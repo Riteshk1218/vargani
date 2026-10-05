@@ -1,0 +1,279 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-10-05 18:06+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: hi\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: apps/accounts/otp.py:32
+msgid "Please wait before requesting another code."
+msgstr "दूसरा कोड मांगने से पहले कृपया थोड़ा इंतज़ार करें।"
+
+#: apps/accounts/otp.py:34
+msgid "Too many codes requested. Try again later."
+msgstr "बहुत बार कोड मांगा गया है। कुछ देर बाद फिर से प्रयास करें।"
+
+#: apps/accounts/otp.py:47
+#, python-format
+msgid ""
+"Your verification code is %(code)s. It expires in %(minutes)s minutes. Do "
+"not share it."
+msgstr ""
+"आपका सत्यापन कोड %(code)s है। यह %(minutes)s मिनट में समाप्त हो जाएगा। इसे "
+"किसी के साथ साझा न करें।"
+
+#: apps/accounts/otp.py:51
+msgid "Your verification code"
+msgstr "आपका सत्यापन कोड"
+
+#: apps/accounts/otp.py:82 apps/accounts/views.py:65
+#: apps/accounts/views.py:177
+msgid "The code is invalid or has expired."
+msgstr "कोड गलत है या उसकी समय-सीमा समाप्त हो गई है।"
+
+#: apps/accounts/serializers.py:55 apps/organizations/serializers.py:167
+msgid "Enter an email address or a mobile number."
+msgstr "ईमेल पता या मोबाइल नंबर दर्ज करें।"
+
+#: apps/accounts/services.py:19
+msgid "An account with these details already exists. Please log in."
+msgstr "इन विवरणों के साथ खाता पहले से मौजूद है। कृपया लॉग इन करें।"
+
+#: apps/accounts/services.py:25
+msgid "Please verify your account before logging in."
+msgstr "लॉग इन करने से पहले कृपया अपना खाता सत्यापित करें।"
+
+#: apps/accounts/services.py:123
+msgid "Invalid login details."
+msgstr "लॉग इन विवरण गलत हैं।"
+
+#: apps/accounts/views.py:113 apps/accounts/views.py:115
+msgid "Refresh token required."
+msgstr "रिफ्रेश टोकन आवश्यक है।"
+
+#: apps/accounts/views.py:160
+msgid "If an account exists, a reset code has been sent."
+msgstr "यदि खाता मौजूद है, तो रीसेट कोड भेज दिया गया है।"
+
+#: apps/accounts/views.py:184
+msgid "Your password has been reset. Please log in."
+msgstr "आपका पासवर्ड रीसेट हो गया है। कृपया लॉग इन करें।"
+
+#: apps/accounts/views.py:196
+msgid "Your current password is incorrect."
+msgstr "आपका वर्तमान पासवर्ड गलत है।"
+
+#: apps/core/exceptions.py:24
+msgid "Select an organization (X-Organization-ID header)."
+msgstr "संस्था चुनें।"
+
+#: apps/core/exceptions.py:30
+msgid "You are not a member of this organization."
+msgstr "आप इस संस्था के सदस्य नहीं हैं।"
+
+#: apps/core/exceptions.py:36
+msgid "Select an event (event parameter)."
+msgstr "कार्यक्रम चुनें।"
+
+#: apps/core/exceptions.py:42
+msgid "This conflicts with existing data."
+msgstr "यह मौजूदा जानकारी से टकराता है।"
+
+#: apps/core/exceptions.py:48
+msgid "This action is not allowed in the record's current state."
+msgstr "वर्तमान स्थिति में यह क्रिया नहीं की जा सकती।"
+
+#: apps/core/exceptions.py:54
+msgid "This request breaks a business rule."
+msgstr "यह अनुरोध नियमों के अनुसार नहीं किया जा सकता।"
+
+#: apps/core/exceptions.py:73
+msgid "Some fields are invalid."
+msgstr "कुछ जानकारी गलत है।"
+
+#: apps/core/exceptions.py:74
+msgid "Not found."
+msgstr "नहीं मिला।"
+
+#: apps/core/exceptions.py:113
+msgid "Something went wrong. Please try again."
+msgstr "कुछ गलत हो गया। कृपया फिर से प्रयास करें।"
+
+#: apps/core/phone.py:26
+msgid "Enter a valid mobile number."
+msgstr "सही मोबाइल नंबर दर्ज करें।"
+
+#: apps/events/serializers.py:36
+msgid "Enter the event name."
+msgstr "कार्यक्रम का नाम दर्ज करें।"
+
+#: apps/events/serializers.py:42
+msgid "Use only letters and numbers."
+msgstr "केवल अक्षर और अंक इस्तेमाल करें।"
+
+#: apps/events/serializers.py:47
+msgid "Unknown module or invalid value."
+msgstr "अज्ञात मॉड्यूल या गलत मान।"
+
+#: apps/events/serializers.py:55
+msgid "An event cannot move to another financial year."
+msgstr "कार्यक्रम को दूसरे वित्तीय वर्ष में नहीं ले जाया जा सकता।"
+
+#: apps/events/serializers.py:57
+msgid "This financial year is closed."
+msgstr "यह वित्तीय वर्ष बंद है।"
+
+#: apps/events/serializers.py:61
+msgid "End date must be on or after the start date."
+msgstr "समाप्ति तिथि आरंभ तिथि के बाद या उसी दिन होनी चाहिए।"
+
+#: apps/events/serializers.py:80
+msgid "Another event in this financial year uses this code."
+msgstr "इस वित्तीय वर्ष का दूसरा कार्यक्रम यह कोड इस्तेमाल करता है।"
+
+#: apps/events/serializers.py:100
+msgid "This cannot be changed."
+msgstr "इसे बदला नहीं जा सकता।"
+
+#: apps/events/serializers.py:103
+msgid "This person is already part of the event."
+msgstr "यह व्यक्ति पहले से कार्यक्रम में है।"
+
+#: apps/events/templates.py:9
+msgid "Festival"
+msgstr "उत्सव"
+
+#: apps/events/templates.py:10
+msgid "Festivals such as Ganesh Chaturthi, Navratri or Dahi Handi."
+msgstr "गणेश चतुर्थी, नवरात्रि या दही हांडी जैसे उत्सव।"
+
+#: apps/events/templates.py:15
+msgid "Fundraising"
+msgstr "धन संग्रह"
+
+#: apps/events/templates.py:16
+msgid "A campaign that collects donations towards a goal."
+msgstr "किसी लक्ष्य के लिए दान इकट्ठा करने का अभियान।"
+
+#: apps/events/templates.py:21
+msgid "Membership"
+msgstr "सदस्यता"
+
+#: apps/events/templates.py:22
+msgid "Annual or monthly membership and Vargani collection."
+msgstr "वार्षिक या मासिक सदस्यता और वर्गणी संग्रह।"
+
+#: apps/events/templates.py:27
+msgid "Society"
+msgstr "सोसाइटी"
+
+#: apps/events/templates.py:28
+msgid "Housing society maintenance, funds and expenses."
+msgstr "हाउसिंग सोसाइटी का रखरखाव, निधि और खर्च।"
+
+#: apps/events/templates.py:33
+msgid "Custom"
+msgstr "कस्टम"
+
+#: apps/events/templates.py:34
+msgid "Start empty and choose the modules yourself."
+msgstr "खाली से शुरू करें और मॉड्यूल खुद चुनें।"
+
+#: apps/organizations/serializers.py:35
+msgid "Enter the organization name."
+msgstr "संस्था का नाम दर्ज करें।"
+
+#: apps/organizations/serializers.py:52 apps/organizations/serializers.py:88
+msgid "End date must be after the start date."
+msgstr "समाप्ति तिथि आरंभ तिथि के बाद होनी चाहिए।"
+
+#: apps/organizations/serializers.py:86
+msgid "A closed financial year cannot be edited."
+msgstr "बंद वित्तीय वर्ष को बदला नहीं जा सकता।"
+
+#: apps/organizations/serializers.py:93
+msgid "A financial year with this label already exists."
+msgstr "इस नाम का वित्तीय वर्ष पहले से मौजूद है।"
+
+#: apps/organizations/serializers.py:95
+msgid "This financial year overlaps another financial year."
+msgstr "यह वित्तीय वर्ष दूसरे वित्तीय वर्ष से टकराता है।"
+
+#: apps/organizations/services.py:69
+msgid "Unknown setting."
+msgstr "अज्ञात सेटिंग।"
+
+#: apps/organizations/services.py:71
+msgid "Invalid value."
+msgstr "गलत मान।"
+
+#: apps/organizations/services.py:85
+msgid "Upload a PNG, JPG, JPEG or WEBP image."
+msgstr "PNG, JPG, JPEG या WEBP छवि अपलोड करें।"
+
+#: apps/organizations/services.py:91
+msgid "The file is too large."
+msgstr "फ़ाइल बहुत बड़ी है।"
+
+#: apps/organizations/services.py:115
+msgid "The image is too small. Use at least 512 × 512 pixels."
+msgstr "छवि बहुत छोटी है। कम से कम 512 × 512 पिक्सेल इस्तेमाल करें।"
+
+#: apps/organizations/services.py:165
+msgid "A closed financial year cannot be made current."
+msgstr "बंद वित्तीय वर्ष को चालू नहीं किया जा सकता।"
+
+#: apps/organizations/services.py:221
+msgid "This person already has access to the organization."
+msgstr "इस व्यक्ति को संस्था में पहले से पहुँच है।"
+
+#: apps/organizations/services.py:245
+#, python-format
+msgid ""
+"You have been invited to join %(org)s as %(role)s. Open this link to accept:"
+" %(link)s"
+msgstr ""
+"आपको %(org)s में %(role)s के रूप में जुड़ने का निमंत्रण है। स्वीकार करने के "
+"लिए यह लिंक खोलें: %(link)s"
+
+#: apps/organizations/services.py:248
+#, python-format
+msgid "Invitation to %(org)s"
+msgstr "%(org)s से निमंत्रण"
+
+#: apps/organizations/services.py:270
+msgid "This invitation is invalid or has expired."
+msgstr "यह निमंत्रण अमान्य है या उसकी समय-सीमा समाप्त हो गई है।"
+
+#: apps/organizations/services.py:277
+msgid "This invitation was sent to a different email or mobile number."
+msgstr "यह निमंत्रण किसी दूसरे ईमेल या मोबाइल नंबर पर भेजा गया था।"
+
+#: apps/organizations/services.py:286
+msgid "You already have access to this organization."
+msgstr "आपको इस संस्था में पहले से पहुँच है।"
+
+#: apps/organizations/services.py:324
+msgid "The organization must keep at least one active Organization Admin."
+msgstr "संस्था में कम से कम एक सक्रिय संस्था एडमिन होना ज़रूरी है।"
+
+#: apps/people/serializers.py:29
+msgid "Enter the person's name."
+msgstr "व्यक्ति का नाम दर्ज करें।"
+
+#: config/settings/base.py:94
+msgid "English"
+msgstr "English"
