@@ -3,7 +3,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import i18n from '../i18n'
 import { refreshAccessToken, setSessionExpiredHandler } from '../services/apiClient'
 import { authService } from '../services/auth'
-import { session } from '../services/session'
+import { MEMBER_LOGIN_KEY, session } from '../services/session'
 import type { TokenResponse, User } from '../types/api'
 
 type Status = 'loading' | 'authenticated' | 'anonymous'
@@ -74,6 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await authService.logout()
     } finally {
       session.setOrganizationId(null)
+      session.write(MEMBER_LOGIN_KEY, null)
       clear()
     }
   }, [clear])

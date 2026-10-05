@@ -19,7 +19,8 @@
     "expenses": "Expenses",
     "income": "Other income",
     "reports": "Reports",
-    "audit": "Audit log"
+    "audit": "Audit log",
+    "my": "My contributions"
   },
   "topbar": {
     "switchOrganization": "Switch organization",
@@ -311,7 +312,8 @@
       "profile": "Profile",
       "logo": "Logo",
       "financialYears": "Financial years",
-      "preferences": "Preferences"
+      "preferences": "Preferences",
+      "onlinePayments": "Online payments"
     }
   },
   "logo": {
@@ -349,7 +351,9 @@
     "require_expense_approval": "Expenses need approval",
     "require_expense_approval_help": "A Treasurer or Admin must approve an expense before it counts in the balance.",
     "member_portal_enabled": "Member portal",
-    "member_portal_enabled_help": "Members can log in with their mobile number to see their own contributions and receipts."
+    "member_portal_enabled_help": "Members can log in with their mobile number to see their own contributions and receipts.",
+    "auto_reminders": "Monthly reminders",
+    "auto_reminders_help": "On the 5th of each month, members with a login who still owe get a reminder. Needs the member portal."
   },
   "profile": {
     "title": "My profile",
@@ -704,5 +708,91 @@
       "exportjob": "report",
       "user": "account"
     }
+  },
+  "memberLogin": {
+    "link": "Member? Log in with your mobile number",
+    "title": "Member login",
+    "subtitle": "Enter the mobile number your organization has for you. We will send a code by SMS.",
+    "mobile": "Mobile number",
+    "sendCode": "Send code",
+    "changeNumber": "Change number",
+    "staff": "Committee or staff?",
+    "staffLink": "Log in with password"
+  },
+  "portal": {
+    "title": "My contributions",
+    "portal_not_linked": "Your login is not linked yet",
+    "portal_unavailable": "Member portal is switched off",
+    "notLinkedMessage": "Ask your organization to link your mobile number to your member record. Then log in again.",
+    "allEvents": "All events",
+    "totalPaid": "Total paid",
+    "paymentsCount": "Payments: {{count}}",
+    "totalDue": "Still due",
+    "receipts": "Receipts",
+    "dues": "What is due",
+    "noDues": "Nothing is due. Thank you!",
+    "paidOf": "{{paid}} paid of {{expected}}",
+    "fullyPaid": "Paid",
+    "payOnline": "Pay online",
+    "payCollector": "Please pay your collector. You will get a receipt here.",
+    "myPayments": "My payments",
+    "noPayments": "No payments yet",
+    "noReceipts": "No receipts yet",
+    "view": "View",
+    "download": "Download PDF",
+    "paid": "Payment received. Your receipt is ready.",
+    "payFailed": "The payment did not go through. No receipt was issued.",
+    "payAmount": "Pay {{amount}}",
+    "payNote": "You can pay part of the amount. Your receipt appears here as soon as the payment is confirmed."
+  },
+  "notifications": {
+    "label": "Notifications",
+    "labelUnread": "Notifications, {{count}} unread",
+    "title": "Notifications",
+    "markAll": "Mark all read",
+    "empty": "You're all caught up"
+  },
+  "announce": {
+    "button": "Announcement",
+    "title": "Send an announcement",
+    "help": "Everyone with access to this organization will see it in their notifications.",
+    "subject": "Title",
+    "message": "Message",
+    "send": "Send",
+    "sent": "Sent to {{count}} people with access"
+  },
+  "gateway": {
+    "help": "Members can pay dues online with UPI, cards or net banking through your own Razorpay account. Money goes directly to your account.",
+    "on": "On",
+    "off": "Off",
+    "keyId": "Key id",
+    "keySecret": "Key secret",
+    "webhookSecret": "Webhook secret",
+    "secretSaved": "Saved. Leave empty to keep it.",
+    "secretMissing": "Not set yet",
+    "webhookUrl": "Webhook URL",
+    "copy": "Copy",
+    "webhookHelp": "In the Razorpay dashboard, add this URL as a webhook for payment.captured, order.paid and payment.failed, using the webhook secret above.",
+    "active": "Accept online payments",
+    "activeHelp": "Shows a Pay online button to members in the portal."
+  },
+  "reminders": {
+    "send": "Send reminders",
+    "title": "Reminders",
+    "inApp": "Reminded in the app: {{count}}",
+    "already": "Already reminded this month: {{count}}",
+    "whatsappIntro": "Without a login: {{count}}. Tap to send each a WhatsApp message:"
+  },
+  "linkLogin": {
+    "title": "Portal login",
+    "badge": "Portal",
+    "help": "Link {{name}} to a login so they can see their own contributions and receipts.",
+    "current": "Linked to {{name}}.",
+    "user": "Login",
+    "autoHint": "Members who log in with a mobile number that matches exactly one person are linked automatically.",
+    "link": "Link",
+    "unlink": "Unlink",
+    "linked": "Login linked",
+    "unlinked": "Login unlinked"
   }
 }

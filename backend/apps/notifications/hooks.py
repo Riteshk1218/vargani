@@ -81,5 +81,5 @@ def receipt_issued(receipt, actor):
         {"amount": money(receipt.payment.amount), "event": receipt.event.name, "number": receipt.receipt_number},
         organization=org,
         entity=receipt,
-        link=f"/portal/receipts/{receipt.pk}",
+        link="/app/my",
     )

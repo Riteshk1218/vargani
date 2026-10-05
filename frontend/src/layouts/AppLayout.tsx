@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Outlet } from 'react-router-dom'
 import { EventSwitcher } from '../components/layout/EventSwitcher'
 import { LanguageSelector } from '../components/layout/LanguageSelector'
+import { NotificationBell } from '../components/layout/NotificationBell'
 import { Sidebar } from '../components/layout/Sidebar'
 import { UserMenu } from '../components/layout/UserMenu'
 import { Badge } from '../components/ui/Card'
@@ -49,6 +50,7 @@ export function AppLayout() {
             )}
             <div className="ml-auto flex items-center gap-2">
               <LanguageSelector compact />
+              <NotificationBell />
               <UserMenu />
             </div>
           </header>

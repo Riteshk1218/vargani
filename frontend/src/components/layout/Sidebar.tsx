@@ -1,4 +1,4 @@
-import { BarChart3, CalendarDays, HandCoins, History, PiggyBank, Receipt, LayoutDashboard, ListChecks, ReceiptText, Settings, ShieldAlert, ShieldCheck, Users, UsersRound, Wallet, type LucideIcon } from 'lucide-react'
+import { BarChart3, HandHeart, CalendarDays, HandCoins, History, PiggyBank, Receipt, LayoutDashboard, ListChecks, ReceiptText, Settings, ShieldAlert, ShieldCheck, Users, UsersRound, Wallet, type LucideIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { NavLink } from 'react-router-dom'
 import { useOrg } from '../../context/OrgContext'
@@ -11,10 +11,13 @@ interface NavItem {
   label: string
   icon: LucideIcon
   permission?: string | string[]
+  /** Shown only when the organization has the member portal switched on. */
+  portal?: boolean
 }
 
 const NAV: NavItem[] = [
   { to: '/app/dashboard', label: 'nav.dashboard', icon: LayoutDashboard },
+  { to: '/app/my', label: 'nav.my', icon: HandHeart, permission: 'portal.self', portal: true },
   { to: '/app/collect', label: 'nav.collect', icon: HandCoins, permission: 'payments.create' },
   { to: '/app/contributions', label: 'nav.contributions', icon: ListChecks, permission: 'contributions.view' },
   { to: '/app/payments', label: 'nav.payments', icon: Wallet, permission: 'payments.view' },
@@ -33,12 +36,13 @@ const NAV: NavItem[] = [
 
 export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const { t } = useTranslation()
-  const { can } = useOrg()
+  const { can, detail } = useOrg()
+  const portalOn = Boolean(detail?.member_portal_enabled)
   return (
     <nav className="flex h-full flex-col gap-4 p-3" aria-label={t('nav.main')}>
       <OrgSwitcher />
       <ul className="space-y-1">
-        {NAV.filter((item) => !item.permission || [item.permission].flat().some(can)).map((item) => (
+        {NAV.filter((item) => (!item.portal || portalOn) && (!item.permission || [item.permission].flat().some(can))).map((item) => (
           <li key={item.to}>
             <NavLink
               to={item.to}

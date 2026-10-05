@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-05 21:47+0000\n"
+"POT-Creation-Date: 2026-10-05 21:57+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -322,6 +322,10 @@ msgstr "पेमेंटची पडताळणी होऊ शकली �
 msgid "Online payment failed"
 msgstr "ऑनलाइन पेमेंट अयशस्वी"
 
+#: apps/gateway/views.py:63
+msgid "Add the key id and key secret before switching on."
+msgstr "चालू करण्यापूर्वी key id आणि key secret टाका."
+
 #: apps/notifications/templates.py:12
 msgid "Expense waiting for approval"
 msgstr "खर्च मंजुरीच्या प्रतीक्षेत"
@@ -408,9 +412,6 @@ msgstr "पेमेंट पूर्ण झाले नाही"
 
 #: apps/notifications/templates.py:46
 #, python-format
-#| msgid ""
-#| "Your online payment of ₹%(amount)s for %(event)s did not go through. If "
-#| "money was deducted, your bank will return it."
 msgid ""
 "Your payment of ₹%(amount)s for %(event)s did not go through. Any money "
 "deducted will be returned."

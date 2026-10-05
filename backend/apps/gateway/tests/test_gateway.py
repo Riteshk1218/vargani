@@ -184,6 +184,18 @@ def test_no_gateway_means_no_online_payment(portal, api):  # noqa: F811
     assert not Payment.objects.filter(mode="online").exists()
 
 
+def test_monthly_dues_paid_online_count_for_the_current_month(online):
+    s = online
+    response = s.member.post(
+        "/api/v1/portal/pay/",
+        {"event": str(s.event.pk), "lines": [{"contribution_type": str(s.monthly.pk), "amount": "1500"}]},
+        format="json",
+    )
+    assert response.status_code == 201, response.data
+    line = Payment.objects.get(pk=response.data["payment"]).lines.get()
+    assert line.period_month is not None and line.period_month.day == 1
+
+
 def test_staff_cannot_record_online_payments_by_hand(online):
     s = online
     response = s.admin.post(

@@ -146,6 +146,7 @@ class PortalSummaryView(PortalMixin, APIView):
                     "contribution_type": str(ctype.pk),
                     "name": ctype.name,
                     "event": ctype.event.name,
+                    "event_id": str(ctype.event_id),
                     "expected": _money(expected),
                     "paid": _money(paid),
                     "due": _money(due),
@@ -182,7 +183,8 @@ class PortalPaymentsView(PortalMixin, generics.ListAPIView):
         qs = (
             Payment.objects.for_org(self.org)
             .filter(payer=self.person())
-            .exclude(status=Payment.Status.PENDING, mode="online")  # abandoned checkouts are not shown
+            # Abandoned or failed online checkouts took no money and are not shown.
+            .exclude(status__in=[Payment.Status.PENDING, Payment.Status.FAILED], mode="online")
             .select_related("event", "payer", "collector__user")
             .prefetch_related("lines__contribution_type", "lines__fund", "receipts")
             .order_by("-paid_at")

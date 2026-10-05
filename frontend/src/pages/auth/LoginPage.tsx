@@ -9,6 +9,7 @@ import { useAuth } from '../../context/AuthContext'
 import { useApiErrors } from '../../hooks/useApiErrors'
 import { authService } from '../../services/auth'
 import { toApiError } from '../../services/apiClient'
+import { MEMBER_LOGIN_KEY, session } from '../../services/session'
 
 const schema = z.object({ identifier: z.string().trim().min(1), password: z.string().min(1) })
 type Values = z.infer<typeof schema>
@@ -24,6 +25,7 @@ export function LoginPage() {
   const onSubmit = async (values: Values) => {
     try {
       startSession(await authService.login(values.identifier, values.password))
+      session.write(MEMBER_LOGIN_KEY, null)
       const from = (location.state as { from?: string } | null)?.from
       navigate(from && (from.startsWith('/app') || from.startsWith('/invite/')) ? from : '/app/dashboard', { replace: true })
     } catch (error) {
@@ -77,6 +79,9 @@ export function LoginPage() {
           {t('auth.registerLink')}
         </Link>
       </p>
+      <Link to="/member-login" className="block rounded-lg border border-slate-200 px-3 py-2.5 text-center text-sm font-medium text-slate-700 hover:bg-slate-50">
+        {t('memberLogin.link')}
+      </Link>
     </form>
   )
 }

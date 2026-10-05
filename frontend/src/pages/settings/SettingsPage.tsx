@@ -7,8 +7,9 @@ import { FinancialYearsPanel } from './FinancialYearsPanel'
 import { LogoUploader } from './LogoUploader'
 import { OrganizationProfileForm } from './OrganizationProfileForm'
 import { OrganizationSettingsPanel } from './OrganizationSettingsPanel'
+import { PaymentGatewayPanel } from './PaymentGatewayPanel'
 
-const TABS = ['profile', 'logo', 'financialYears', 'preferences'] as const
+const TABS = ['profile', 'logo', 'financialYears', 'preferences', 'onlinePayments'] as const
 
 export function SettingsPage() {
   const { t } = useTranslation()
@@ -37,6 +38,7 @@ export function SettingsPage() {
         {tab === 'logo' && <LogoUploader organization={organization} />}
         {tab === 'financialYears' && <FinancialYearsPanel />}
         {tab === 'preferences' && <OrganizationSettingsPanel />}
+        {tab === 'onlinePayments' && <PaymentGatewayPanel />}
       </Card>
     </div>
   )

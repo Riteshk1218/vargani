@@ -187,7 +187,7 @@ def handle_webhook(*, org, body: bytes, signature: str, event_id: str, payload: 
                     {"amount": money(payment.amount), "event": payment.event.name},
                     organization=org,
                     entity=payment,
-                    link="/portal",
+                    link="/app/my",
                 )
             result = "processed"
     except ValidationError as exc:

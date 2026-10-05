@@ -99,12 +99,14 @@ export interface MyOrganizationDetail {
   role: RoleSummary
   permissions: Record<string, string>
   current_financial_year: FinancialYear | null
+  member_portal_enabled: boolean
 }
 
 export interface OrganizationSettings {
   allow_unassigned_collection: boolean
   require_expense_approval: boolean
   member_portal_enabled: boolean
+  auto_reminders: boolean
 }
 
 export type EventTemplateCode = 'festival' | 'fundraising' | 'membership' | 'society' | 'custom'
@@ -166,6 +168,8 @@ export interface Person {
   notes: string
   is_active: boolean
   has_login: boolean
+  linked_user: string | null
+  linked_user_name: string | null
   created_at: string
   updated_at: string
 }
@@ -604,4 +608,69 @@ export interface AuditEntry {
   user_agent: string
   request_id: string
   created_at: string
+}
+
+// --- Phase 5: member portal, notifications, online payments ---------------------------------------
+export interface AppNotification {
+  id: string
+  type: string
+  title: string
+  body: string
+  link: string
+  organization: string | null
+  organization_name: string | null
+  read_at: string | null
+  created_at: string
+}
+
+export interface PortalMe {
+  person: { id: string; full_name: string; mobile: string; email: string; address: string }
+  organization: { id: string; name: string; currency: string }
+  events: { id: string; name: string; status: EventStatus }[]
+  online_payments: boolean
+}
+
+export interface PortalDue {
+  contribution_type: string
+  name: string
+  event: string
+  event_id: string
+  expected: string
+  paid: string
+  due: string
+}
+
+export interface PortalSummary {
+  total_paid: string
+  payments: number
+  by_event: { id: string; name: string; total: string }[]
+  by_type: { id: string; name: string; event: string; total: string }[]
+  dues: PortalDue[]
+  total_due: string
+}
+
+export interface CheckoutOptions {
+  provider: 'razorpay'
+  key: string
+  order_id: string
+  amount: number
+  currency: string
+  name: string
+  description: string
+  prefill: { name: string; contact: string; email: string }
+}
+
+export interface GatewaySettings {
+  provider: 'razorpay'
+  key_id: string
+  is_active: boolean
+  has_key_secret: boolean
+  has_webhook_secret: boolean
+  webhook_url: string
+}
+
+export interface ReminderResult {
+  notified: number
+  already_reminded: number
+  whatsapp: { person: string; name: string; mobile: string; due: string; whatsapp_url: string }[]
 }

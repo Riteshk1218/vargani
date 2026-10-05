@@ -8,7 +8,7 @@ import { useApiErrors } from '../../hooks/useApiErrors'
 import { organizationService } from '../../services/organizations'
 import type { OrganizationSettings } from '../../types/api'
 
-const KEYS: (keyof OrganizationSettings)[] = ['allow_unassigned_collection', 'require_expense_approval', 'member_portal_enabled']
+const KEYS: (keyof OrganizationSettings)[] = ['allow_unassigned_collection', 'require_expense_approval', 'member_portal_enabled', 'auto_reminders']
 
 export function OrganizationSettingsPanel() {
   const { t } = useTranslation()
@@ -21,6 +21,7 @@ export function OrganizationSettingsPanel() {
     mutationFn: (input: Partial<OrganizationSettings>) => organizationService.updateSettings(activeOrgId!, input),
     onSuccess: (data) => {
       queryClient.setQueryData(['org', activeOrgId, 'settings'], data)
+      void queryClient.invalidateQueries({ queryKey: ['org', activeOrgId, 'me'] })
       notify(t('common.saved'))
     },
     onError,

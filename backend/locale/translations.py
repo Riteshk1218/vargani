@@ -10,6 +10,10 @@ from pathlib import Path
 import polib
 
 T = {
+    "Add the key id and key secret before switching on.": (
+        "चालू करण्यापूर्वी key id आणि key secret टाका.",
+        "चालू करने से पहले key id और key secret दर्ज करें।",
+    ),
     "%(actor)s asked to void receipt %(number)s (₹%(amount)s): %(reason)s": (
         "%(actor)s यांनी पावती %(number)s (₹%(amount)s) रद्द करण्याची विनंती केली: %(reason)s",
         "%(actor)s ने रसीद %(number)s (₹%(amount)s) रद्द करने का अनुरोध किया: %(reason)s",

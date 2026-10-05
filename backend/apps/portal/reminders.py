@@ -71,7 +71,7 @@ def send(ctype: ContributionType, *, request=None, actor=None) -> dict:
                 {"amount": amount, "type": ctype.name, "event": ctype.event.name},
                 organization=org,
                 entity=ctype,
-                link="/portal",
+                link="/app/my",
             )
             notified += 1
         elif person.mobile:

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Archive, Pencil, Search, UserPlus } from 'lucide-react'
+import { Archive, KeyRound, Pencil, Search, UserPlus } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router-dom'
@@ -16,6 +16,7 @@ import { useDebounced } from '../../hooks/useDebounced'
 import { peopleService } from '../../services/people'
 import type { Person, PersonType } from '../../types/api'
 import { formatMobile } from '../../utils/format'
+import { LinkLoginModal } from './LinkLoginModal'
 import { PERSON_TYPES, PersonFormModal } from './PersonFormModal'
 
 export function PeoplePage() {
@@ -33,6 +34,8 @@ export function PeoplePage() {
   const debouncedSearch = useDebounced(search)
   const creating = params.get('new') === '1'
   const canManage = can('people.manage')
+  const canLink = canManage && can('members.view')
+  const [linking, setLinking] = useState<Person | null>(null)
 
   const people = useQuery({
     queryKey: ['org', activeOrgId, 'people', 'list', debouncedSearch, type, page],
@@ -114,7 +117,14 @@ export function PeoplePage() {
                   {people.data!.results.map((person) => (
                     <tr key={person.id}>
                       <td className="px-4 py-3">
-                        <p className="font-medium text-slate-900">{person.full_name}</p>
+                        <p className="font-medium text-slate-900">
+                          {person.full_name}
+                          {person.linked_user && (
+                            <span className="ml-2 align-middle">
+                              <Badge tone="green">{t('linkLogin.badge')}</Badge>
+                            </span>
+                          )}
+                        </p>
                         <p className="text-xs text-slate-500 sm:hidden">{formatMobile(person.mobile)}</p>
                       </td>
                       <td className="hidden px-4 py-3 text-slate-600 sm:table-cell">{formatMobile(person.mobile)}</td>
@@ -131,6 +141,11 @@ export function PeoplePage() {
                           <Button variant="ghost" size="sm" aria-label={t('common.edit')} onClick={() => setEditing(person)}>
                             <Pencil className="size-4" />
                           </Button>
+                          {canLink && (
+                            <Button variant="ghost" size="sm" aria-label={t('linkLogin.title')} title={t('linkLogin.title')} onClick={() => setLinking(person)}>
+                              <KeyRound className="size-4" />
+                            </Button>
+                          )}
                           <Button variant="ghost" size="sm" aria-label={t('people.archive')} onClick={() => setArchiving(person)}>
                             <Archive className="size-4" />
                           </Button>
@@ -153,6 +168,7 @@ export function PeoplePage() {
           if (creating) setParams({})
         }}
       />
+      <LinkLoginModal person={linking} onClose={() => setLinking(null)} />
       <ConfirmDialog
         open={Boolean(archiving)}
         title={t('people.archiveTitle')}

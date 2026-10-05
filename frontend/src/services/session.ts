@@ -6,6 +6,8 @@ import type { Language } from '../types/api'
 
 const ORG_KEY = 'vargani.activeOrg'
 const LANG_KEY = 'vargani.language'
+/** Set when someone logged in as a member with a one-time code. */
+export const MEMBER_LOGIN_KEY = 'vargani.memberLogin'
 
 let accessToken: string | null = null
 let organizationId: string | null = readStorage(ORG_KEY)

@@ -1,7 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
 import { CalendarDays, CalendarPlus, HandCoins, IndianRupee, Receipt, ShieldCheck, UserPlus, Users, Wallet } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { Link } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
+import { AnnouncementButton } from '../../components/AnnouncementButton'
 import { Button } from '../../components/ui/Button'
 import { BarList } from '../../components/ui/BarList'
 import { Card, PageHeader, StatCard } from '../../components/ui/Card'
@@ -23,9 +24,15 @@ export function DashboardPage() {
   })
 
   const org = detail!.organization
+  // Members only see their own contributions.
+  if (detail!.role.code === 'member' && detail!.member_portal_enabled) return <Navigate to="/app/my" replace />
   return (
     <div>
-      <PageHeader title={t('dashboard.title')} description={activeEvent ? t('dashboard.forEvent', { event: activeEvent.name }) : org.name} />
+      <PageHeader
+        title={t('dashboard.title')}
+        description={activeEvent ? t('dashboard.forEvent', { event: activeEvent.name }) : org.name}
+        actions={can('notifications.send') && <AnnouncementButton />}
+      />
       {summary.isLoading ? (
         <Card>
           <SkeletonRows rows={3} />

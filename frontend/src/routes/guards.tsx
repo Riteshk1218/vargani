@@ -1,7 +1,9 @@
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
+import { Button } from '../components/ui/Button'
 import { EmptyState, FullPageSpinner } from '../components/ui/States'
+import { MEMBER_LOGIN_KEY, session } from '../services/session'
 import { useAuth } from '../context/AuthContext'
 import { useOrg } from '../context/OrgContext'
 
@@ -24,9 +26,31 @@ export function RedirectIfAuthenticated() {
 export function RequireOrganization() {
   const { memberships, membershipsLoading, activeOrgId } = useOrg()
   if (membershipsLoading) return <FullPageSpinner />
-  if (memberships.length === 0) return <Navigate to="/onboarding/create-organization" replace />
+  if (memberships.length === 0) {
+    // A member who logged in with a code but is not linked to any organization's records yet.
+    if (session.read(MEMBER_LOGIN_KEY)) return <NotLinkedYet />
+    return <Navigate to="/onboarding/create-organization" replace />
+  }
   if (!activeOrgId) return <FullPageSpinner />
   return <Outlet />
+}
+
+function NotLinkedYet() {
+  const { t } = useTranslation()
+  const { logout } = useAuth()
+  return (
+    <div className="mx-auto max-w-md px-4 py-16">
+      <EmptyState
+        title={t('portal.portal_not_linked')}
+        message={t('portal.notLinkedMessage')}
+        action={
+          <Button variant="secondary" onClick={() => void logout()}>
+            {t('common.logout')}
+          </Button>
+        }
+      />
+    </div>
+  )
 }
 
 /** UX only: the API enforces every permission on its own. */

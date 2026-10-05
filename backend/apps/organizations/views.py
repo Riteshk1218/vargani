@@ -341,5 +341,6 @@ class MyOrganizationDetailView(APIView):
                 "role": {"id": str(membership.role.pk), "code": membership.role.code, "name": membership.role.name},
                 "permissions": context.permissions,
                 "current_financial_year": FinancialYearSerializer(current_fy).data if current_fy else None,
+                "member_portal_enabled": bool(context.organization.settings.get("member_portal_enabled")),
             }
         )

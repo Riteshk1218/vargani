@@ -2,6 +2,8 @@ import json
 
 from django.conf import settings
 from django.http import HttpResponse
+from django.utils import timezone
+from django.utils.translation import gettext as _
 from django.views.decorators.csrf import csrf_exempt
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
@@ -11,6 +13,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.audit import services as audit
+from apps.contributions.models import ContributionType
 from apps.core.fields import TenantPrimaryKeyRelatedField
 from apps.core.permissions import HasOrgPermission
 from apps.events.models import Event
@@ -59,7 +62,7 @@ class GatewayConfigSerializer(serializers.ModelSerializer):
             and not (attrs.get("key_id") or getattr(self.instance, "key_id", ""))
             or (attrs.get("is_active") and not secret)
         ):
-            raise serializers.ValidationError({"is_active": ["Add the key id and key secret before switching on."]})
+            raise serializers.ValidationError({"is_active": [_("Add the key id and key secret before switching on.")]})
         return attrs
 
 
@@ -125,6 +128,13 @@ class PortalPayVerifySerializer(serializers.Serializer):
     signature = serializers.CharField(max_length=200)
 
 
+def _with_month(line: LineInput) -> LineInput:
+    """Members pay what is due on a monthly type as a whole; it is recorded against the current month."""
+    if line.period_month is None and line.contribution_type.kind == ContributionType.Kind.RECURRING_MONTHLY:
+        line.period_month = timezone.localdate().replace(day=1)
+    return line
+
+
 class PortalPayView(PortalMixin, APIView):
     """Start an online payment for myself. Returns the gateway checkout options."""
 
@@ -137,7 +147,7 @@ class PortalPayView(PortalMixin, APIView):
             org=self.org,
             event=body.validated_data["event"],
             payer=person,
-            lines=[LineInput(**line) for line in body.validated_data["lines"]],
+            lines=[_with_month(LineInput(**line)) for line in body.validated_data["lines"]],
             request=request,
             actor=request.user,
         )

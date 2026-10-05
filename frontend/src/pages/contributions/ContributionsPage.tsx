@@ -13,6 +13,7 @@ import { useDebounced } from '../../hooks/useDebounced'
 import { contributionService, contributionTypeService } from '../../services/finance'
 import { formatDate, formatMobile, formatMoney, formatMonth } from '../../utils/format'
 import { cn } from '../../utils/cn'
+import { RemindButton } from './RemindButton'
 
 type Tab = 'list' | 'dues'
 
@@ -204,13 +205,16 @@ function Dues({ eventId }: { eventId: string }) {
           ))}
         </SelectInput>
         {r && (
-          <p className="text-sm text-slate-600 sm:text-right">
-            {t('contributions.duesSummary', {
-              due: formatMoney(r.total_due, currency),
-              count: r.people_with_dues,
-              expected: formatMoney(r.expected_per_person, currency),
-            })}
-          </p>
+          <div className="flex flex-wrap items-center gap-3 sm:justify-end">
+            <p className="text-sm text-slate-600 sm:text-right">
+              {t('contributions.duesSummary', {
+                due: formatMoney(r.total_due, currency),
+                count: r.people_with_dues,
+                expected: formatMoney(r.expected_per_person, currency),
+              })}
+            </p>
+            {r.people_with_dues > 0 && <RemindButton contributionTypeId={typeId} />}
+          </div>
         )}
       </div>
       {report.isLoading ? (

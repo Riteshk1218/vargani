@@ -1,5 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { AuditPage } from '../pages/audit/AuditPage'
+import { MemberLoginPage } from '../pages/auth/MemberLoginPage'
+import { MyContributionsPage } from '../pages/portal/MyContributionsPage'
 import { ExpensesPage } from '../pages/expenses/ExpensesPage'
 import { OtherIncomePage } from '../pages/income/OtherIncomePage'
 import { ReportsPage } from '../pages/reports/ReportsPage'
@@ -36,6 +38,7 @@ export function AppRoutes() {
       <Route element={<RedirectIfAuthenticated />}>
         <Route element={<AuthLayout />}>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/member-login" element={<MemberLoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/verify" element={<VerifyPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
@@ -52,6 +55,7 @@ export function AppRoutes() {
           <Route path="/app" element={<AppLayout />}>
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<DashboardPage />} />
+            <Route path="my" element={<RequirePermission permission="portal.self"><MyContributionsPage /></RequirePermission>} />
             <Route path="collect" element={<RequirePermission permission="payments.create"><CollectPage /></RequirePermission>} />
             <Route path="contributions" element={<RequirePermission permission="contributions.view"><ContributionsPage /></RequirePermission>} />
             <Route path="payments" element={<RequirePermission permission="payments.view"><PaymentsPage /></RequirePermission>} />

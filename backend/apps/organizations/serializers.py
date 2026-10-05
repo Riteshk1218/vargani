@@ -78,6 +78,7 @@ class OrganizationSettingsSerializer(serializers.Serializer):
     allow_unassigned_collection = serializers.BooleanField(required=False)
     require_expense_approval = serializers.BooleanField(required=False)
     member_portal_enabled = serializers.BooleanField(required=False)
+    auto_reminders = serializers.BooleanField(required=False)
 
 
 class LogoUploadSerializer(serializers.Serializer):
