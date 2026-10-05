@@ -232,6 +232,10 @@ EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="no-reply@localhost")
 
 SMS_BACKEND = env("SMS_BACKEND", default="apps.accounts.sms.ConsoleSMSBackend")
+# Push notifications to the mobile app: "console" (logs only) or "fcm" (Firebase Cloud Messaging HTTP v1).
+PUSH_BACKEND = env("PUSH_BACKEND", default="console")
+FCM_SERVICE_ACCOUNT_FILE = env("FCM_SERVICE_ACCOUNT_FILE", default="")
+FCM_PROJECT_ID = env("FCM_PROJECT_ID", default="")
 OTP_LENGTH = 6
 OTP_TTL_SECONDS = 300
 OTP_MAX_ATTEMPTS = 5

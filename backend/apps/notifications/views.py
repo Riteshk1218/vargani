@@ -11,8 +11,8 @@ from apps.audit import services as audit
 from apps.core.permissions import HasOrgPermission
 from apps.organizations.models import OrganizationMembership
 
-from .models import Notification
-from .serializers import AnnouncementSerializer, NotificationSerializer
+from .models import DeviceToken, Notification
+from .serializers import AnnouncementSerializer, DeviceSerializer, DeviceTokenSerializer, NotificationSerializer
 from .services import notify
 
 
@@ -89,3 +89,42 @@ class AnnouncementView(APIView):
             after={**serializer.validated_data, "recipients": len(rows)},
         )
         return Response({"sent": len(rows)}, status=status.HTTP_201_CREATED)
+
+
+class DeviceRegisterView(APIView):
+    """The mobile app registers its push token after login (and whenever FCM rotates it)."""
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(request=DeviceSerializer, responses=OpenApiTypes.OBJECT)
+    def post(self, request):
+        body = DeviceSerializer(data=request.data)
+        body.is_valid(raise_exception=True)
+        data = body.validated_data
+        device, created = DeviceToken.objects.update_or_create(
+            token=data["token"],
+            defaults={
+                "user": request.user,
+                "platform": data["platform"],
+                "app_version": data["app_version"],
+                "is_active": True,
+                "failure_count": 0,
+                "last_seen_at": timezone.now(),
+            },
+        )
+        return Response({"id": str(device.pk)}, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+
+
+class DeviceUnregisterView(APIView):
+    """Called on logout so the phone stops receiving this user's notifications."""
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(request=DeviceTokenSerializer, responses=OpenApiTypes.OBJECT)
+    def post(self, request):
+        body = DeviceTokenSerializer(data=request.data)
+        body.is_valid(raise_exception=True)
+        removed = DeviceToken.objects.filter(user=request.user, token=body.validated_data["token"]).update(
+            is_active=False
+        )
+        return Response({"removed": removed})

@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Notification
+from .models import DeviceToken, Notification
 from .templates import render
 
 
@@ -42,3 +42,13 @@ class NotificationSerializer(serializers.ModelSerializer):
 class AnnouncementSerializer(serializers.Serializer):
     title = serializers.CharField(max_length=120)
     message = serializers.CharField(max_length=1000)
+
+
+class DeviceSerializer(serializers.Serializer):
+    token = serializers.CharField(max_length=512)
+    platform = serializers.ChoiceField(choices=DeviceToken.Platform.choices, default=DeviceToken.Platform.ANDROID)
+    app_version = serializers.CharField(max_length=40, required=False, allow_blank=True, default="")
+
+
+class DeviceTokenSerializer(serializers.Serializer):
+    token = serializers.CharField(max_length=512)
