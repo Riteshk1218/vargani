@@ -33,6 +33,15 @@ def endpoint_cases(org):
         "create event": ("post", "/api/v1/events/", {"name": "E", "financial_year": str(fy.pk)}),
         "view audit log": ("get", "/api/v1/audit-logs/", None),
         "view roles": ("get", "/api/v1/roles/", None),
+        "view funds": ("get", "/api/v1/funds/", None),
+        "manage funds": ("post", "/api/v1/funds/", {}),
+        "view contribution types": ("get", "/api/v1/contribution-types/", None),
+        "manage contribution types": ("post", "/api/v1/contribution-types/", {}),
+        "record payment": ("post", "/api/v1/payments/", {}),
+        "record collection": ("post", "/api/v1/collections/", {}),
+        "view payments": ("get", "/api/v1/payments/", None),
+        "view contributions": ("get", "/api/v1/contributions/", None),
+        "view receipts": ("get", "/api/v1/receipts/", None),
     }
 
 
@@ -52,6 +61,16 @@ EXPECTED = {
     "create event": (1, 0, 1, 0, 0, 0),
     "view audit log": (1, 1, 0, 0, 0, 0),
     "view roles": (1, 0, 0, 0, 0, 0),
+    "view funds": (1, 1, 1, 1, 0, 0),
+    "manage funds": (1, 1, 0, 0, 0, 0),
+    "view contribution types": (1, 1, 1, 1, 0, 0),
+    "manage contribution types": (1, 1, 0, 0, 0, 0),
+    # Collectors need assignments (Phase 3) or the "allow unassigned collection" setting.
+    "record payment": (1, 1, 0, 0, 0, 0),
+    "record collection": (1, 1, 0, 0, 0, 0),
+    "view payments": (1, 1, 0, 1, 0, 0),
+    "view contributions": (1, 1, 0, 1, 0, 0),
+    "view receipts": (1, 1, 0, 1, 0, 0),
 }
 
 

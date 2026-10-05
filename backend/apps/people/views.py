@@ -51,7 +51,12 @@ class PersonViewSet(TenantModelViewSet):
         if scope == SCOPE_SELF:
             return queryset.filter(user=self.request.user)
         # "assigned": people assigned to this collector. Collector assignments arrive with the collection
-        # module (Phase 3); until a person is assigned, a collector sees nobody.
+        # module (Phase 3). Until then a collector sees people only when the organization allows collecting
+        # from anyone, because they must be able to find the person they are collecting from.
+        if self.org_context.has("payments.create") and (self.organization.settings or {}).get(
+            "allow_unassigned_collection"
+        ):
+            return queryset
         return queryset.none()
 
     def perform_create(self, serializer):

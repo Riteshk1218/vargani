@@ -33,8 +33,12 @@ jobs:
       - run: ruff check . && ruff format --check .
       - run: python manage.py compilemessages
       - run: python manage.py makemigrations --check --dry-run
-      - run: python manage.py spectacular --fail-on-warn --file /tmp/schema.yml || python manage.py spectacular --file /tmp/schema.yml
+      - run: python manage.py spectacular --fail-on-warn --file /tmp/schema.yml
       - run: pytest --create-db
+      - name: Receipt numbering under concurrency (CI database is throwaway)
+        run: python manage.py migrate && python scripts/check_receipt_concurrency.py
+        env:
+          VARGANI_THROWAWAY_DB: "1"
 
   frontend:
     runs-on: ubuntu-latest

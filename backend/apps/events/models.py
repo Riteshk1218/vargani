@@ -39,6 +39,7 @@ class Event(TenantModel, SoftDeleteModel):
         ordering = ["-start_date", "name"]
         constraints = [
             models.UniqueConstraint(fields=["organization", "id"], name="event_org_id_unique"),
+            models.UniqueConstraint(fields=["id", "financial_year"], name="event_id_fy_unique"),
             models.UniqueConstraint(fields=["organization", "financial_year", "code"], name="event_fy_code_unique"),
             models.CheckConstraint(
                 condition=Q(target_amount__isnull=True) | Q(target_amount__gt=0), name="event_target_positive"

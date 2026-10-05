@@ -1,14 +1,18 @@
 """Data isolation tests (spec §33). Each organization must be invisible to every other organization."""
 
 import uuid
+from decimal import Decimal
 from types import SimpleNamespace
 
 import pytest
 
 from apps.audit.models import AuditLog
+from apps.contributions.models import ContributionType
 from apps.events.models import Event, EventParticipant
+from apps.funds.models import Fund
 from apps.organizations import services as org_services
 from apps.organizations.models import FinancialYear, OrganizationMembership
+from apps.payments.services import LineInput, record_payment
 from apps.people.models import Person
 
 pytestmark = pytest.mark.django_db
@@ -33,7 +37,17 @@ def world(make_org, make_user, add_member):
             request=SimpleNamespace(user=org.admin_user, META={}),
         )
         audit_entry = AuditLog.objects.filter(organization=org).first()
+        fund = Fund.objects.create(organization=org, event=event, name="General")
+        ctype = ContributionType.objects.create(organization=org, event=event, fund=fund, name="Vargani")
+        payment, _ = record_payment(
+            org=org, event=event, payer=person, mode="cash", lines=[LineInput(ctype, Decimal("100"))]
+        )
         return SimpleNamespace(
+            fund=fund,
+            ctype=ctype,
+            payment=payment,
+            contribution=payment.lines.get(),
+            receipt=payment.receipts.get(),
             org=org,
             fy=fy,
             event=event,
@@ -55,6 +69,11 @@ DETAIL_ROUTES = [
     ("members", "membership"),
     ("invitations", "invitation"),
     ("audit-logs", "audit"),
+    ("funds", "fund"),
+    ("contribution-types", "ctype"),
+    ("payments", "payment"),
+    ("contributions", "contribution"),
+    ("receipts", "receipt"),
 ]
 
 WRITE_ROUTES = [
@@ -68,6 +87,12 @@ WRITE_ROUTES = [
     ("post", "financial-years/{id}/set-current/", "fy", {}),
     ("patch", "members/{id}/", "membership", {"status": "suspended"}),
     ("post", "invitations/{id}/revoke/", "invitation", {}),
+    ("patch", "funds/{id}/", "fund", {"name": "Hacked"}),
+    ("patch", "contribution-types/{id}/", "ctype", {"name": "Hacked"}),
+    ("get", "contribution-types/{id}/outstanding/", "ctype", None),
+    ("patch", "payments/{id}/", "payment", {"notes": "Hacked"}),
+    ("post", "payments/{id}/confirm/", "payment", {}),
+    ("post", "payments/{id}/cancel/", "payment", {}),
 ]
 
 
@@ -126,6 +151,25 @@ def test_1_cross_org_references_in_body_are_rejected(world, client_for):
     assert response.status_code == 400
     response = client.post("/api/v1/events/", {"name": "X", "financial_year": str(world.b.fy.pk)}, format="json")
     assert response.status_code == 400
+    collect = {
+        "event": str(world.a.event.pk),
+        "payer": str(world.a.person.pk),
+        "mode": "cash",
+        "lines": [{"contribution_type": str(world.a.ctype.pk), "amount": "10"}],
+    }
+    for field, value in [("payer", world.b.person.pk), ("event", world.b.event.pk)]:
+        response = client.post("/api/v1/payments/", {**collect, field: str(value)}, format="json")
+        assert response.status_code == 400, field
+    bad_line = [{"contribution_type": str(world.b.ctype.pk), "amount": "10"}]
+    assert client.post("/api/v1/payments/", {**collect, "lines": bad_line}, format="json").status_code == 400
+    response = client.post("/api/v1/funds/", {"event": str(world.b.event.pk), "name": "X"}, format="json")
+    assert response.status_code == 400
+    response = client.post(
+        "/api/v1/contribution-types/",
+        {"event": str(world.a.event.pk), "fund": str(world.b.fund.pk), "name": "X"},
+        format="json",
+    )
+    assert response.status_code == 400
 
 
 def test_2_event_a_does_not_show_event_b_data(world, client_for):
@@ -157,7 +201,7 @@ def test_8_org_switching_changes_data_and_permissions(world, client_for, add_mem
 def test_dashboard_counts_are_per_organization(world, client_for):
     data = client_for(world.a.org.admin_user, world.a.org).get("/api/v1/dashboard/summary/").data
     assert data["people"]["total"] == 1 and data["events"]["total"] == 1
-    assert data["financial"] is None
+    assert data["financial"]["collected"] == "100.00" and data["financial"]["payments"] == 1
     response = client_for(world.a.org.admin_user, world.a.org).get(
         f"/api/v1/dashboard/summary/?event={world.b.event.pk}"
     )

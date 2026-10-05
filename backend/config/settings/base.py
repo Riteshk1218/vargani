@@ -36,6 +36,10 @@ INSTALLED_APPS = [
     "apps.organizations",
     "apps.people",
     "apps.events",
+    "apps.funds",
+    "apps.contributions",
+    "apps.payments",
+    "apps.receipts",
     "apps.reports",
 ]
 
@@ -235,4 +239,9 @@ REQUIRE_VERIFIED_LOGIN = True
 
 SPECTACULAR_SETTINGS["ENUM_NAME_OVERRIDES"] = {
     "LanguageEnum": "apps.accounts.models.Language",
+    "PaymentStatusEnum": "apps.payments.models.Payment.Status",
+    "ContributionStatusEnum": "apps.contributions.models.Contribution.Status",
+    "ReceiptStatusEnum": "apps.receipts.models.Receipt.Status",
+    "NewPaymentStatusEnum": ["successful", "pending"],
+    "OrganizationStatusEnum": "apps.organizations.models.Organization.Status",
 }

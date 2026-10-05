@@ -103,4 +103,4 @@ class TenantModelViewSet(
 
 
 class TenantReadOnlyViewSet(TenantScopedMixin, viewsets.ReadOnlyModelViewSet):
-    pass
+    http_method_names = ["get", "head", "options"]

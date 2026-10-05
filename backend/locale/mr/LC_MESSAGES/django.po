@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-05 18:06+0000\n"
+"POT-Creation-Date: 2026-10-05 18:39+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -39,12 +39,12 @@ msgstr ""
 msgid "Your verification code"
 msgstr "तुमचा पडताळणी कोड"
 
-#: apps/accounts/otp.py:82 apps/accounts/views.py:65
-#: apps/accounts/views.py:177
+#: apps/accounts/otp.py:82 apps/accounts/views.py:69
+#: apps/accounts/views.py:181
 msgid "The code is invalid or has expired."
 msgstr "कोड चुकीचा आहे किंवा त्याची मुदत संपली आहे."
 
-#: apps/accounts/serializers.py:55 apps/organizations/serializers.py:167
+#: apps/accounts/serializers.py:63 apps/organizations/serializers.py:186
 msgid "Enter an email address or a mobile number."
 msgstr "ईमेल पत्ता किंवा मोबाइल नंबर टाका."
 
@@ -60,21 +60,62 @@ msgstr "लॉग इन करण्यापूर्वी कृपया �
 msgid "Invalid login details."
 msgstr "लॉग इन तपशील चुकीचे आहेत."
 
-#: apps/accounts/views.py:113 apps/accounts/views.py:115
+#: apps/accounts/views.py:117 apps/accounts/views.py:119
 msgid "Refresh token required."
 msgstr "रिफ्रेश टोकन आवश्यक आहे."
 
-#: apps/accounts/views.py:160
+#: apps/accounts/views.py:164
 msgid "If an account exists, a reset code has been sent."
 msgstr "खाते अस्तित्वात असल्यास, रीसेट कोड पाठवला आहे."
 
-#: apps/accounts/views.py:184
+#: apps/accounts/views.py:188
 msgid "Your password has been reset. Please log in."
 msgstr "तुमचा पासवर्ड रीसेट झाला आहे. कृपया लॉग इन करा."
 
-#: apps/accounts/views.py:196
+#: apps/accounts/views.py:200
 msgid "Your current password is incorrect."
 msgstr "तुमचा सध्याचा पासवर्ड चुकीचा आहे."
+
+#: apps/contributions/serializers.py:42 apps/funds/serializers.py:22
+#| msgid "Enter the event name."
+msgid "Enter a name."
+msgstr "नाव टाका."
+
+#: apps/contributions/serializers.py:54
+#| msgid "This person is already part of the event."
+msgid "This fund belongs to another event."
+msgstr "हा निधी दुसऱ्या कार्यक्रमाचा आहे."
+
+#: apps/contributions/serializers.py:58 apps/funds/serializers.py:27
+#: apps/payments/services.py:75
+msgid "Amount must be more than zero."
+msgstr "रक्कम शून्यापेक्षा जास्त असावी."
+
+#: apps/contributions/serializers.py:61
+msgid "Maximum must be at least the minimum."
+msgstr "कमाल रक्कम किमान रकमेपेक्षा कमी असू शकत नाही."
+
+#: apps/contributions/serializers.py:63
+msgid "Enter the amount expected from each person."
+msgstr "प्रत्येक व्यक्तीकडून अपेक्षित रक्कम टाका."
+
+#: apps/contributions/serializers.py:66 apps/events/serializers.py:78
+msgid "End date must be on or after the start date."
+msgstr "शेवटची तारीख सुरुवातीच्या तारखेनंतर किंवा त्याच दिवशी हवी."
+
+#: apps/contributions/serializers.py:68
+#| msgid "This cannot be changed."
+msgid "This cannot be changed after collections exist."
+msgstr "वसुली झाल्यानंतर हे बदलता येत नाही."
+
+#: apps/contributions/serializers.py:75
+#| msgid "This person already has access to the organization."
+msgid "This event already has a contribution type with this name."
+msgstr "या कार्यक्रमात या नावाचा वर्गणी प्रकार आधीच आहे."
+
+#: apps/contributions/views.py:49
+msgid "Dues are tracked only for mandatory contribution types."
+msgstr "थकबाकी फक्त अनिवार्य वर्गणी प्रकारांसाठी मोजली जाते."
 
 #: apps/core/exceptions.py:24
 msgid "Select an organization (X-Organization-ID header)."
@@ -108,7 +149,7 @@ msgstr "काही माहिती चुकीची आहे."
 msgid "Not found."
 msgstr "सापडले नाही."
 
-#: apps/core/exceptions.py:113
+#: apps/core/exceptions.py:115
 msgid "Something went wrong. Please try again."
 msgstr "काहीतरी चुकले. कृपया पुन्हा प्रयत्न करा."
 
@@ -116,39 +157,35 @@ msgstr "काहीतरी चुकले. कृपया पुन्ह�
 msgid "Enter a valid mobile number."
 msgstr "योग्य मोबाइल नंबर टाका."
 
-#: apps/events/serializers.py:36
-msgid "Enter the event name."
-msgstr "कार्यक्रमाचे नाव टाका."
-
-#: apps/events/serializers.py:42
-msgid "Use only letters and numbers."
-msgstr "फक्त अक्षरे आणि अंक वापरा."
-
-#: apps/events/serializers.py:47
-msgid "Unknown module or invalid value."
-msgstr "अज्ञात विभाग किंवा चुकीचे मूल्य."
-
-#: apps/events/serializers.py:55
-msgid "An event cannot move to another financial year."
-msgstr "कार्यक्रम दुसऱ्या आर्थिक वर्षात हलवता येत नाही."
-
-#: apps/events/serializers.py:57
-msgid "This financial year is closed."
-msgstr "हे आर्थिक वर्ष बंद आहे."
-
-#: apps/events/serializers.py:61
-msgid "End date must be on or after the start date."
-msgstr "शेवटची तारीख सुरुवातीच्या तारखेनंतर किंवा त्याच दिवशी हवी."
-
-#: apps/events/serializers.py:80
-msgid "Another event in this financial year uses this code."
-msgstr "या आर्थिक वर्षातील दुसरा कार्यक्रम हा कोड वापरतो."
-
-#: apps/events/serializers.py:100
+#: apps/core/serializers.py:14 apps/events/serializers.py:126
 msgid "This cannot be changed."
 msgstr "हे बदलता येत नाही."
 
-#: apps/events/serializers.py:103
+#: apps/events/serializers.py:49
+msgid "Enter the event name."
+msgstr "कार्यक्रमाचे नाव टाका."
+
+#: apps/events/serializers.py:55
+msgid "Use only letters and numbers."
+msgstr "फक्त अक्षरे आणि अंक वापरा."
+
+#: apps/events/serializers.py:62
+msgid "Unknown module or invalid value."
+msgstr "अज्ञात विभाग किंवा चुकीचे मूल्य."
+
+#: apps/events/serializers.py:71
+msgid "An event cannot move to another financial year."
+msgstr "कार्यक्रम दुसऱ्या आर्थिक वर्षात हलवता येत नाही."
+
+#: apps/events/serializers.py:74 apps/payments/services.py:52
+msgid "This financial year is closed."
+msgstr "हे आर्थिक वर्ष बंद आहे."
+
+#: apps/events/serializers.py:97
+msgid "Another event in this financial year uses this code."
+msgstr "या आर्थिक वर्षातील दुसरा कार्यक्रम हा कोड वापरतो."
+
+#: apps/events/serializers.py:129
 msgid "This person is already part of the event."
 msgstr "ही व्यक्ती आधीच कार्यक्रमात आहे."
 
@@ -160,87 +197,92 @@ msgstr "उत्सव"
 msgid "Festivals such as Ganesh Chaturthi, Navratri or Dahi Handi."
 msgstr "गणेश चतुर्थी, नवरात्री किंवा दहीहंडी यांसारखे उत्सव."
 
-#: apps/events/templates.py:15
+#: apps/events/templates.py:20
 msgid "Fundraising"
 msgstr "निधी संकलन"
 
-#: apps/events/templates.py:16
+#: apps/events/templates.py:21
 msgid "A campaign that collects donations towards a goal."
 msgstr "ठराविक उद्दिष्टासाठी देणगी गोळा करणारी मोहीम."
 
-#: apps/events/templates.py:21
+#: apps/events/templates.py:31
 msgid "Membership"
 msgstr "सभासदत्व"
 
-#: apps/events/templates.py:22
+#: apps/events/templates.py:32
 msgid "Annual or monthly membership and Vargani collection."
 msgstr "वार्षिक किंवा मासिक सभासदत्व आणि वर्गणी संकलन."
 
-#: apps/events/templates.py:27
+#: apps/events/templates.py:42
 msgid "Society"
 msgstr "सोसायटी"
 
-#: apps/events/templates.py:28
+#: apps/events/templates.py:43
 msgid "Housing society maintenance, funds and expenses."
 msgstr "गृहनिर्माण सोसायटीची देखभाल, निधी आणि खर्च."
 
-#: apps/events/templates.py:33
+#: apps/events/templates.py:53
 msgid "Custom"
 msgstr "सानुकूल"
 
-#: apps/events/templates.py:34
+#: apps/events/templates.py:54
 msgid "Start empty and choose the modules yourself."
 msgstr "रिकाम्यापासून सुरू करा आणि विभाग स्वतः निवडा."
 
-#: apps/organizations/serializers.py:35
+#: apps/funds/serializers.py:38
+#| msgid "This person already has access to the organization."
+msgid "This event already has a fund with this name."
+msgstr "या कार्यक्रमात या नावाचा निधी आधीच आहे."
+
+#: apps/organizations/serializers.py:49
 msgid "Enter the organization name."
 msgstr "संस्थेचे नाव टाका."
 
-#: apps/organizations/serializers.py:52 apps/organizations/serializers.py:88
+#: apps/organizations/serializers.py:66 apps/organizations/serializers.py:102
 msgid "End date must be after the start date."
 msgstr "शेवटची तारीख सुरुवातीच्या तारखेनंतर हवी."
 
-#: apps/organizations/serializers.py:86
+#: apps/organizations/serializers.py:100
 msgid "A closed financial year cannot be edited."
 msgstr "बंद आर्थिक वर्ष बदलता येत नाही."
 
-#: apps/organizations/serializers.py:93
+#: apps/organizations/serializers.py:107
 msgid "A financial year with this label already exists."
 msgstr "या नावाचे आर्थिक वर्ष आधीच आहे."
 
-#: apps/organizations/serializers.py:95
+#: apps/organizations/serializers.py:109
 msgid "This financial year overlaps another financial year."
 msgstr "हे आर्थिक वर्ष दुसऱ्या आर्थिक वर्षाशी जुळते."
 
-#: apps/organizations/services.py:69
+#: apps/organizations/services.py:93
 msgid "Unknown setting."
 msgstr "अज्ञात सेटिंग."
 
-#: apps/organizations/services.py:71
+#: apps/organizations/services.py:95
 msgid "Invalid value."
 msgstr "चुकीचे मूल्य."
 
-#: apps/organizations/services.py:85
+#: apps/organizations/services.py:109
 msgid "Upload a PNG, JPG, JPEG or WEBP image."
 msgstr "PNG, JPG, JPEG किंवा WEBP प्रतिमा अपलोड करा."
 
-#: apps/organizations/services.py:91
+#: apps/organizations/services.py:115
 msgid "The file is too large."
 msgstr "फाइल खूप मोठी आहे."
 
-#: apps/organizations/services.py:115
+#: apps/organizations/services.py:139
 msgid "The image is too small. Use at least 512 × 512 pixels."
 msgstr "प्रतिमा खूप लहान आहे. किमान 512 × 512 पिक्सेल वापरा."
 
-#: apps/organizations/services.py:165
+#: apps/organizations/services.py:201
 msgid "A closed financial year cannot be made current."
 msgstr "बंद आर्थिक वर्ष चालू करता येत नाही."
 
-#: apps/organizations/services.py:221
+#: apps/organizations/services.py:273
 msgid "This person already has access to the organization."
 msgstr "या व्यक्तीला संस्थेत आधीच प्रवेश आहे."
 
-#: apps/organizations/services.py:245
+#: apps/organizations/services.py:307
 #, python-format
 msgid ""
 "You have been invited to join %(org)s as %(role)s. Open this link to accept:"
@@ -249,31 +291,82 @@ msgstr ""
 "तुम्हाला %(org)s मध्ये %(role)s म्हणून सामील होण्याचे निमंत्रण आहे. "
 "स्वीकारण्यासाठी ही लिंक उघडा: %(link)s"
 
-#: apps/organizations/services.py:248
+#: apps/organizations/services.py:312
 #, python-format
 msgid "Invitation to %(org)s"
 msgstr "%(org)s कडून निमंत्रण"
 
-#: apps/organizations/services.py:270
+#: apps/organizations/services.py:332
 msgid "This invitation is invalid or has expired."
 msgstr "हे निमंत्रण अवैध आहे किंवा त्याची मुदत संपली आहे."
 
-#: apps/organizations/services.py:277
+#: apps/organizations/services.py:339
 msgid "This invitation was sent to a different email or mobile number."
 msgstr "हे निमंत्रण दुसऱ्या ईमेल किंवा मोबाइल नंबरवर पाठवले होते."
 
-#: apps/organizations/services.py:286
+#: apps/organizations/services.py:349
 msgid "You already have access to this organization."
 msgstr "तुम्हाला या संस्थेत आधीच प्रवेश आहे."
 
-#: apps/organizations/services.py:324
+#: apps/organizations/services.py:403
 msgid "The organization must keep at least one active Organization Admin."
 msgstr "संस्थेत किमान एक सक्रिय संस्था प्रशासक असणे आवश्यक आहे."
 
-#: apps/people/serializers.py:29
+#: apps/payments/services.py:50 apps/payments/services.py:245
+msgid "This event is not active. New collections are not allowed."
+msgstr "हा कार्यक्रम सक्रिय नाही. नवीन वसुली करता येणार नाही."
+
+#: apps/payments/services.py:54
+#| msgid "This person is already part of the event."
+msgid "This person is archived."
+msgstr "ही व्यक्ती संग्रहित केली आहे."
+
+#: apps/payments/services.py:56
+msgid "This payment mode cannot be recorded manually."
+msgstr "ही पेमेंट पद्धत हाताने नोंदवता येत नाही."
+
+#: apps/payments/services.py:58
+msgid "A new payment must be successful or pending."
+msgstr "नवीन पेमेंट यशस्वी किंवा प्रलंबित असणे आवश्यक आहे."
+
+#: apps/payments/services.py:60
+#| msgid "Enter the organization name."
+msgid "Enter the cheque or transaction number."
+msgstr "चेक किंवा व्यवहार क्रमांक टाका."
+
+#: apps/payments/services.py:62
+msgid "Payment date cannot be in the future."
+msgstr "पेमेंटची तारीख भविष्यातील असू शकत नाही."
+
+#: apps/payments/services.py:64
+msgid "Add at least one contribution."
+msgstr "किमान एक वर्गणी जोडा."
+
+#: apps/payments/services.py:71
+msgid "This contribution type belongs to another event."
+msgstr "हा वर्गणी प्रकार दुसऱ्या कार्यक्रमाचा आहे."
+
+#: apps/payments/services.py:73
+msgid "This contribution type is archived."
+msgstr "हा वर्गणी प्रकार संग्रहित केला आहे."
+
+#: apps/payments/services.py:78
+msgid "Select the month this contribution is for."
+msgstr "ही वर्गणी कोणत्या महिन्याची आहे ते निवडा."
+
+#: apps/payments/services.py:90
+msgid "Amount must equal the total of the contribution lines."
+msgstr "रक्कम सर्व वर्गणीच्या एकूण रकमेइतकी असावी."
+
+#: apps/payments/views.py:83
+msgid "Your organization has not allowed collecting from unassigned people."
+msgstr ""
+"तुमच्या संस्थेने न सोपवलेल्या व्यक्तींकडून वसुलीची परवानगी दिलेली नाही."
+
+#: apps/people/serializers.py:44
 msgid "Enter the person's name."
 msgstr "व्यक्तीचे नाव टाका."
 
-#: config/settings/base.py:94
+#: config/settings/base.py:98
 msgid "English"
 msgstr "English"
