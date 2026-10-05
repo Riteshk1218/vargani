@@ -12,7 +12,24 @@ One platform for any organization that collects contributions (Ganeshotsav manda
 
 **Phase 2:** funds and contribution types per event, recording collections (flexible amounts, several months or types in one payment, cash / UPI / bank / cheque, pending cheques), automatic gapless receipt numbers (`GC-2026-00001`), printable receipts in the organization's receipt language, payments, contributions and dues lists, and dashboard totals. Money rows can never be deleted or rewritten (database triggers).
 
-Next: Phase 3 (receipt PDF, WhatsApp sharing, void/correction approval, collector assignments).
+**Phase 3:** receipt PDFs, WhatsApp sharing, void and correction requests with approval, collector assignments.
+
+**Phase 4:** expenses with bill uploads and approval, other income, 15 reports (collections by month, fund, mode and collector, dues, receipts, expenses, income and expenditure, audit and more) with CSV, Excel and PDF export, audit log screen.
+
+**Phase 5:** member portal (members log in with a mobile code and see only their own dues, payments and receipts), online payments through each organization's own Razorpay account, in-app notifications in the reader's language, announcements, monthly dues reminders.
+
+**Phase 6:** push notifications (Firebase), device registration, OpenAPI file and Postman collection, FlutterFlow guide.
+
+**Phase 7:** database row-level security per organization, production settings, JSON logs, security headers, MSG91/Twilio SMS, Docker production stack with automatic HTTPS, backup and restore scripts, privacy policy and Play Store data-safety drafts.
+
+## Documents
+
+| What | Where |
+|---|---|
+| Deploying to a server | `docs/deploy/DEPLOYMENT.md` |
+| Building the mobile app in FlutterFlow | `docs/mobile/FLUTTERFLOW_GUIDE.md` |
+| API contract (OpenAPI, Postman) | `docs/api/` |
+| Privacy policy and Play Store data-safety drafts | `docs/legal/` (have them reviewed before publishing) |
 
 ## Quick start (Docker)
 
@@ -64,4 +81,4 @@ FlutterFlow talks only to the REST API, never to the database:
 4. Record a collection with `POST /collections/` and an `Idempotency-Key` header (a fresh UUID per attempt), so a retry on a bad network never records the money twice. The response includes the receipt number.
 5. All errors look like `{"error": {"code", "message", "details"}, "request_id"}`. Send `Accept-Language: mr` or `hi` for translated messages.
 
-The full contract is at `/api/v1/schema/` (OpenAPI) and `/api/v1/docs/`.
+The full contract is at `/api/v1/schema/` (OpenAPI) and `/api/v1/docs/`. The step-by-step guide is `docs/mobile/FLUTTERFLOW_GUIDE.md`.

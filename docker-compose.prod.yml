@@ -23,12 +23,19 @@ services:
     image: postgres:16
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-    volumes: [pgdata:/var/lib/postgresql/data]
+      # "postgres" is the administrator; the application gets its own ordinary role (deploy/db-init.sh).
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_ADMIN_PASSWORD}
+      APP_DB_NAME: ${POSTGRES_DB}
+      APP_DB_USER: ${POSTGRES_USER}
+      APP_DB_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./deploy/db-init.sh:/docker-entrypoint-initdb.d/10-app-role.sh:ro
+    # Reachable from the server itself only (for backup.sh / restore.sh), never from the internet.
+    ports: ["127.0.0.1:5432:5432"]
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
       retries: 20
 

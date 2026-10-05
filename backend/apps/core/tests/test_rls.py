@@ -62,3 +62,25 @@ def test_every_tenant_table_has_row_level_security():
     missing = sorted(name for name, enabled, forced in rows if not (enabled and forced))
     assert missing == [], f"add these tables to core/rls.py TENANT_TABLES and a migration: {missing}"
     assert {name for name, *_ in rows} == set(rls.TENANT_TABLES)
+
+
+def test_deploy_check_warns_about_privileged_database_roles(monkeypatch):
+    from apps.core import checks
+
+    assert checks.database_role_is_not_privileged(None) == []  # the test role is an ordinary role
+
+    class _Cursor:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return False
+
+        def execute(self, *args):
+            pass
+
+        def fetchone(self):
+            return (True, False)
+
+    monkeypatch.setattr(checks.connection, "cursor", lambda: _Cursor())
+    assert [w.id for w in checks.database_role_is_not_privileged(None)] == ["core.W001"]
