@@ -58,8 +58,14 @@ def example(schema, spec, depth=0):
         return [item] if item is not None else []
     fmt = schema.get("format", "")
     if kind == "string":
-        return {"uuid": "{{id}}", "date": "2026-09-01", "date-time": "2026-09-01T10:00:00+05:30", "decimal": "501.00",
-                "email": "name@example.com", "binary": None}.get(fmt, "")
+        return {
+            "uuid": "{{id}}",
+            "date": "2026-09-01",
+            "date-time": "2026-09-01T10:00:00+05:30",
+            "decimal": "501.00",
+            "email": "name@example.com",
+            "binary": None,
+        }.get(fmt, "")
     if kind == "integer":
         return 1
     if kind == "number":

@@ -67,4 +67,10 @@ def get_org_context(request, org_id=None) -> OrgContext:
 
     context = OrgContext(membership.organization, membership, load_permissions(membership.role))
     request._org_context = context
+    # From here on the database itself only shows this organization's rows (see core/rls.py).
+    from .rls import activate
+
+    activate(membership.organization_id)
+    # Mark the underlying Django request, which is what TenantDatabaseMiddleware sees.
+    getattr(request, "_request", request)._rls_org = membership.organization_id
     return context

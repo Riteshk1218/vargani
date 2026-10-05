@@ -1,0 +1,7 @@
+# Automatic HTTPS (Let's Encrypt) for the website and API. Set DOMAIN and ACME_EMAIL in deploy/.env.
+{$DOMAIN} {
+    encode gzip zstd
+    reverse_proxy web:80 {
+        header_up X-Forwarded-Proto https
+    }
+}

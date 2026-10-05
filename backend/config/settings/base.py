@@ -59,6 +59,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "apps.core.middleware.RequestIDMiddleware",
+    "apps.core.rls.TenantDatabaseMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -232,6 +233,11 @@ EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="no-reply@localhost")
 
 SMS_BACKEND = env("SMS_BACKEND", default="apps.accounts.sms.ConsoleSMSBackend")
+SMS_MSG91_AUTH_KEY = env("SMS_MSG91_AUTH_KEY", default="")
+SMS_MSG91_TEMPLATE_ID = env("SMS_MSG91_TEMPLATE_ID", default="")
+SMS_TWILIO_ACCOUNT_SID = env("SMS_TWILIO_ACCOUNT_SID", default="")
+SMS_TWILIO_AUTH_TOKEN = env("SMS_TWILIO_AUTH_TOKEN", default="")
+SMS_TWILIO_FROM = env("SMS_TWILIO_FROM", default="")
 # Push notifications to the mobile app: "console" (logs only) or "fcm" (Firebase Cloud Messaging HTTP v1).
 PUSH_BACKEND = env("PUSH_BACKEND", default="console")
 FCM_SERVICE_ACCOUNT_FILE = env("FCM_SERVICE_ACCOUNT_FILE", default="")
