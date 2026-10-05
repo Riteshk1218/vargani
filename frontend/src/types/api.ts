@@ -210,9 +210,13 @@ export interface MoneyBreakdown {
 
 export interface FinancialSummary extends MoneyBreakdown {
   pending_payments: number
+  other_income: string
   income: string
-  expenses: string | null
+  expenses: string
   balance: string
+  expenses_by_category: { id: string; name: string; total: string }[]
+  expenses_by_month: { month: string; total: string }[]
+  pending_expenses: number
   recent_payments: { id: string; payer_name: string; amount: string; mode: PaymentMode; paid_at: string; receipt_number: string | null }[]
 }
 
@@ -461,4 +465,143 @@ export interface OutstandingReport {
   total_due: string
   people_with_dues: number
   results: { person: string; person_name: string; mobile: string; expected: string; paid: string; due: string }[]
+}
+
+// --- Phase 4: expenses, other income, reports, audit -------------------------------------------------------
+export type ExpenseStatus = 'draft' | 'submitted' | 'approved' | 'rejected' | 'void'
+export type IncomeSource = 'donation_box' | 'sponsorship' | 'interest' | 'sale' | 'other'
+
+export interface ExpenseCategory {
+  id: string
+  name: string
+  is_default: boolean
+  is_active: boolean
+  created_at: string
+}
+
+export interface ExpenseAttachment {
+  id: string
+  original_name: string
+  content_type: string
+  size_bytes: number
+  created_at: string
+}
+
+export interface Expense {
+  id: string
+  event: string
+  event_name: string
+  financial_year: string
+  category: string
+  category_name: string
+  amount: string
+  expense_date: string
+  mode: PaymentMode
+  payee: string
+  description: string
+  reference_number: string
+  status: ExpenseStatus
+  created_by: string | null
+  created_by_name: string | null
+  submitted_by: string | null
+  submitted_by_name: string | null
+  submitted_at: string | null
+  decided_by: string | null
+  decided_by_name: string | null
+  decided_at: string | null
+  rejection_reason: string
+  void_reason: string
+  voided_by_name: string | null
+  voided_at: string | null
+  attachments: ExpenseAttachment[]
+  created_at: string
+  updated_at: string
+}
+
+export type ExpenseInput = Pick<Expense, 'event' | 'category' | 'amount' | 'expense_date' | 'mode' | 'payee' | 'description' | 'reference_number'>
+
+export interface OtherIncome {
+  id: string
+  event: string
+  financial_year: string
+  fund: string | null
+  fund_name: string | null
+  source: IncomeSource
+  amount: string
+  received_on: string
+  mode: PaymentMode
+  reference_number: string
+  description: string
+  status: 'recorded' | 'void'
+  void_reason: string
+  voided_by_name: string | null
+  voided_at: string | null
+  created_by_name: string | null
+  created_at: string
+}
+
+export type OtherIncomeInput = Pick<OtherIncome, 'event' | 'fund' | 'source' | 'amount' | 'received_on' | 'mode' | 'reference_number' | 'description'>
+
+export type ReportGroup = 'general' | 'financial' | 'audit'
+export type ReportFilterKey =
+  | 'event' | 'financial_year' | 'date_from' | 'date_to' | 'fund' | 'contribution_type' | 'collector' | 'person'
+  | 'category' | 'mode' | 'status' | 'action'
+
+export interface ReportInfo {
+  type: string
+  title: string
+  group: ReportGroup
+  filters: ReportFilterKey[]
+  needs_event: boolean
+  can_export: boolean
+}
+
+export interface ReportColumn {
+  key: string
+  label: string
+  kind: 'text' | 'money' | 'number' | 'date' | 'datetime'
+}
+
+export interface ReportData {
+  type: string
+  title: string
+  scope: string
+  columns: ReportColumn[]
+  rows: Record<string, string | number | null>[]
+  row_count: number
+  truncated: boolean
+  totals: Record<string, string | number>
+  notes: string[]
+}
+
+export type ExportFormat = 'csv' | 'xlsx' | 'pdf'
+
+export interface ExportJob {
+  id: string
+  report_type: string
+  format: ExportFormat
+  status: 'pending' | 'running' | 'done' | 'failed'
+  file_name: string
+  row_count: number | null
+  error: string
+  created_at: string
+  finished_at: string | null
+  download_url: string | null
+}
+
+export interface AuditEntry {
+  id: number
+  action: string
+  entity_type: string
+  entity_id: string
+  actor_user: string | null
+  actor_name: string | null
+  actor_role_code: string
+  before: Record<string, unknown> | null
+  after: Record<string, unknown> | null
+  changed_fields: string[]
+  ip: string | null
+  user_agent: string
+  request_id: string
+  created_at: string
 }

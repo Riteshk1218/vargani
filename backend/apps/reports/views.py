@@ -1,7 +1,13 @@
+from django.core.files.storage import default_storage
+from django.http import FileResponse
+from django.utils.translation import gettext as _
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
+from rest_framework import serializers, status
+from rest_framework.exceptions import NotFound
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle, UserRateThrottle
 from rest_framework.views import APIView
 
 from apps.contributions.models import Contribution
@@ -9,17 +15,25 @@ from apps.contributions.selectors import summarize
 from apps.core.permissions import HasOrgPermission
 from apps.core.tenancy import SCOPE_ALL
 from apps.events.models import Event, EventParticipant
+from apps.expenses.models import Expense
 from apps.organizations.models import FinancialYear, OrganizationMembership
 from apps.payments.models import Payment
 from apps.people.models import Person
+
+from . import exporters, services
+from . import selectors as sel
+from .models import ExportJob
+from .registry import REPORTS, can_export, can_view
+
+JSON_ROW_LIMIT = 1000
 
 
 class DashboardSummaryView(APIView):
     """Dashboard numbers for the active organization (and event, when given).
 
     Only real numbers are returned. `financial` is present for roles with dashboard.view_financial and covers
-    the selected event, or every event of the current financial year when no event is given. Expenses and
-    other income arrive in Phase 4, so `balance` currently equals income from contributions.
+    the selected event, or every event of the current financial year when no event is given. Income is
+    confirmed contributions plus recorded other income; expenses are approved expenses (reports/selectors.py).
     """
 
     permission_classes = [IsAuthenticated, HasOrgPermission]
@@ -61,8 +75,6 @@ class DashboardSummaryView(APIView):
         if event_id:
             event = events.filter(pk=event_id).first()
             if event is None:
-                from rest_framework.exceptions import NotFound
-
                 raise NotFound()
             data["event"] = {
                 "id": str(event.pk),
@@ -91,9 +103,22 @@ class DashboardSummaryView(APIView):
         targets = [e.target_amount for e in events if e.target_amount is not None]
         data["target_amount"] = f"{sum(targets):.2f}" if targets else None
         data["pending_payments"] = payments.filter(status=Payment.Status.PENDING).count()
-        data["income"] = data["collected"]
-        data["expenses"] = None
-        data["balance"] = data["collected"]
+        totals = sel.finance_totals(org, events)
+        data["other_income"] = sel.money(totals["other_income"])
+        data["income"] = sel.money(totals["income"])
+        data["expenses"] = sel.money(totals["expenses"])
+        data["balance"] = sel.money(totals["balance"])
+        data["expenses_by_category"] = [
+            {"id": str(r["category"]), "name": r["category__name"], "total": sel.money(r["total"])}
+            for r in sel.expenses_by_category(org, events)
+        ]
+        data["expenses_by_month"] = [
+            {"month": r["month"].strftime("%Y-%m"), "total": sel.money(r["total"])}
+            for r in sel.expenses_by_month(org, events)
+        ]
+        data["pending_expenses"] = (
+            Expense.objects.for_org(org).filter(event__in=events, status=Expense.Status.SUBMITTED).count()
+        )
         data["recent_payments"] = [
             {
                 "id": str(p.pk),
@@ -109,3 +134,143 @@ class DashboardSummaryView(APIView):
             .order_by("-paid_at")[:5]
         ]
         return data
+
+
+class ReportViewMixin:
+    permission_classes = [IsAuthenticated, HasOrgPermission]
+
+    def get_organization_id(self):
+        return None
+
+    def get_required_permissions(self):
+        return ("reports.view_general", "reports.view_financial", "audit.view")
+
+
+class ReportListView(ReportViewMixin, APIView):
+    """Reports available to my role, with the filters each accepts."""
+
+    @extend_schema(responses=OpenApiTypes.OBJECT, operation_id="reports_list")
+    def get(self, request):
+        context = request._org_context
+        return Response(
+            [
+                {
+                    "type": d.key,
+                    "title": _(d.title),
+                    "group": d.group,
+                    "filters": list(d.filters),
+                    "needs_event": d.needs_event,
+                    "can_export": can_export(d, context),
+                }
+                for d in REPORTS.values()
+                if can_view(d, context)
+            ]
+        )
+
+
+class ReportView(ReportViewMixin, APIView):
+    """One report as JSON (first 1,000 rows; export for the rest). Filters are query parameters."""
+
+    throttle_classes = [UserRateThrottle, ScopedRateThrottle]
+    throttle_scope = "reports"
+
+    @extend_schema(responses=OpenApiTypes.OBJECT)
+    def get(self, request, report_type):
+        context = request._org_context
+        definition = services.definition_for(report_type, context)
+        report, scope = services.build(definition, context, services.parse_filters(request.query_params, definition))
+        return Response({**exporters.as_json(report, JSON_ROW_LIMIT), "scope": scope, "type": definition.key})
+
+
+class ExportRequestSerializer(serializers.Serializer):
+    format = serializers.ChoiceField(choices=ExportJob.Format.choices)
+    filters = serializers.DictField(required=False, default=dict)
+
+
+class ExportJobSerializer(serializers.ModelSerializer):
+    download_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ExportJob
+        fields = [
+            "id",
+            "report_type",
+            "format",
+            "status",
+            "file_name",
+            "row_count",
+            "error",
+            "created_at",
+            "finished_at",
+            "download_url",
+        ]
+        read_only_fields = fields
+
+    def get_download_url(self, obj) -> str | None:
+        if obj.status != ExportJob.Status.DONE:
+            return None
+        return f"/api/v1/exports/{obj.pk}/download/"
+
+
+class ReportExportView(ReportViewMixin, APIView):
+    """Start an export (CSV, Excel or PDF). Poll GET /exports/{id}/ until `status` is done, then download."""
+
+    throttle_classes = [UserRateThrottle, ScopedRateThrottle]
+    throttle_scope = "exports"
+
+    def get_required_permissions(self):
+        return "reports.export"
+
+    @extend_schema(request=ExportRequestSerializer, responses={202: ExportJobSerializer})
+    def post(self, request, report_type):
+        context = request._org_context
+        definition = services.definition_for(report_type, context, export=True)
+        body = ExportRequestSerializer(data=request.data)
+        body.is_valid(raise_exception=True)
+        filters = services.parse_filters(body.validated_data["filters"], definition)
+        services.build(definition, context, filters)  # validate event / year now, not in the background
+        job = services.start_export(
+            org_context=context,
+            definition=definition,
+            filters=filters,
+            file_format=body.validated_data["format"],
+            request=request,
+        )
+        return Response(ExportJobSerializer(job).data, status=status.HTTP_202_ACCEPTED)
+
+
+def _my_job(request, job_id):
+    context = request._org_context
+    job = ExportJob.objects.for_org(context.organization).filter(pk=job_id, requested_by=request.user).first()
+    if job is None:
+        raise NotFound()
+    return job
+
+
+class ExportJobView(ReportViewMixin, APIView):
+    def get_required_permissions(self):
+        return "reports.export"
+
+    @extend_schema(responses=ExportJobSerializer)
+    def get(self, request, job_id):
+        return Response(ExportJobSerializer(_my_job(request, job_id)).data)
+
+
+class ExportDownloadView(ReportViewMixin, APIView):
+    def get_required_permissions(self):
+        return "reports.export"
+
+    @extend_schema(responses={(200, "application/octet-stream"): OpenApiTypes.BINARY})
+    def get(self, request, job_id):
+        job = _my_job(request, job_id)
+        if job.status != ExportJob.Status.DONE:
+            raise NotFound()
+        response = FileResponse(
+            default_storage.open(job.file, "rb"),
+            content_type=exporters.CONTENT_TYPES[job.format],
+            as_attachment=True,
+            filename=job.file_name,
+        )
+        response["Cache-Control"] = "private, no-store"
+        response["X-Content-Type-Options"] = "nosniff"
+        return response

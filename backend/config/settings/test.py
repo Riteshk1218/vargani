@@ -24,5 +24,7 @@ REST_FRAMEWORK = {
         "auth": "10000/min",
         "otp": "10000/min",
         "public_receipt": "10000/min",
+        "reports": "10000/min",
+        "exports": "10000/min",
     },
 }

@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     "apps.contributions",
     "apps.payments",
     "apps.receipts",
+    "apps.expenses",
     "apps.reports",
 ]
 
@@ -162,6 +163,8 @@ REST_FRAMEWORK = {
         "auth": env("THROTTLE_AUTH", default="10/min"),
         "otp": env("THROTTLE_OTP", default="5/min"),
         "public_receipt": env("THROTTLE_PUBLIC_RECEIPT", default="30/min"),
+        "reports": env("THROTTLE_REPORTS", default="60/min"),
+        "exports": env("THROTTLE_EXPORTS", default="10/min"),
     },
     "COERCE_DECIMAL_TO_STRING": True,
     "TEST_REQUEST_DEFAULT_FORMAT": "json",
@@ -246,5 +249,7 @@ SPECTACULAR_SETTINGS["ENUM_NAME_OVERRIDES"] = {
     "ContributionStatusEnum": "apps.contributions.models.Contribution.Status",
     "ReceiptStatusEnum": "apps.receipts.models.Receipt.Status",
     "NewPaymentStatusEnum": ["successful", "pending"],
+    "PaymentModeEnum": "apps.payments.models.PaymentMode",
+    "ManualPaymentModeEnum": ["cash", "upi", "bank_transfer", "cheque", "other"],
     "OrganizationStatusEnum": "apps.organizations.models.Organization.Status",
 }

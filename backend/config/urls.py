@@ -17,6 +17,7 @@ api_v1 = [
     path("", include("apps.contributions.urls")),
     path("", include("apps.payments.urls")),
     path("", include("apps.receipts.urls")),
+    path("", include("apps.expenses.urls")),
     path("", include("apps.reports.urls")),
     path("", include("apps.audit.urls")),
     path("schema/", SpectacularAPIView.as_view(), name="schema"),

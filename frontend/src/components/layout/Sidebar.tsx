@@ -1,18 +1,18 @@
-import { CalendarDays, HandCoins, LayoutDashboard, ListChecks, ReceiptText, Settings, ShieldAlert, ShieldCheck, Users, UsersRound, Wallet, type LucideIcon } from 'lucide-react'
+import { BarChart3, CalendarDays, HandCoins, History, PiggyBank, Receipt, LayoutDashboard, ListChecks, ReceiptText, Settings, ShieldAlert, ShieldCheck, Users, UsersRound, Wallet, type LucideIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { NavLink } from 'react-router-dom'
 import { useOrg } from '../../context/OrgContext'
 import { cn } from '../../utils/cn'
+import { REPORT_PERMISSIONS } from '../../utils/permissions'
 import { OrgSwitcher } from './OrgSwitcher'
 
 interface NavItem {
   to: string
   label: string
   icon: LucideIcon
-  permission?: string
+  permission?: string | string[]
 }
 
-// Expenses, Collectors and Reports are added as their phases ship.
 const NAV: NavItem[] = [
   { to: '/app/dashboard', label: 'nav.dashboard', icon: LayoutDashboard },
   { to: '/app/collect', label: 'nav.collect', icon: HandCoins, permission: 'payments.create' },
@@ -21,6 +21,10 @@ const NAV: NavItem[] = [
   { to: '/app/receipts', label: 'nav.receipts', icon: ReceiptText, permission: 'receipts.view' },
   { to: '/app/collectors', label: 'nav.collectors', icon: UsersRound, permission: 'collectors.manage' },
   { to: '/app/approvals', label: 'nav.approvals', icon: ShieldAlert, permission: 'receipts.void_approve' },
+  { to: '/app/expenses', label: 'nav.expenses', icon: Receipt, permission: 'expenses.view' },
+  { to: '/app/income', label: 'nav.income', icon: PiggyBank, permission: 'other_income.manage' },
+  { to: '/app/reports', label: 'nav.reports', icon: BarChart3, permission: REPORT_PERMISSIONS },
+  { to: '/app/audit', label: 'nav.audit', icon: History, permission: 'audit.view' },
   { to: '/app/events', label: 'nav.events', icon: CalendarDays, permission: 'events.view' },
   { to: '/app/people', label: 'nav.people', icon: Users, permission: 'people.view' },
   { to: '/app/users', label: 'nav.users', icon: ShieldCheck, permission: 'members.view' },
@@ -34,7 +38,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
     <nav className="flex h-full flex-col gap-4 p-3" aria-label={t('nav.main')}>
       <OrgSwitcher />
       <ul className="space-y-1">
-        {NAV.filter((item) => !item.permission || can(item.permission)).map((item) => (
+        {NAV.filter((item) => !item.permission || [item.permission].flat().some(can)).map((item) => (
           <li key={item.to}>
             <NavLink
               to={item.to}

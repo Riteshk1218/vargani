@@ -42,6 +42,16 @@ def endpoint_cases(org):
         "view payments": ("get", "/api/v1/payments/", None),
         "view contributions": ("get", "/api/v1/contributions/", None),
         "view receipts": ("get", "/api/v1/receipts/", None),
+        "view expenses": ("get", "/api/v1/expenses/", None),
+        "create expense": ("post", "/api/v1/expenses/", {}),
+        "manage expense categories": ("post", "/api/v1/expense-categories/", {}),
+        "other income": ("get", "/api/v1/other-income/", None),
+        "list reports": ("get", "/api/v1/reports/", None),
+        "general report": ("get", "/api/v1/reports/people/", None),
+        "financial report": ("get", "/api/v1/reports/income-expense/", None),
+        "audit report": ("get", "/api/v1/reports/audit/", None),
+        "export general report": ("post", "/api/v1/reports/people/exports/", {"format": "csv"}),
+        "export financial report": ("post", "/api/v1/reports/income-expense/exports/", {"format": "csv"}),
     }
 
 
@@ -71,6 +81,16 @@ EXPECTED = {
     "view payments": (1, 1, 0, 1, 0, 0),
     "view contributions": (1, 1, 0, 1, 0, 0),
     "view receipts": (1, 1, 0, 1, 0, 0),
+    "view expenses": (1, 1, 0, 0, 0, 0),
+    "create expense": (1, 1, 0, 0, 0, 0),
+    "manage expense categories": (1, 1, 0, 0, 0, 0),
+    "other income": (1, 1, 0, 0, 0, 0),
+    "list reports": (1, 1, 1, 0, 0, 0),
+    "general report": (1, 1, 1, 0, 0, 0),
+    "financial report": (1, 1, 1, 0, 0, 0),
+    "audit report": (1, 1, 0, 0, 0, 0),
+    "export general report": (1, 1, 1, 0, 0, 0),
+    "export financial report": (1, 1, 0, 0, 0, 0),
 }
 
 

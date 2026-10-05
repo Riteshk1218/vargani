@@ -15,7 +15,11 @@
     "payments": "Payments",
     "receipts": "Receipts",
     "collectors": "Collectors",
-    "approvals": "Approvals"
+    "approvals": "Approvals",
+    "expenses": "Expenses",
+    "income": "Other income",
+    "reports": "Reports",
+    "audit": "Audit log"
   },
   "topbar": {
     "switchOrganization": "Switch organization",
@@ -52,7 +56,13 @@
     "print": "Print",
     "back": "Back",
     "selectEvent": "Select an event first",
-    "selectEventMessage": "Choose an event from the top bar to see its collections."
+    "selectEventMessage": "Choose an event from the top bar to see its collections.",
+    "archive": "Archive",
+    "restore": "Restore",
+    "choose": "Choose…",
+    "description": "Description",
+    "download": "Download",
+    "remove": "Remove"
   },
   "validation": {
     "required": "This field is required.",
@@ -181,7 +191,14 @@
     "balanceHint": "Expenses are added in a later update",
     "byMonth": "Collections by month",
     "recent": "Recent payments",
-    "viewAll": "View all"
+    "viewAll": "View all",
+    "expenses": "Expenses",
+    "waitingApproval": "{{count}} waiting for approval",
+    "incomeHint": "Total income {{income}}",
+    "contributorsCount": "{{count}} contributors",
+    "expensesByCategory": "Expenses by category",
+    "incomeVsExpense": "Income and expenses",
+    "noExpenses": "No approved expenses yet"
   },
   "events": {
     "title": "Events",
@@ -506,7 +523,11 @@
     "replacedBy": "Corrected by {{number}}",
     "replaces": "This receipt corrects",
     "recordCorrection": "Record corrected payment",
-    "linkInvalid": "This receipt link is invalid or has expired."
+    "linkInvalid": "This receipt link is invalid or has expired.",
+    "status": {
+      "issued": "Issued",
+      "void": "Void"
+    }
   },
   "approvals": {
     "title": "Approvals",
@@ -552,5 +573,136 @@
     "total": "My total",
     "paidThisMonth": "{{count}} paid this month",
     "recentReceipts": "My recent receipts"
+  },
+  "expenseStatus": {
+    "draft": "Draft",
+    "submitted": "Waiting for approval",
+    "approved": "Approved",
+    "rejected": "Rejected",
+    "void": "Void"
+  },
+  "expenses": {
+    "title": "Expenses",
+    "subtitle": "Money spent, with bills and approval. Only approved expenses count in the balance.",
+    "add": "Add expense",
+    "edit": "Edit expense",
+    "empty": "No expenses yet",
+    "emptyMessage": "Record decoration, sound, pandal and other spending here, with the bill.",
+    "category": "Category",
+    "categories": "Categories",
+    "newCategory": "New category",
+    "payee": "Paid to",
+    "date": "Expense date",
+    "hasBills": "Has bills",
+    "bills": "Bills and photos",
+    "addBill": "Add bill",
+    "billAdded": "Bill added",
+    "noBills": "No bills attached yet.",
+    "billHelp": "JPG, PNG, WEBP or PDF, up to 10 MB each, 10 per expense.",
+    "createdBy": "Entered by",
+    "submittedBy": "Submitted by",
+    "approvedBy": "Approved by",
+    "rejectedBy": "Rejected by",
+    "rejectedBecause": "Rejected: {{reason}}. Edit it and send again.",
+    "voidBecause": "Void: {{reason}}",
+    "actions": {
+      "submit": "Send for approval",
+      "approve": "Approve",
+      "reject": "Reject",
+      "void": "Void"
+    },
+    "confirm": {
+      "submit": "Send {{amount}} paid to {{payee}} for approval?",
+      "approve": "Approve {{amount}} paid to {{payee}}? It will count in the balance and can then only be voided.",
+      "reject": "Reject {{amount}} paid to {{payee}}? Say what needs to change.",
+      "void": "Void {{amount}} paid to {{payee}}? It stays on record but no longer counts."
+    }
+  },
+  "income": {
+    "title": "Other income",
+    "subtitle": "Donation box, sponsorship, bank interest and sales.",
+    "add": "Add income",
+    "empty": "No other income yet",
+    "emptyMessage": "Record donation box (hundi) counts, sponsorships and similar income here.",
+    "source": "Source",
+    "receivedOn": "Received on",
+    "voidTitle": "Void this income?",
+    "voidMessage": "{{amount}} from {{source}} stays on record but no longer counts in the balance."
+  },
+  "incomeSource": {
+    "donation_box": "Donation box",
+    "sponsorship": "Sponsorship",
+    "interest": "Bank interest",
+    "sale": "Sales",
+    "other": "Other"
+  },
+  "reports": {
+    "title": "Reports",
+    "subtitle": "Every report can be downloaded as Excel, PDF or CSV.",
+    "groups": {
+      "financial": "Money",
+      "general": "People and events",
+      "audit": "Audit"
+    },
+    "pick": "Choose a report",
+    "pickMessage": "Pick a report from the list to see it here.",
+    "event": "Event",
+    "allEventsInYear": "All events this financial year",
+    "from": "From",
+    "to": "To",
+    "needsEvent": "This report needs an event.",
+    "noRows": "Nothing to show for these filters",
+    "rows": "Rows",
+    "totalOf": "Total {{label}}",
+    "truncated": "Showing the first {{shown}} of {{total}} rows. Download Excel or CSV for all of them.",
+    "exported": "Report downloaded",
+    "exportFailed": "The report could not be created. Please try again."
+  },
+  "audit": {
+    "title": "Audit log",
+    "subtitle": "Who changed what, and when. Entries can never be edited or deleted.",
+    "action": "Action",
+    "empty": "No entries for these filters",
+    "system": "System",
+    "record": "Record",
+    "noDetails": "No details recorded.",
+    "field": "Field",
+    "before": "Before",
+    "after": "After",
+    "actions": {
+      "create": "created",
+      "update": "changed",
+      "status_change": "changed status of",
+      "soft_delete": "removed",
+      "approve": "approved",
+      "reject": "rejected",
+      "void": "voided",
+      "expense_submit": "sent for approval",
+      "receipt_issue": "issued",
+      "void_request": "asked to void",
+      "void_approve": "approved void of",
+      "void_reject": "refused void of",
+      "login": "logged in",
+      "login_failed": "failed to log in",
+      "role_change": "changed role of",
+      "permission_change": "changed permissions of",
+      "invite": "invited",
+      "export": "exported"
+    },
+    "entities": {
+      "payment": "payment",
+      "receipt": "receipt",
+      "expense": "expense",
+      "expenseattachment": "expense bill",
+      "otherincome": "other income",
+      "person": "person",
+      "event": "event",
+      "organization": "organization",
+      "organizationmembership": "user access",
+      "fund": "fund",
+      "contributiontype": "contribution type",
+      "exportjob": "report",
+      "user": "account"
+    }
   }
 }

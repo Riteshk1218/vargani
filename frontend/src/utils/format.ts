@@ -74,3 +74,15 @@ export function formatDateTime(value: string | null | undefined): string {
   if (Number.isNaN(date.getTime())) return value
   return new Intl.DateTimeFormat(locale(), { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' }).format(date)
 }
+
+/** Today's date in the browser's time zone, as YYYY-MM-DD (for date inputs). */
+export function todayIso(now = new Date()): string {
+  const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000)
+  return local.toISOString().slice(0, 10)
+}
+
+export function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}

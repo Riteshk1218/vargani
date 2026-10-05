@@ -285,7 +285,7 @@ def test_dashboard_financial_totals(setup):
     collect(s.admin, s, [month_line(s, "2027-05-01", "700")], mode="upi")
     data = s.admin.get(f"/api/v1/dashboard/summary/?event={s.event.pk}").data["financial"]
     assert data["collected"] == "1200.00" and data["target_amount"] == "100000.00"
-    assert data["balance"] == "1200.00" and data["expenses"] is None
+    assert data["balance"] == "1200.00" and data["expenses"] == "0.00"
     assert {m["mode"]: m["total"] for m in data["by_mode"]} == {"cash": "500.00", "upi": "700.00"}
     assert data["recent_payments"][0]["receipt_number"].startswith("GC-2027-")
     # Without an event the dashboard covers the current financial year.

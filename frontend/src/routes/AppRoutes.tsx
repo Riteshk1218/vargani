@@ -1,4 +1,9 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
+import { AuditPage } from '../pages/audit/AuditPage'
+import { ExpensesPage } from '../pages/expenses/ExpensesPage'
+import { OtherIncomePage } from '../pages/income/OtherIncomePage'
+import { ReportsPage } from '../pages/reports/ReportsPage'
+import { REPORT_PERMISSIONS } from '../utils/permissions'
 import { AppLayout } from '../layouts/AppLayout'
 import { AuthLayout } from '../layouts/AuthLayout'
 import { ForgotPasswordPage } from '../pages/auth/ForgotPasswordPage'
@@ -54,6 +59,11 @@ export function AppRoutes() {
             <Route path="receipts/:id" element={<RequirePermission permission="receipts.view"><ReceiptPage /></RequirePermission>} />
             <Route path="collectors" element={<RequirePermission permission="collectors.manage"><CollectorsPage /></RequirePermission>} />
             <Route path="approvals" element={<RequirePermission permission="receipts.void_approve"><ApprovalsPage /></RequirePermission>} />
+            <Route path="expenses" element={<RequirePermission permission="expenses.view"><ExpensesPage /></RequirePermission>} />
+            <Route path="income" element={<RequirePermission permission="other_income.manage"><OtherIncomePage /></RequirePermission>} />
+            <Route path="reports" element={<RequirePermission permission={REPORT_PERMISSIONS}><ReportsPage /></RequirePermission>} />
+            <Route path="reports/:type" element={<RequirePermission permission={REPORT_PERMISSIONS}><ReportsPage /></RequirePermission>} />
+            <Route path="audit" element={<RequirePermission permission="audit.view"><AuditPage /></RequirePermission>} />
             <Route path="events" element={<RequirePermission permission="events.view"><EventsPage /></RequirePermission>} />
             <Route path="events/:id" element={<RequirePermission permission="events.view"><EventDetailPage /></RequirePermission>} />
             <Route path="people" element={<RequirePermission permission="people.view"><PeoplePage /></RequirePermission>} />

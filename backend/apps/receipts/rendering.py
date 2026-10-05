@@ -3,7 +3,6 @@
 import hashlib
 import secrets
 from datetime import date, datetime, timedelta
-from decimal import Decimal
 from urllib.parse import quote
 
 from django.conf import settings
@@ -12,6 +11,7 @@ from django.utils.translation import gettext as _
 from django.utils.translation import gettext_noop
 
 from apps.audit import services as audit
+from apps.core.money import indian_format
 from apps.core.pdf import render_pdf, storage_data_uri
 from apps.core.words import rupees_in_words
 
@@ -31,17 +31,7 @@ MODE_LABELS = {
 
 
 def _money(value: str) -> str:
-    number = Decimal(value)
-    whole, fraction = f"{number:.2f}".split(".")
-    # Indian grouping: 1,23,45,678.00
-    head, tail = whole[:-3], whole[-3:]
-    groups = []
-    while len(head) > 2:
-        groups.insert(0, head[-2:])
-        head = head[:-2]
-    if head:
-        groups.insert(0, head)
-    return ",".join([*groups, tail]) + "." + fraction
+    return indian_format(value)
 
 
 def receipt_pdf(receipt: Receipt, language: str | None = None) -> bytes:

@@ -15,7 +15,11 @@
     "payments": "भुगतान",
     "receipts": "रसीदें",
     "collectors": "संग्रहकर्ता",
-    "approvals": "स्वीकृतियाँ"
+    "approvals": "स्वीकृतियाँ",
+    "expenses": "खर्च",
+    "income": "अन्य आय",
+    "reports": "रिपोर्ट",
+    "audit": "ऑडिट लॉग"
   },
   "topbar": {
     "switchOrganization": "संस्था बदलें",
@@ -52,7 +56,13 @@
     "print": "प्रिंट करें",
     "back": "वापस",
     "selectEvent": "पहले कार्यक्रम चुनें",
-    "selectEventMessage": "संग्रह देखने के लिए ऊपर की पट्टी से कार्यक्रम चुनें।"
+    "selectEventMessage": "संग्रह देखने के लिए ऊपर की पट्टी से कार्यक्रम चुनें।",
+    "archive": "संग्रहित करें",
+    "restore": "फिर से चालू करें",
+    "choose": "चुनें…",
+    "description": "विवरण",
+    "download": "डाउनलोड",
+    "remove": "हटाएं"
   },
   "validation": {
     "required": "यह जानकारी ज़रूरी है।",
@@ -181,7 +191,14 @@
     "balanceHint": "खर्च अगले अपडेट में जोड़े जाएंगे",
     "byMonth": "महीने के अनुसार संग्रह",
     "recent": "हाल के भुगतान",
-    "viewAll": "सभी देखें"
+    "viewAll": "सभी देखें",
+    "expenses": "खर्च",
+    "waitingApproval": "{{count}} स्वीकृति की प्रतीक्षा में",
+    "incomeHint": "कुल आय {{income}}",
+    "contributorsCount": "{{count}} योगदानकर्ता",
+    "expensesByCategory": "श्रेणी के अनुसार खर्च",
+    "incomeVsExpense": "आय और खर्च",
+    "noExpenses": "अभी कोई स्वीकृत खर्च नहीं"
   },
   "events": {
     "title": "कार्यक्रम",
@@ -506,7 +523,11 @@
     "replacedBy": "{{number}} द्वारा सुधारी गई",
     "replaces": "यह रसीद सुधारती है",
     "recordCorrection": "सुधारा हुआ भुगतान दर्ज करें",
-    "linkInvalid": "यह रसीद लिंक गलत है या समाप्त हो चुकी है।"
+    "linkInvalid": "यह रसीद लिंक गलत है या समाप्त हो चुकी है।",
+    "status": {
+      "issued": "जारी",
+      "void": "रद्द"
+    }
   },
   "approvals": {
     "title": "स्वीकृतियाँ",
@@ -552,5 +573,136 @@
     "total": "मेरा कुल",
     "paidThisMonth": "इस महीने {{count}} ने भुगतान किया",
     "recentReceipts": "मेरी हाल की रसीदें"
+  },
+  "expenseStatus": {
+    "draft": "ड्राफ्ट",
+    "submitted": "स्वीकृति की प्रतीक्षा में",
+    "approved": "स्वीकृत",
+    "rejected": "अस्वीकृत",
+    "void": "रद्द"
+  },
+  "expenses": {
+    "title": "खर्च",
+    "subtitle": "बिल और स्वीकृति के साथ खर्च। शेष राशि में केवल स्वीकृत खर्च गिना जाता है।",
+    "add": "खर्च जोड़ें",
+    "edit": "खर्च बदलें",
+    "empty": "अभी कोई खर्च नहीं",
+    "emptyMessage": "सजावट, ध्वनि, पंडाल और अन्य खर्च बिल के साथ यहां दर्ज करें।",
+    "category": "श्रेणी",
+    "categories": "खर्च की श्रेणियां",
+    "newCategory": "नई श्रेणी",
+    "payee": "किसे दिया",
+    "date": "खर्च की तारीख",
+    "hasBills": "बिल जुड़ा है",
+    "bills": "बिल और फोटो",
+    "addBill": "बिल जोड़ें",
+    "billAdded": "बिल जोड़ा गया",
+    "noBills": "अभी कोई बिल नहीं जुड़ा।",
+    "billHelp": "JPG, PNG, WEBP या PDF, हर एक 10 MB तक, एक खर्च में 10।",
+    "createdBy": "दर्ज करने वाले",
+    "submittedBy": "भेजने वाले",
+    "approvedBy": "स्वीकृत करने वाले",
+    "rejectedBy": "अस्वीकृत करने वाले",
+    "rejectedBecause": "अस्वीकृत: {{reason}}। बदलकर फिर से भेजें।",
+    "voidBecause": "रद्द: {{reason}}",
+    "actions": {
+      "submit": "स्वीकृति के लिए भेजें",
+      "approve": "स्वीकृत करें",
+      "reject": "अस्वीकार करें",
+      "void": "रद्द करें"
+    },
+    "confirm": {
+      "submit": "{{payee}} को दिए {{amount}} स्वीकृति के लिए भेजें?",
+      "approve": "{{payee}} को दिए {{amount}} स्वीकृत करें? यह शेष राशि में गिना जाएगा और बाद में केवल रद्द किया जा सकेगा।",
+      "reject": "{{payee}} को दिए {{amount}} अस्वीकार करें? बताएं क्या बदलना है।",
+      "void": "{{payee}} को दिए {{amount}} रद्द करें? रिकॉर्ड रहेगा पर गिना नहीं जाएगा।"
+    }
+  },
+  "income": {
+    "title": "अन्य आय",
+    "subtitle": "दान पेटी, प्रायोजन, बैंक ब्याज और बिक्री।",
+    "add": "आय जोड़ें",
+    "empty": "अभी कोई अन्य आय नहीं",
+    "emptyMessage": "दान पेटी की गिनती, प्रायोजन और ऐसी आय यहां दर्ज करें।",
+    "source": "स्रोत",
+    "receivedOn": "प्राप्ति की तारीख",
+    "voidTitle": "यह आय रद्द करें?",
+    "voidMessage": "{{source}} से {{amount}} का रिकॉर्ड रहेगा पर शेष राशि में नहीं गिना जाएगा।"
+  },
+  "incomeSource": {
+    "donation_box": "दान पेटी",
+    "sponsorship": "प्रायोजन",
+    "interest": "बैंक ब्याज",
+    "sale": "बिक्री",
+    "other": "अन्य"
+  },
+  "reports": {
+    "title": "रिपोर्ट",
+    "subtitle": "हर रिपोर्ट Excel, PDF या CSV में डाउनलोड की जा सकती है।",
+    "groups": {
+      "financial": "हिसाब",
+      "general": "लोग और कार्यक्रम",
+      "audit": "ऑडिट"
+    },
+    "pick": "रिपोर्ट चुनें",
+    "pickMessage": "यहां देखने के लिए सूची से रिपोर्ट चुनें।",
+    "event": "कार्यक्रम",
+    "allEventsInYear": "इस वित्तीय वर्ष के सभी कार्यक्रम",
+    "from": "से",
+    "to": "तक",
+    "needsEvent": "इस रिपोर्ट के लिए कार्यक्रम चुनें।",
+    "noRows": "इन फ़िल्टर के लिए कुछ नहीं",
+    "rows": "पंक्तियां",
+    "totalOf": "कुल {{label}}",
+    "truncated": "{{total}} में से पहली {{shown}} पंक्तियां दिखाई गई हैं। सभी के लिए Excel या CSV डाउनलोड करें।",
+    "exported": "रिपोर्ट डाउनलोड हुई",
+    "exportFailed": "रिपोर्ट नहीं बन सकी। फिर से प्रयास करें।"
+  },
+  "audit": {
+    "title": "ऑडिट लॉग",
+    "subtitle": "किसने, क्या, कब बदला। ये प्रविष्टियां कभी बदली या हटाई नहीं जा सकतीं।",
+    "action": "कार्रवाई",
+    "empty": "इन फ़िल्टर के लिए कोई प्रविष्टि नहीं",
+    "system": "सिस्टम",
+    "record": "रिकॉर्ड",
+    "noDetails": "कोई विवरण नहीं।",
+    "field": "फ़ील्ड",
+    "before": "पहले",
+    "after": "बाद में",
+    "actions": {
+      "create": "बनाया",
+      "update": "बदला",
+      "status_change": "स्थिति बदली",
+      "soft_delete": "हटाया",
+      "approve": "स्वीकृत किया",
+      "reject": "अस्वीकार किया",
+      "void": "रद्द किया",
+      "expense_submit": "स्वीकृति के लिए भेजा",
+      "receipt_issue": "रसीद जारी की",
+      "void_request": "रद्द करने का अनुरोध किया",
+      "void_approve": "रद्द स्वीकृत किया",
+      "void_reject": "रद्द अस्वीकार किया",
+      "login": "लॉग इन किया",
+      "login_failed": "लॉग इन विफल",
+      "role_change": "भूमिका बदली",
+      "permission_change": "अनुमतियां बदलीं",
+      "invite": "आमंत्रित किया",
+      "export": "निर्यात किया"
+    },
+    "entities": {
+      "payment": "भुगतान",
+      "receipt": "रसीद",
+      "expense": "खर्च",
+      "expenseattachment": "खर्च का बिल",
+      "otherincome": "अन्य आय",
+      "person": "व्यक्ति",
+      "event": "कार्यक्रम",
+      "organization": "संस्था",
+      "organizationmembership": "उपयोगकर्ता पहुंच",
+      "fund": "निधि",
+      "contributiontype": "योगदान प्रकार",
+      "exportjob": "रिपोर्ट",
+      "user": "खाता"
+    }
   }
 }

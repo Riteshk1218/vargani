@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-05 19:12+0000\n"
+"POT-Creation-Date: 2026-10-05 19:34+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -77,19 +77,20 @@ msgid "Your current password is incorrect."
 msgstr "तुमचा सध्याचा पासवर्ड चुकीचा आहे."
 
 #: apps/contributions/assignments.py:31
-#| msgid "Add at least one contribution."
 msgid "This user cannot collect contributions."
 msgstr "हा वापरकर्ता वसुली करू शकत नाही."
 
-#: apps/contributions/serializers.py:44 apps/funds/serializers.py:22
+#: apps/contributions/serializers.py:44 apps/expenses/serializers.py:32
+#: apps/funds/serializers.py:22
 msgid "Enter a name."
 msgstr "नाव टाका."
 
-#: apps/contributions/serializers.py:56
+#: apps/contributions/serializers.py:56 apps/expenses/services.py:190
 msgid "This fund belongs to another event."
 msgstr "हा निधी दुसऱ्या कार्यक्रमाचा आहे."
 
-#: apps/contributions/serializers.py:60 apps/funds/serializers.py:27
+#: apps/contributions/serializers.py:60 apps/expenses/serializers.py:114
+#: apps/expenses/serializers.py:179 apps/funds/serializers.py:27
 #: apps/payments/services.py:75
 msgid "Amount must be more than zero."
 msgstr "रक्कम शून्यापेक्षा जास्त असावी."
@@ -182,7 +183,8 @@ msgstr "अज्ञात विभाग किंवा चुकीचे �
 msgid "An event cannot move to another financial year."
 msgstr "कार्यक्रम दुसऱ्या आर्थिक वर्षात हलवता येत नाही."
 
-#: apps/events/serializers.py:74 apps/payments/services.py:52
+#: apps/events/serializers.py:74 apps/expenses/services.py:35
+#: apps/payments/services.py:52
 msgid "This financial year is closed."
 msgstr "हे आर्थिक वर्ष बंद आहे."
 
@@ -234,6 +236,52 @@ msgstr "सानुकूल"
 msgid "Start empty and choose the modules yourself."
 msgstr "रिकाम्यापासून सुरू करा आणि विभाग स्वतः निवडा."
 
+#: apps/expenses/attachments.py:32
+#| msgid "Upload a PNG, JPG, JPEG or WEBP image."
+msgid "Upload a JPG, PNG or WEBP image, or a PDF."
+msgstr "JPG, PNG किंवा WEBP फोटो, किंवा PDF अपलोड करा."
+
+#: apps/expenses/attachments.py:75
+msgid "Choose a file."
+msgstr "फाइल निवडा."
+
+#: apps/expenses/attachments.py:82
+msgid "An expense can have at most 10 attachments."
+msgstr "एका खर्चाला जास्तीत जास्त 10 बिले जोडता येतात."
+
+#: apps/expenses/serializers.py:38
+#| msgid "A financial year with this label already exists."
+msgid "A category with this name already exists."
+msgstr "या नावाचा प्रकार आधीच आहे."
+
+#: apps/expenses/serializers.py:120
+#| msgid "Enter a name."
+msgid "Enter who was paid."
+msgstr "कोणाला पैसे दिले ते लिहा."
+
+#: apps/expenses/services.py:33
+msgid "This event is closed. Money records cannot be added or changed."
+msgstr "हा कार्यक्रम बंद आहे. पैशांच्या नोंदी जोडता किंवा बदलता येणार नाहीत."
+
+#: apps/expenses/services.py:40
+#| msgid "Payment date cannot be in the future."
+msgid "The date cannot be in the future."
+msgstr "तारीख भविष्यातील असू शकत नाही."
+
+#: apps/expenses/services.py:129 apps/receipts/voids.py:61
+msgid "Someone other than the requester must approve this."
+msgstr "विनंती करणाऱ्याशिवाय दुसऱ्या व्यक्तीने हे मंजूर करावे."
+
+#: apps/expenses/services.py:146 apps/expenses/services.py:166
+#: apps/expenses/services.py:202
+#| msgid "Void reason"
+msgid "Give a reason."
+msgstr "कारण द्या."
+
+#: apps/expenses/services.py:172
+msgid "Only an approver can void an approved expense."
+msgstr "मंजूर खर्च फक्त मंजुरी देणारेच रद्द करू शकतात."
+
 #: apps/funds/serializers.py:38
 msgid "This event already has a fund with this name."
 msgstr "या कार्यक्रमात या नावाचा निधी आधीच आहे."
@@ -258,35 +306,35 @@ msgstr "या नावाचे आर्थिक वर्ष आधीच �
 msgid "This financial year overlaps another financial year."
 msgstr "हे आर्थिक वर्ष दुसऱ्या आर्थिक वर्षाशी जुळते."
 
-#: apps/organizations/services.py:93
+#: apps/organizations/services.py:95
 msgid "Unknown setting."
 msgstr "अज्ञात सेटिंग."
 
-#: apps/organizations/services.py:95
+#: apps/organizations/services.py:97
 msgid "Invalid value."
 msgstr "चुकीचे मूल्य."
 
-#: apps/organizations/services.py:109
+#: apps/organizations/services.py:111
 msgid "Upload a PNG, JPG, JPEG or WEBP image."
 msgstr "PNG, JPG, JPEG किंवा WEBP प्रतिमा अपलोड करा."
 
-#: apps/organizations/services.py:115
+#: apps/organizations/services.py:117
 msgid "The file is too large."
 msgstr "फाइल खूप मोठी आहे."
 
-#: apps/organizations/services.py:139
+#: apps/organizations/services.py:141
 msgid "The image is too small. Use at least 512 × 512 pixels."
 msgstr "प्रतिमा खूप लहान आहे. किमान 512 × 512 पिक्सेल वापरा."
 
-#: apps/organizations/services.py:201
+#: apps/organizations/services.py:203
 msgid "A closed financial year cannot be made current."
 msgstr "बंद आर्थिक वर्ष चालू करता येत नाही."
 
-#: apps/organizations/services.py:273
+#: apps/organizations/services.py:275
 msgid "This person already has access to the organization."
 msgstr "या व्यक्तीला संस्थेत आधीच प्रवेश आहे."
 
-#: apps/organizations/services.py:307
+#: apps/organizations/services.py:309
 #, python-format
 msgid ""
 "You have been invited to join %(org)s as %(role)s. Open this link to accept:"
@@ -295,24 +343,24 @@ msgstr ""
 "तुम्हाला %(org)s मध्ये %(role)s म्हणून सामील होण्याचे निमंत्रण आहे. "
 "स्वीकारण्यासाठी ही लिंक उघडा: %(link)s"
 
-#: apps/organizations/services.py:312
+#: apps/organizations/services.py:314
 #, python-format
 msgid "Invitation to %(org)s"
 msgstr "%(org)s कडून निमंत्रण"
 
-#: apps/organizations/services.py:332
+#: apps/organizations/services.py:334
 msgid "This invitation is invalid or has expired."
 msgstr "हे निमंत्रण अवैध आहे किंवा त्याची मुदत संपली आहे."
 
-#: apps/organizations/services.py:339
+#: apps/organizations/services.py:341
 msgid "This invitation was sent to a different email or mobile number."
 msgstr "हे निमंत्रण दुसऱ्या ईमेल किंवा मोबाइल नंबरवर पाठवले होते."
 
-#: apps/organizations/services.py:349
+#: apps/organizations/services.py:351
 msgid "You already have access to this organization."
 msgstr "तुम्हाला या संस्थेत आधीच प्रवेश आहे."
 
-#: apps/organizations/services.py:403
+#: apps/organizations/services.py:405
 msgid "The organization must keep at least one active Organization Admin."
 msgstr "संस्थेत किमान एक सक्रिय संस्था प्रशासक असणे आवश्यक आहे."
 
@@ -377,7 +425,6 @@ msgid "A correction must be a received payment."
 msgstr "दुरुस्ती ही मिळालेले पेमेंट असावी."
 
 #: apps/payments/views.py:85
-#| msgid "This person is already part of the event."
 msgid "This person is not assigned to you for this event."
 msgstr "ही व्यक्ती या कार्यक्रमासाठी तुम्हाला सोपवलेली नाही."
 
@@ -405,7 +452,7 @@ msgstr "धनादेश"
 msgid "Online"
 msgstr "ऑनलाइन"
 
-#: apps/receipts/rendering.py:29
+#: apps/receipts/rendering.py:29 apps/reports/registry.py:39
 msgid "Other"
 msgstr "इतर"
 
@@ -431,10 +478,12 @@ msgid "Receipt"
 msgstr "पावती"
 
 #: apps/receipts/templates/receipts/receipt_pdf.html:44
+#: apps/reports/registry.py:206 apps/reports/registry.py:357
 msgid "Receipt no."
 msgstr "पावती क्र."
 
 #: apps/receipts/templates/receipts/receipt_pdf.html:46
+#: apps/reports/services.py:81
 #, python-format
 msgid "Financial year %(label)s"
 msgstr "आर्थिक वर्ष %(label)s"
@@ -444,6 +493,8 @@ msgid "Received from"
 msgstr "यांच्याकडून मिळाले"
 
 #: apps/receipts/templates/receipts/receipt_pdf.html:49
+#: apps/reports/registry.py:122 apps/reports/registry.py:201
+#: apps/reports/registry.py:395
 msgid "Mobile"
 msgstr "मोबाइल"
 
@@ -456,22 +507,32 @@ msgid "Details"
 msgstr "तपशील"
 
 #: apps/receipts/templates/receipts/receipt_pdf.html:53
+#: apps/reports/registry.py:208 apps/reports/registry.py:233
+#: apps/reports/registry.py:298 apps/reports/registry.py:327
+#: apps/reports/registry.py:364 apps/reports/registry.py:443
+#: apps/reports/registry.py:475
 msgid "Amount"
 msgstr "रक्कम"
 
 #: apps/receipts/templates/receipts/receipt_pdf.html:59
+#: apps/reports/registry.py:274
 msgid "Total"
 msgstr "एकूण"
 
 #: apps/receipts/templates/receipts/receipt_pdf.html:63
+#: apps/reports/registry.py:205 apps/reports/registry.py:296
+#: apps/reports/registry.py:360 apps/reports/registry.py:439
+#: apps/reports/registry.py:472
 msgid "Payment mode"
 msgstr "पेमेंट पद्धत"
 
 #: apps/receipts/templates/receipts/receipt_pdf.html:64
+#: apps/reports/registry.py:207 apps/reports/registry.py:361
 msgid "Collected by"
 msgstr "वसूल करणारे"
 
 #: apps/receipts/templates/receipts/receipt_pdf.html:65
+#: apps/reports/registry.py:363
 msgid "Void reason"
 msgstr "रद्द करण्याचे कारण"
 
@@ -495,11 +556,397 @@ msgstr "ही पावती आधीच रद्द आहे."
 msgid "A void request for this receipt is already waiting for approval."
 msgstr "या पावतीची रद्द विनंती आधीच मंजुरीच्या प्रतीक्षेत आहे."
 
-#: apps/receipts/voids.py:61
-msgid "Someone other than the requester must approve this."
-msgstr "विनंती करणाऱ्याशिवाय दुसऱ्या व्यक्तीने हे मंजूर करावे."
+#: apps/reports/exporters.py:56
+#: apps/reports/templates/reports/report_pdf.html:36
+#, python-format
+msgid "Generated on %(when)s"
+msgstr "%(when)s रोजी तयार"
 
-#: config/settings/base.py:98
+#: apps/reports/exporters.py:94
+#, python-format
+#| msgid "Financial year %(label)s"
+msgid "Total: %(label)s"
+msgstr "एकूण: %(label)s"
+
+#: apps/reports/exporters.py:95
+msgid "Rows"
+msgstr "ओळी"
+
+#: apps/reports/exporters.py:95 apps/reports/registry.py:543
+msgid "Balance"
+msgstr "शिल्लक"
+
+#: apps/reports/registry.py:35
+msgid "Donation box"
+msgstr "दानपेटी"
+
+#: apps/reports/registry.py:36
+msgid "Sponsorship"
+msgstr "प्रायोजकत्व"
+
+#: apps/reports/registry.py:37
+#| msgid "Bank transfer"
+msgid "Bank interest"
+msgstr "बँक व्याज"
+
+#: apps/reports/registry.py:38
+msgid "Sales"
+msgstr "विक्री"
+
+#: apps/reports/registry.py:42
+msgid "Draft"
+msgstr "मसुदा"
+
+#: apps/reports/registry.py:43
+msgid "Submitted"
+msgstr "मंजुरीसाठी पाठवले"
+
+#: apps/reports/registry.py:44
+msgid "Approved"
+msgstr "मंजूर"
+
+#: apps/reports/registry.py:45
+msgid "Rejected"
+msgstr "नामंजूर"
+
+#: apps/reports/registry.py:46
+msgid "Void"
+msgstr "रद्द"
+
+#: apps/reports/registry.py:47
+msgid "Issued"
+msgstr "दिलेली"
+
+#: apps/reports/registry.py:48
+msgid "Recorded"
+msgstr "नोंदवले"
+
+#: apps/reports/registry.py:49
+msgid "Active"
+msgstr "सक्रिय"
+
+#: apps/reports/registry.py:50
+msgid "Closed"
+msgstr "बंद"
+
+#: apps/reports/registry.py:51
+msgid "Archived"
+msgstr "संग्रहित"
+
+#: apps/reports/registry.py:114
+msgid "Inactive"
+msgstr "निष्क्रिय"
+
+#: apps/reports/registry.py:119 apps/reports/registry.py:606
+msgid "People"
+msgstr "लोक"
+
+#: apps/reports/registry.py:121 apps/reports/registry.py:200
+#: apps/reports/registry.py:359 apps/reports/registry.py:394
+msgid "Name"
+msgstr "नाव"
+
+#: apps/reports/registry.py:123
+msgid "Email"
+msgstr "ईमेल"
+
+#: apps/reports/registry.py:124
+msgid "Flat / house"
+msgstr "सदनिका / घर"
+
+#: apps/reports/registry.py:125
+msgid "Building"
+msgstr "इमारत"
+
+#: apps/reports/registry.py:126
+msgid "Area"
+msgstr "परिसर"
+
+#: apps/reports/registry.py:127
+msgid "City"
+msgstr "शहर"
+
+#: apps/reports/registry.py:128 apps/reports/registry.py:154
+#: apps/reports/registry.py:362 apps/reports/registry.py:441
+#: apps/reports/registry.py:538
+msgid "Status"
+msgstr "स्थिती"
+
+#: apps/reports/registry.py:150 apps/reports/registry.py:607
+msgid "Events"
+msgstr "कार्यक्रम"
+
+#: apps/reports/registry.py:152 apps/reports/registry.py:270
+#: apps/reports/registry.py:537
+msgid "Event"
+msgstr "कार्यक्रम"
+
+#: apps/reports/registry.py:153
+msgid "Code"
+msgstr "कोड"
+
+#: apps/reports/registry.py:155
+msgid "Starts"
+msgstr "सुरुवात"
+
+#: apps/reports/registry.py:156
+msgid "Ends"
+msgstr "शेवट"
+
+#: apps/reports/registry.py:157
+msgid "Participants"
+msgstr "सहभागी"
+
+#: apps/reports/registry.py:158 apps/reports/registry.py:271
+#: apps/reports/registry.py:539
+msgid "Target"
+msgstr "लक्ष्य"
+
+#: apps/reports/registry.py:197 apps/reports/registry.py:272
+#: apps/reports/registry.py:540 apps/reports/registry.py:610
+msgid "Contributions"
+msgstr "वर्गणी"
+
+#: apps/reports/registry.py:199 apps/reports/registry.py:358
+#: apps/reports/registry.py:435 apps/reports/registry.py:469
+msgid "Date"
+msgstr "तारीख"
+
+#: apps/reports/registry.py:202 apps/reports/registry.py:396
+#| msgid "This contribution type is archived."
+msgid "Contribution type"
+msgstr "वर्गणी प्रकार"
+
+#: apps/reports/registry.py:203
+msgid "For month"
+msgstr "महिना"
+
+#: apps/reports/registry.py:204 apps/reports/registry.py:269
+#: apps/reports/registry.py:471
+msgid "Fund"
+msgstr "निधी"
+
+#: apps/reports/registry.py:228 apps/reports/registry.py:617
+msgid "Monthly collection"
+msgstr "मासिक वसुली"
+
+#: apps/reports/registry.py:230
+msgid "Month"
+msgstr "महिना"
+
+#: apps/reports/registry.py:231 apps/reports/registry.py:297
+#: apps/reports/registry.py:325
+#| msgid "Payment mode"
+msgid "Payments"
+msgstr "पेमेंट्स"
+
+#: apps/reports/registry.py:232 apps/reports/registry.py:326
+msgid "Contributors"
+msgstr "देणगीदार"
+
+#: apps/reports/registry.py:264
+msgid "No fund"
+msgstr "निधी नाही"
+
+#: apps/reports/registry.py:267 apps/reports/registry.py:623
+msgid "Fund-wise collection"
+msgstr "निधीनुसार वसुली"
+
+#: apps/reports/registry.py:273 apps/reports/registry.py:467
+#: apps/reports/registry.py:541 apps/reports/registry.py:658
+msgid "Other income"
+msgstr "इतर उत्पन्न"
+
+#: apps/reports/registry.py:294 apps/reports/registry.py:627
+#| msgid "Payment mode"
+msgid "Payment mode summary"
+msgstr "पेमेंट पद्धतीनुसार सारांश"
+
+#: apps/reports/registry.py:314
+msgid "Office (no collector)"
+msgstr "कार्यालय (वसुलीदार नाही)"
+
+#: apps/reports/registry.py:322 apps/reports/registry.py:634
+msgid "Collector-wise collection"
+msgstr "वसुलीदारानुसार वसुली"
+
+#: apps/reports/registry.py:324
+#| msgid "Collected by"
+msgid "Collector"
+msgstr "वसुलीदार"
+
+#: apps/reports/registry.py:355 apps/reports/registry.py:641
+#| msgid "Receipt"
+msgid "Receipt register"
+msgstr "पावती नोंदवही"
+
+#: apps/reports/registry.py:368
+msgid ""
+"The total counts issued receipts only; void receipts are listed but not "
+"added."
+msgstr ""
+"एकूण रकमेत फक्त दिलेल्या पावत्या धरल्या आहेत; रद्द पावत्या यादीत आहेत पण "
+"बेरजेत नाहीत."
+
+#: apps/reports/registry.py:392 apps/reports/registry.py:647
+msgid "Pending dues"
+msgstr "बाकी वर्गणी"
+
+#: apps/reports/registry.py:397
+msgid "Expected"
+msgstr "अपेक्षित"
+
+#: apps/reports/registry.py:398
+msgid "Paid"
+msgstr "भरले"
+
+#: apps/reports/registry.py:399
+msgid "Due"
+msgstr "बाकी"
+
+#: apps/reports/registry.py:403
+msgid ""
+"Only mandatory contribution types with an expected amount are included."
+msgstr "फक्त अपेक्षित रक्कम असलेले अनिवार्य वर्गणी प्रकार धरले आहेत."
+
+#: apps/reports/registry.py:433 apps/reports/registry.py:542
+#: apps/reports/registry.py:651
+msgid "Expenses"
+msgstr "खर्च"
+
+#: apps/reports/registry.py:436
+msgid "Category"
+msgstr "प्रकार"
+
+#: apps/reports/registry.py:437
+msgid "Paid to"
+msgstr "कोणाला दिले"
+
+#: apps/reports/registry.py:438 apps/reports/registry.py:474
+msgid "Description"
+msgstr "वर्णन"
+
+#: apps/reports/registry.py:440 apps/reports/registry.py:473
+msgid "Reference"
+msgstr "संदर्भ"
+
+#: apps/reports/registry.py:442
+msgid "Approved by"
+msgstr "मंजूर करणारे"
+
+#: apps/reports/registry.py:470
+msgid "Source"
+msgstr "स्रोत"
+
+#: apps/reports/registry.py:487 apps/reports/registry.py:510
+msgid "Income"
+msgstr "उत्पन्न"
+
+#: apps/reports/registry.py:487 apps/reports/registry.py:511
+msgid "Expense"
+msgstr "खर्च"
+
+#: apps/reports/registry.py:506 apps/reports/registry.py:665
+msgid "Income and expenditure"
+msgstr "जमा-खर्च"
+
+#: apps/reports/registry.py:508
+msgid "Type"
+msgstr "प्रकार"
+
+#: apps/reports/registry.py:509
+msgid "Head"
+msgstr "बाब"
+
+#: apps/reports/registry.py:515
+msgid ""
+"Income counts confirmed contributions and recorded other income. Expenses "
+"count approved expenses."
+msgstr ""
+"उत्पन्नात निश्चित वर्गणी आणि नोंदवलेले इतर उत्पन्न धरले आहे. खर्चात फक्त "
+"मंजूर खर्च धरला आहे."
+
+#: apps/reports/registry.py:535 apps/reports/registry.py:670
+msgid "Event-wise balance"
+msgstr "कार्यक्रमानुसार शिल्लक"
+
+#: apps/reports/registry.py:566
+msgid "System"
+msgstr "प्रणाली"
+
+#: apps/reports/registry.py:577 apps/reports/registry.py:671
+msgid "Audit log"
+msgstr "बदलांची नोंद"
+
+#: apps/reports/registry.py:579
+msgid "Time"
+msgstr "वेळ"
+
+#: apps/reports/registry.py:580
+msgid "User"
+msgstr "वापरकर्ता"
+
+#: apps/reports/registry.py:581
+msgid "Role"
+msgstr "भूमिका"
+
+#: apps/reports/registry.py:582
+msgid "Action"
+msgstr "कृती"
+
+#: apps/reports/registry.py:583
+msgid "Record type"
+msgstr "नोंदीचा प्रकार"
+
+#: apps/reports/registry.py:584
+msgid "Record id"
+msgstr "नोंद क्र."
+
+#: apps/reports/registry.py:585
+msgid "Changed fields"
+msgstr "बदललेली माहिती"
+
+#: apps/reports/registry.py:586
+#| msgid "Address"
+msgid "IP address"
+msgstr "IP पत्ता"
+
+#: apps/reports/services.py:39
+#| msgid "End date must be after the start date."
+msgid "The end date must be after the start date."
+msgstr "शेवटची तारीख सुरुवातीनंतर असावी."
+
+#: apps/reports/services.py:66
+#| msgid "Not found."
+msgid "Event not found."
+msgstr "कार्यक्रम सापडला नाही."
+
+#: apps/reports/services.py:71
+#| msgid "Select an event (event parameter)."
+msgid "Select an event."
+msgstr "कार्यक्रम निवडा."
+
+#: apps/reports/services.py:77
+#| msgid "This financial year is closed."
+msgid "Financial year not found."
+msgstr "आर्थिक वर्ष सापडले नाही."
+
+#: apps/reports/services.py:83
+msgid "All events"
+msgstr "सर्व कार्यक्रम"
+
+#: apps/reports/templates/reports/report_pdf.html:41
+msgid "No records for these filters."
+msgstr "या निवडीसाठी नोंदी नाहीत."
+
+#: apps/reports/templates/reports/report_pdf.html:45
+#, python-format
+msgid ""
+"Only the first %(n)s rows are shown. Use Excel or CSV for the full list."
+msgstr ""
+"फक्त पहिल्या %(n)s ओळी दाखवल्या आहेत. पूर्ण यादीसाठी Excel किंवा CSV वापरा."
+
+#: config/settings/base.py:99
 msgid "English"
 msgstr "English"
 

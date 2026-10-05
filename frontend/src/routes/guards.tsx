@@ -30,9 +30,11 @@ export function RequireOrganization() {
 }
 
 /** UX only: the API enforces every permission on its own. */
-export function RequirePermission({ permission, children }: { permission: string; children: ReactNode }) {
+/** `permission` may be a list, meaning "any of these". */
+export function RequirePermission({ permission, children }: { permission: string | string[]; children: ReactNode }) {
   const { t } = useTranslation()
   const { can } = useOrg()
-  if (!can(permission)) return <EmptyState title={t('errors.forbiddenTitle')} message={t('errors.forbidden')} />
+  const codes = Array.isArray(permission) ? permission : [permission]
+  if (!codes.some(can)) return <EmptyState title={t('errors.forbiddenTitle')} message={t('errors.forbidden')} />
   return <>{children}</>
 }

@@ -10,6 +10,7 @@ from apps.audit.models import AuditLog
 from apps.contributions import assignments
 from apps.contributions.models import ContributionType
 from apps.events.models import Event, EventParticipant
+from apps.expenses.models import Expense, ExpenseCategory, OtherIncome
 from apps.funds.models import Fund
 from apps.organizations import services as org_services
 from apps.organizations.models import FinancialYear, OrganizationMembership
@@ -48,7 +49,28 @@ def world(make_org, make_user, add_member):
         collector = OrganizationMembership.objects.get(organization=org, user=add_member(org, "collector"))
         void_request = voids.request_void(receipt, reason="Wrong amount", actor=org.admin_user)
         (assignment,) = assignments.assign(org=org, event=event, collector=collector, people=[person])
+        category = ExpenseCategory.objects.filter(organization=org).first()
+        expense = Expense.objects.create(
+            organization=org,
+            financial_year=fy,
+            event=event,
+            category=category,
+            amount=Decimal("10"),
+            expense_date=event.created_at.date(),
+            payee="Vendor",
+        )
+        income = OtherIncome.objects.create(
+            organization=org,
+            financial_year=fy,
+            event=event,
+            source="donation_box",
+            amount=Decimal("5"),
+            received_on=event.created_at.date(),
+        )
         return SimpleNamespace(
+            category=category,
+            expense=expense,
+            income=income,
             void_request=void_request,
             assignment=assignment,
             fund=fund,
@@ -84,6 +106,9 @@ DETAIL_ROUTES = [
     ("receipts", "receipt"),
     ("receipt-void-requests", "void_request"),
     ("collector-assignments", "assignment"),
+    ("expense-categories", "category"),
+    ("expenses", "expense"),
+    ("other-income", "income"),
 ]
 
 WRITE_ROUTES = [
@@ -109,6 +134,14 @@ WRITE_ROUTES = [
     ("post", "receipt-void-requests/{id}/approve/", "void_request", {}),
     ("post", "receipt-void-requests/{id}/reject/", "void_request", {}),
     ("post", "collector-assignments/{id}/end/", "assignment", {}),
+    ("patch", "expense-categories/{id}/", "category", {"name": "Hacked"}),
+    ("patch", "expenses/{id}/", "expense", {"payee": "Hacked"}),
+    ("post", "expenses/{id}/submit/", "expense", {}),
+    ("post", "expenses/{id}/approve/", "expense", {}),
+    ("post", "expenses/{id}/void/", "expense", {"reason": "Hacked"}),
+    ("post", "expenses/{id}/attachments/", "expense", {}),
+    ("patch", "other-income/{id}/", "income", {"description": "Hacked"}),
+    ("post", "other-income/{id}/void/", "income", {"reason": "Hacked"}),
 ]
 
 
@@ -218,6 +251,7 @@ def test_dashboard_counts_are_per_organization(world, client_for):
     data = client_for(world.a.org.admin_user, world.a.org).get("/api/v1/dashboard/summary/").data
     assert data["people"]["total"] == 1 and data["events"]["total"] == 1
     assert data["financial"]["collected"] == "100.00" and data["financial"]["payments"] == 1
+    assert data["financial"]["income"] == "105.00" and data["financial"]["expenses"] == "0.00"
     response = client_for(world.a.org.admin_user, world.a.org).get(
         f"/api/v1/dashboard/summary/?event={world.b.event.pk}"
     )

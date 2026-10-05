@@ -15,7 +15,11 @@
     "payments": "पेमेंट्स",
     "receipts": "पावत्या",
     "collectors": "वसुलीदार",
-    "approvals": "मंजुरी"
+    "approvals": "मंजुरी",
+    "expenses": "खर्च",
+    "income": "इतर उत्पन्न",
+    "reports": "अहवाल",
+    "audit": "बदलांची नोंद"
   },
   "topbar": {
     "switchOrganization": "संस्था बदला",
@@ -52,7 +56,13 @@
     "print": "प्रिंट करा",
     "back": "मागे",
     "selectEvent": "आधी कार्यक्रम निवडा",
-    "selectEventMessage": "वसुली पाहण्यासाठी वरच्या पट्टीतून कार्यक्रम निवडा."
+    "selectEventMessage": "वसुली पाहण्यासाठी वरच्या पट्टीतून कार्यक्रम निवडा.",
+    "archive": "संग्रहित करा",
+    "restore": "पुन्हा सुरू करा",
+    "choose": "निवडा…",
+    "description": "वर्णन",
+    "download": "डाउनलोड",
+    "remove": "काढा"
   },
   "validation": {
     "required": "ही माहिती आवश्यक आहे.",
@@ -181,7 +191,14 @@
     "balanceHint": "खर्च पुढील अपडेटमध्ये जोडले जातील",
     "byMonth": "महिन्यानुसार वसुली",
     "recent": "अलीकडील पेमेंट्स",
-    "viewAll": "सर्व पाहा"
+    "viewAll": "सर्व पाहा",
+    "expenses": "खर्च",
+    "waitingApproval": "{{count}} मंजुरीच्या प्रतीक्षेत",
+    "incomeHint": "एकूण उत्पन्न {{income}}",
+    "contributorsCount": "{{count}} देणगीदार",
+    "expensesByCategory": "प्रकारानुसार खर्च",
+    "incomeVsExpense": "उत्पन्न आणि खर्च",
+    "noExpenses": "अजून मंजूर खर्च नाही"
   },
   "events": {
     "title": "कार्यक्रम",
@@ -506,7 +523,11 @@
     "replacedBy": "{{number}} ने दुरुस्त",
     "replaces": "ही पावती दुरुस्त करते",
     "recordCorrection": "दुरुस्त पेमेंट नोंदवा",
-    "linkInvalid": "ही पावती लिंक चुकीची आहे किंवा तिची मुदत संपली आहे."
+    "linkInvalid": "ही पावती लिंक चुकीची आहे किंवा तिची मुदत संपली आहे.",
+    "status": {
+      "issued": "दिलेली",
+      "void": "रद्द"
+    }
   },
   "approvals": {
     "title": "मंजुरी",
@@ -552,5 +573,136 @@
     "total": "माझी एकूण",
     "paidThisMonth": "या महिन्यात {{count}} जणांनी भरले",
     "recentReceipts": "माझ्या अलीकडील पावत्या"
+  },
+  "expenseStatus": {
+    "draft": "मसुदा",
+    "submitted": "मंजुरीच्या प्रतीक्षेत",
+    "approved": "मंजूर",
+    "rejected": "नामंजूर",
+    "void": "रद्द"
+  },
+  "expenses": {
+    "title": "खर्च",
+    "subtitle": "बिल आणि मंजुरीसह झालेला खर्च. शिल्लक रकमेत फक्त मंजूर खर्च धरला जातो.",
+    "add": "खर्च नोंदवा",
+    "edit": "खर्च बदला",
+    "empty": "अजून खर्च नाही",
+    "emptyMessage": "सजावट, ध्वनी, मंडप आणि इतर खर्च बिलासह येथे नोंदवा.",
+    "category": "प्रकार",
+    "categories": "खर्चाचे प्रकार",
+    "newCategory": "नवीन प्रकार",
+    "payee": "कोणाला दिले",
+    "date": "खर्चाची तारीख",
+    "hasBills": "बिल जोडले आहे",
+    "bills": "बिले आणि फोटो",
+    "addBill": "बिल जोडा",
+    "billAdded": "बिल जोडले",
+    "noBills": "अजून बिल जोडलेले नाही.",
+    "billHelp": "JPG, PNG, WEBP किंवा PDF, प्रत्येकी 10 MB पर्यंत, एका खर्चासाठी 10.",
+    "createdBy": "नोंद करणारे",
+    "submittedBy": "पाठवणारे",
+    "approvedBy": "मंजूर करणारे",
+    "rejectedBy": "नामंजूर करणारे",
+    "rejectedBecause": "नामंजूर: {{reason}}. बदल करून पुन्हा पाठवा.",
+    "voidBecause": "रद्द: {{reason}}",
+    "actions": {
+      "submit": "मंजुरीसाठी पाठवा",
+      "approve": "मंजूर करा",
+      "reject": "नामंजूर करा",
+      "void": "रद्द करा"
+    },
+    "confirm": {
+      "submit": "{{payee}} यांना दिलेले {{amount}} मंजुरीसाठी पाठवायचे?",
+      "approve": "{{payee}} यांना दिलेले {{amount}} मंजूर करायचे? ते शिल्लक रकमेत धरले जाईल आणि नंतर फक्त रद्द करता येईल.",
+      "reject": "{{payee}} यांना दिलेले {{amount}} नामंजूर करायचे? काय बदलायचे ते लिहा.",
+      "void": "{{payee}} यांना दिलेले {{amount}} रद्द करायचे? नोंद राहील पण हिशोबात धरली जाणार नाही."
+    }
+  },
+  "income": {
+    "title": "इतर उत्पन्न",
+    "subtitle": "दानपेटी, प्रायोजकत्व, बँक व्याज आणि विक्री.",
+    "add": "उत्पन्न नोंदवा",
+    "empty": "अजून इतर उत्पन्न नाही",
+    "emptyMessage": "दानपेटी मोजणी, प्रायोजकत्व आणि असे उत्पन्न येथे नोंदवा.",
+    "source": "स्रोत",
+    "receivedOn": "मिळाल्याची तारीख",
+    "voidTitle": "हे उत्पन्न रद्द करायचे?",
+    "voidMessage": "{{source}} मधील {{amount}} ची नोंद राहील पण शिल्लक रकमेत धरली जाणार नाही."
+  },
+  "incomeSource": {
+    "donation_box": "दानपेटी",
+    "sponsorship": "प्रायोजकत्व",
+    "interest": "बँक व्याज",
+    "sale": "विक्री",
+    "other": "इतर"
+  },
+  "reports": {
+    "title": "अहवाल",
+    "subtitle": "प्रत्येक अहवाल Excel, PDF किंवा CSV मध्ये डाउनलोड करता येतो.",
+    "groups": {
+      "financial": "हिशोब",
+      "general": "लोक आणि कार्यक्रम",
+      "audit": "तपासणी"
+    },
+    "pick": "अहवाल निवडा",
+    "pickMessage": "येथे पाहण्यासाठी यादीतून अहवाल निवडा.",
+    "event": "कार्यक्रम",
+    "allEventsInYear": "या आर्थिक वर्षातील सर्व कार्यक्रम",
+    "from": "पासून",
+    "to": "पर्यंत",
+    "needsEvent": "या अहवालासाठी कार्यक्रम निवडा.",
+    "noRows": "या निवडीसाठी काही नाही",
+    "rows": "ओळी",
+    "totalOf": "एकूण {{label}}",
+    "truncated": "{{total}} पैकी पहिल्या {{shown}} ओळी दाखवल्या आहेत. सर्वांसाठी Excel किंवा CSV डाउनलोड करा.",
+    "exported": "अहवाल डाउनलोड झाला",
+    "exportFailed": "अहवाल तयार होऊ शकला नाही. पुन्हा प्रयत्न करा."
+  },
+  "audit": {
+    "title": "बदलांची नोंद",
+    "subtitle": "कोणी, काय, केव्हा बदलले. या नोंदी कधीही बदलता किंवा काढता येत नाहीत.",
+    "action": "कृती",
+    "empty": "या निवडीसाठी नोंदी नाहीत",
+    "system": "प्रणाली",
+    "record": "नोंद",
+    "noDetails": "तपशील नाही.",
+    "field": "माहिती",
+    "before": "आधी",
+    "after": "नंतर",
+    "actions": {
+      "create": "तयार केले",
+      "update": "बदलले",
+      "status_change": "स्थिती बदलली",
+      "soft_delete": "काढले",
+      "approve": "मंजूर केले",
+      "reject": "नामंजूर केले",
+      "void": "रद्द केले",
+      "expense_submit": "मंजुरीसाठी पाठवले",
+      "receipt_issue": "पावती दिली",
+      "void_request": "रद्द करण्याची विनंती केली",
+      "void_approve": "रद्द मंजूर केले",
+      "void_reject": "रद्द नामंजूर केले",
+      "login": "लॉग इन केले",
+      "login_failed": "लॉग इन अयशस्वी",
+      "role_change": "भूमिका बदलली",
+      "permission_change": "परवानग्या बदलल्या",
+      "invite": "आमंत्रित केले",
+      "export": "डाउनलोड केले"
+    },
+    "entities": {
+      "payment": "पेमेंट",
+      "receipt": "पावती",
+      "expense": "खर्च",
+      "expenseattachment": "खर्चाचे बिल",
+      "otherincome": "इतर उत्पन्न",
+      "person": "व्यक्ती",
+      "event": "कार्यक्रम",
+      "organization": "संस्था",
+      "organizationmembership": "वापरकर्ता प्रवेश",
+      "fund": "निधी",
+      "contributiontype": "वर्गणी प्रकार",
+      "exportjob": "अहवाल",
+      "user": "खाते"
+    }
   }
 }

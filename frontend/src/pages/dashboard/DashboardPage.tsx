@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { CalendarDays, CalendarPlus, HandCoins, IndianRupee, ShieldCheck, UserPlus, Users, Wallet } from 'lucide-react'
+import { CalendarDays, CalendarPlus, HandCoins, IndianRupee, Receipt, ShieldCheck, UserPlus, Users, Wallet } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { Button } from '../../components/ui/Button'
@@ -119,14 +119,28 @@ function FinancialSection({ financial, currency }: { financial: FinancialSummary
           hint={financial.target_amount ? t('dashboard.ofTarget', { target: formatMoney(financial.target_amount, currency) }) : undefined}
           icon={<Wallet className="size-5" />}
         />
-        <StatCard label={t('contributions.contributors')} value={financial.contributors} icon={<Users className="size-5" />} />
+        <StatCard
+          label={t('dashboard.expenses')}
+          value={formatMoney(financial.expenses, currency)}
+          hint={financial.pending_expenses ? t('dashboard.waitingApproval', { count: financial.pending_expenses }) : undefined}
+          icon={<Receipt className="size-5" />}
+        />
+        <StatCard
+          label={t('dashboard.balance')}
+          value={formatMoney(financial.balance, currency)}
+          hint={t('dashboard.incomeHint', { income: formatMoney(financial.income, currency) })}
+          icon={<IndianRupee className="size-5" />}
+        />
         <StatCard
           label={t('contributions.payments')}
           value={financial.payments}
-          hint={financial.pending_payments ? t('dashboard.pendingCount', { count: financial.pending_payments }) : undefined}
+          hint={
+            financial.pending_payments
+              ? t('dashboard.pendingCount', { count: financial.pending_payments })
+              : t('dashboard.contributorsCount', { count: financial.contributors })
+          }
           icon={<HandCoins className="size-5" />}
         />
-        <StatCard label={t('dashboard.balance')} value={formatMoney(financial.balance, currency)} hint={t('dashboard.balanceHint')} icon={<IndianRupee className="size-5" />} />
       </div>
       {percent !== null && (
         <Card className="p-4">
@@ -157,6 +171,26 @@ function FinancialSection({ financial, currency }: { financial: FinancialSummary
           />
         </Card>
       </div>
+      {(financial.expenses_by_category.length > 0 || Number(financial.other_income) > 0) && (
+        <div className="grid gap-4 lg:grid-cols-2">
+          <Card className="p-4">
+            <h2 className="mb-3 font-semibold">{t('dashboard.expensesByCategory')}</h2>
+            <BarList currency={currency} emptyLabel={t('dashboard.noExpenses')} items={financial.expenses_by_category.map((r) => ({ label: r.name, value: r.total }))} />
+          </Card>
+          <Card className="p-4">
+            <h2 className="mb-3 font-semibold">{t('dashboard.incomeVsExpense')}</h2>
+            <BarList
+              currency={currency}
+              emptyLabel={t('contributions.noneYet')}
+              items={[
+                { label: t('dashboard.collected'), value: financial.collected },
+                { label: t('income.title'), value: financial.other_income },
+                { label: t('dashboard.expenses'), value: financial.expenses },
+              ]}
+            />
+          </Card>
+        </div>
+      )}
       <Card>
         <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
           <h2 className="font-semibold">{t('dashboard.recent')}</h2>

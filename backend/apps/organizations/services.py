@@ -18,6 +18,7 @@ from rest_framework.exceptions import APIException, ValidationError
 
 from apps.audit import services as audit
 from apps.core.exceptions import BusinessRuleViolation
+from apps.expenses.defaults import seed_categories
 
 from .catalog import ADMIN_ROLE
 from .models import FinancialYear, Invitation, Organization, OrganizationMembership, Role
@@ -49,6 +50,7 @@ def create_organization(*, user, request=None, financial_year=None, **fields) ->
         **fields,
     )
     membership = OrganizationMembership.objects.create(organization=org, user=user, role=system_role(ADMIN_ROLE))
+    seed_categories(org)
     audit.record(
         request=request,
         actor=user,
