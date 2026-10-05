@@ -1,0 +1,23 @@
+import { formatMobile, formatMoney, initials, suggestFinancialYear } from '../utils/format'
+
+describe('format helpers', () => {
+  it('formats money from decimal strings with Indian grouping', () => {
+    expect(formatMoney('150000.50')).toBe('₹1,50,000.50')
+    expect(formatMoney('2600.00')).toBe('₹2,600.00')
+    expect(formatMoney(null)).toBe('—')
+  })
+
+  it('formats Indian mobiles for reading', () => {
+    expect(formatMobile('+919812345678')).toBe('+91 98123 45678')
+    expect(formatMobile('+14155550100')).toBe('+14155550100')
+  })
+
+  it('builds initials for organizations without a logo', () => {
+    expect(initials('Shivaji Nagar Mandal')).toBe('SN')
+  })
+
+  it('suggests the April–March financial year', () => {
+    expect(suggestFinancialYear(new Date(2026, 9, 5))).toEqual({ label: '2026–27', start_date: '2026-04-01', end_date: '2027-03-31' })
+    expect(suggestFinancialYear(new Date(2027, 1, 10)).label).toBe('2026–27')
+  })
+})

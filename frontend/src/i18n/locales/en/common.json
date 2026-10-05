@@ -1,0 +1,116 @@
+{
+  "app": { "name": "Vargani" },
+  "nav": { "main": "Main menu", "openMenu": "Open menu", "dashboard": "Dashboard", "events": "Events", "people": "People", "users": "Users & Roles", "settings": "Settings" },
+  "topbar": {
+    "switchOrganization": "Switch organization", "yourOrganizations": "Your organizations", "createOrganization": "Create a new organization",
+    "event": "Event", "financialYear": "FY {{label}}", "language": "Language", "profile": "Profile menu", "myProfile": "My profile"
+  },
+  "common": {
+    "add": "Add", "all": "All", "cancel": "Cancel", "close": "Close", "copied": "Copied", "edit": "Edit", "loading": "Loading…",
+    "logout": "Log out", "next": "Next", "previous": "Previous", "pageOf": "Page {{page}} of {{pages}} · {{count}} total",
+    "retry": "Try again", "save": "Save", "saved": "Saved", "search": "Search", "status": "Status"
+  },
+  "validation": { "required": "This field is required.", "email": "Enter a valid email address." },
+  "errors": {
+    "generic": "Something went wrong. Please try again.", "network": "Cannot reach the server. Check your internet connection.",
+    "forbiddenTitle": "No access", "forbidden": "Your role does not allow this. Ask your organization admin if you need access.",
+    "notFoundTitle": "Page not found", "notFound": "This page does not exist or you do not have access to it."
+  },
+  "status": { "active": "Active", "draft": "Draft", "closed": "Closed", "archived": "Archived", "suspended": "Suspended", "removed": "Removed" },
+  "roles": {
+    "org_admin": "Organization Admin", "treasurer": "Treasurer", "secretary": "Secretary", "collector": "Karyakarta / Collector",
+    "volunteer": "Volunteer", "member": "Member"
+  },
+  "personType": { "member": "Member", "karyakarta": "Karyakarta", "volunteer": "Volunteer", "donor": "Donor", "supporter": "Supporter", "other": "Other" },
+  "participation": { "participant": "Participant", "volunteer": "Volunteer", "karyakarta": "Karyakarta", "guest": "Guest" },
+  "auth": {
+    "loginTitle": "Log in", "loginSubtitle": "Welcome back. Log in to manage your organization.",
+    "identifier": "Email or mobile number", "password": "Password", "forgotPassword": "Forgot password?", "login": "Log in",
+    "noAccount": "New here?", "registerLink": "Create an account",
+    "registerTitle": "Create your account", "registerSubtitle": "Register, verify, then set up your organization.",
+    "fullName": "Full name", "email": "Email", "mobile": "Mobile number", "identifierRequired": "Enter an email address or a mobile number.",
+    "passwordHint": "At least 10 characters. Avoid common words and only numbers.", "createAccount": "Create account", "haveAccount": "Already registered?",
+    "verifyTitle": "Verify your account", "verifySubtitle": "We sent a 6-digit code to {{destination}}.", "code": "Verification code",
+    "verify": "Verify", "resendCode": "Send a new code", "codeResent": "A new code has been sent.", "devCode": "Development mode code: {{code}}",
+    "resetTitle": "Reset your password", "resetSubtitle": "We will send a code to your email or mobile.", "resetCodeSent": "Enter the code we sent and choose a new password.",
+    "newPassword": "New password", "sendCode": "Send code", "setNewPassword": "Set new password", "backToLogin": "Back to log in",
+    "passwordResetDone": "Password changed. Please log in."
+  },
+  "onboarding": {
+    "title": "Set up your organization", "subtitle": "Your mandal, society, club or trust. You can change these details later.",
+    "namePlaceholder": "Your organization's name", "financialYear": "First financial year", "create": "Create organization",
+    "adminNote": "You will become the Organization Admin and can invite your Treasurer, Secretary and Karyakartas."
+  },
+  "organization": {
+    "name": "Organization name", "address1": "Address line 1", "address2": "Address line 2", "city": "City", "district": "District", "state": "State",
+    "pincode": "PIN code", "country": "Country", "phone": "Phone", "email": "Email", "website": "Website", "description": "About the organization",
+    "registrationType": "Registration type", "registrationTypePlaceholder": "Trust, society…", "registrationNumber": "Registration number",
+    "defaultLanguage": "Default language", "receiptLanguage": "Receipt language", "receiptLanguageHint": "Used on receipts you share."
+  },
+  "dashboard": {
+    "title": "Dashboard", "forEvent": "Showing {{event}}", "events": "Events", "people": "People", "users": "Users with access",
+    "activeCount": "{{count}} active", "target": "Event target",
+    "noCollectionsTitle": "No collections recorded yet", "noCollectionsMessage": "Collections, payments and balances will appear here once contribution recording is switched on.",
+    "firstEventTitle": "Create your first event", "firstEventMessage": "Events keep each festival or fund separate, for example Ganesh Chaturthi or Annual Membership.",
+    "firstPersonTitle": "Add your members", "firstPersonMessage": "Add the people who contribute to your organization. They do not need a login."
+  },
+  "events": {
+    "title": "Events", "subtitle": "Each event is a separate workspace with its own funds, collections and expenses.", "create": "Create event", "edit": "Edit event",
+    "created": "Event created", "name": "Event name", "namePlaceholder": "e.g. Ganesh Chaturthi 2027", "template": "Template", "financialYear": "Financial year",
+    "code": "Receipt code", "codeHint": "Short prefix for receipt numbers. Leave empty to generate one.", "target": "Target amount",
+    "targetHint": "Optional.", "startDate": "Start date", "endDate": "End date", "dates": "Dates", "description": "Description",
+    "thankYou": "Thank-you message", "thankYouHint": "Printed on receipts and WhatsApp messages.", "modules": "Modules", "noTarget": "Not set",
+    "module": { "contributions": "Contributions", "monthly": "Monthly Vargani", "expenses": "Expenses", "collectors": "Collectors", "member_portal": "Member portal" },
+    "emptyTitle": "No events yet", "emptyMessage": "Create an event for each festival, campaign or membership drive.",
+    "participants": "Participants", "addParticipant": "Add participant", "participationRole": "Role in event", "participantAdded": "Added to event",
+    "noParticipants": "No participants yet", "noParticipantsMessage": "Add people who take part in this event.",
+    "close": "Close event", "reopen": "Reopen event", "closeTitle": "Close this event?", "closeMessage": "A closed event stays visible but stops accepting new entries. You can reopen it later.",
+    "reopenTitle": "Reopen this event?", "reopenMessage": "The event will accept new entries again."
+  },
+  "people": {
+    "title": "People", "subtitle": "Members, karyakartas, donors and supporters. A login is not required.", "add": "Add person", "edit": "Edit person",
+    "added": "Person added", "fullName": "Name", "mobile": "Mobile", "altMobile": "Alternate mobile", "email": "Email", "unit": "Flat / house no.",
+    "building": "Building / wing", "area": "Area", "address": "Address", "city": "City", "pincode": "PIN code", "types": "Person type", "type": "Type",
+    "typesHint": "Person type is separate from login roles. A karyakarta can also contribute.", "notes": "Notes",
+    "searchPlaceholder": "Name, mobile, flat or area", "noMatches": "No people match your search.",
+    "emptyTitle": "No people yet", "emptyMessage": "Add the people who belong to your organization.",
+    "duplicateWarning": "This mobile number is already used by: {{names}}. You can still save if they share a phone.",
+    "archive": "Archive", "archiveTitle": "Archive this person?", "archiveMessage": "{{name}} will be hidden from lists. Their history is kept.", "archived": "Person archived"
+  },
+  "users": {
+    "title": "Users & Roles", "subtitle": "People who can log in, and what each one can do.", "invite": "Invite user", "you": "you", "role": "Role",
+    "suspend": "Suspend", "reactivate": "Reactivate", "pendingInvitations": "Pending invitations", "noInvitations": "No pending invitations",
+    "noInvitationsMessage": "Invite your Treasurer, Secretary or Karyakartas to give them access.", "expires": "expires {{date}}", "revoke": "Revoke",
+    "invitationRevoked": "Invitation revoked", "name": "Name", "inviteHint": "They must log in with this same email or mobile to accept.",
+    "chooseRole": "Choose a role", "sendInvite": "Create invitation", "inviteCreated": "Invitation created. Share this link with them:",
+    "copyLink": "Copy link", "shareWhatsApp": "Share on WhatsApp", "inviteOnce": "For security this link is shown only once.",
+    "inviteMessage": "You are invited to join {{organization}} on Vargani as {{role}}. Accept here: {{link}}"
+  },
+  "invite": {
+    "title": "Join {{organization}}", "role": "You have been invited as {{role}}.", "accept": "Accept invitation",
+    "loginFirst": "Log in or create an account with the email or mobile the invitation was sent to.", "invalid": "This invitation is invalid or has expired."
+  },
+  "settings": { "title": "Settings", "tabs": { "profile": "Profile", "logo": "Logo", "financialYears": "Financial years", "preferences": "Preferences" } },
+  "logo": {
+    "help": "PNG, JPG or WEBP up to 5 MB. A square image of 512 × 512 pixels or more works best on receipts.",
+    "upload": "Upload logo", "replace": "Replace logo", "remove": "Remove logo", "save": "Save logo", "preview": "Preview", "current": "Current logo",
+    "cropSquare": "Crop to a square", "saved": "Logo saved", "removed": "Logo removed", "wrongType": "Choose a PNG, JPG or WEBP image.",
+    "tooLarge": "The image must be 5 MB or smaller.", "removeTitle": "Remove the logo?", "removeMessage": "Receipts and the app will show your organization's initials instead."
+  },
+  "financialYears": {
+    "help": "Every financial record belongs to a financial year.", "add": "Add financial year", "label": "Label", "start": "Start date", "end": "End date",
+    "current": "Current", "makeCurrent": "Make current", "close": "Close year", "created": "Financial year added",
+    "closeTitle": "Close {{label}}?", "closeMessage": "No new events can be created in a closed financial year. This cannot be undone from here."
+  },
+  "orgSettings": {
+    "allow_unassigned_collection": "Karyakartas can collect from anyone",
+    "allow_unassigned_collection_help": "When off, karyakartas only see and collect from people assigned to them.",
+    "require_expense_approval": "Expenses need approval",
+    "require_expense_approval_help": "A Treasurer or Admin must approve an expense before it counts in the balance.",
+    "member_portal_enabled": "Member portal",
+    "member_portal_enabled_help": "Members can log in with their mobile number to see their own contributions and receipts."
+  },
+  "profile": {
+    "title": "My profile", "changePassword": "Change password", "currentPassword": "Current password", "passwordChanged": "Password changed. Other devices have been logged out."
+  }
+}
