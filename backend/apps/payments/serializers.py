@@ -35,6 +35,7 @@ class PaymentCreateSerializer(serializers.Serializer):
     notes = serializers.CharField(max_length=500, required=False, allow_blank=True, default="")
     idempotency_key = serializers.CharField(max_length=100, required=False, allow_blank=True)
     lines = PaymentLineInputSerializer(many=True, allow_empty=False, max_length=36)
+    replaces_receipt = TenantPrimaryKeyRelatedField(queryset=Receipt.objects.all(), required=False, allow_null=True)
 
     def validate_reference_number(self, value):
         return value.strip()

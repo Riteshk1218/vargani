@@ -161,6 +161,7 @@ REST_FRAMEWORK = {
         "user": env("THROTTLE_USER", default="600/min"),
         "auth": env("THROTTLE_AUTH", default="10/min"),
         "otp": env("THROTTLE_OTP", default="5/min"),
+        "public_receipt": env("THROTTLE_PUBLIC_RECEIPT", default="30/min"),
     },
     "COERCE_DECIMAL_TO_STRING": True,
     "TEST_REQUEST_DEFAULT_FORMAT": "json",
@@ -234,6 +235,8 @@ LOGGING = {
     "formatters": {"plain": {"format": "%(asctime)s %(levelname)s %(name)s %(message)s"}},
     "handlers": {"console": {"class": "logging.StreamHandler", "formatter": "plain"}},
     "root": {"handlers": ["console"], "level": env("LOG_LEVEL", default="INFO")},
+    # PDF rendering libraries are very chatty at INFO/DEBUG.
+    "loggers": {name: {"level": "WARNING"} for name in ("fontTools", "weasyprint")},
 }
 REQUIRE_VERIFIED_LOGIN = True
 

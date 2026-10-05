@@ -9,6 +9,7 @@ import { EmptyState, ErrorState, SkeletonRows } from '../../components/ui/States
 import { useEvents } from '../../context/EventContext'
 import { useOrg } from '../../context/OrgContext'
 import { dashboardService } from '../../services/dashboard'
+import { CollectorDashboard } from './CollectorDashboard'
 import type { FinancialSummary } from '../../types/api'
 import { formatDateTime, formatMoney, formatMonth } from '../../utils/format'
 
@@ -45,6 +46,8 @@ export function DashboardPage() {
               <StatCard label={t('dashboard.target')} value={formatMoney(activeEvent.target_amount, org.currency)} icon={<IndianRupee className="size-5" />} />
             )}
           </div>
+
+          {!summary.data!.financial && activeEvent && can('collectors.view_performance') && <CollectorDashboard eventId={activeEvent.id} />}
 
           {summary.data!.financial &&
             (summary.data!.financial.payments === 0 && summary.data!.financial.pending_payments === 0 ? (

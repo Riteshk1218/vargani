@@ -13,7 +13,9 @@
     "collect": "वसुली करा",
     "contributions": "वर्गणी",
     "payments": "पेमेंट्स",
-    "receipts": "पावत्या"
+    "receipts": "पावत्या",
+    "collectors": "वसुलीदार",
+    "approvals": "मंजुरी"
   },
   "topbar": {
     "switchOrganization": "संस्था बदला",
@@ -431,7 +433,8 @@
     "success": "पावती {{number}} तयार झाली",
     "pendingSaved": "प्रलंबित म्हणून जतन केले. वटल्यावर पावती मिळेल.",
     "viewReceipt": "पावती पाहा",
-    "another": "आणखी नोंदवा"
+    "another": "आणखी नोंदवा",
+    "correctionNote": "तुम्ही दुरुस्ती नोंदवत आहात. नवीन पावती रद्द पावतीशी जोडली जाईल."
   },
   "payments": {
     "title": "पेमेंट्स",
@@ -490,6 +493,64 @@
     "signature": "अधिकृत स्वाक्षरी",
     "void": "रद्द",
     "printHint": "PDF डाउनलोड आणि WhatsApp शेअरिंग पुढील अपडेटमध्ये येईल.",
-    "financialYear": "आर्थिक वर्ष {{label}}"
+    "financialYear": "आर्थिक वर्ष {{label}}",
+    "whatsapp": "WhatsApp वर पाठवा",
+    "downloadPdf": "PDF डाउनलोड करा",
+    "shareReady": "पावतीची लिंक कॉपी झाली आणि WhatsApp उघडले",
+    "requestVoid": "रद्द करण्याची विनंती",
+    "sendVoidRequest": "मंजुरीसाठी पाठवा",
+    "voidExplain": "मंजुरीनंतर पावती {{number}} चा क्रमांक तसाच राहील आणि ती रद्द दिसेल. त्यानंतर योग्य पेमेंट दुरुस्ती म्हणून नोंदवता येईल.",
+    "voidRequested": "रद्द विनंती मंजुरीसाठी पाठवली",
+    "voidPending": "रद्द करण्याची विनंती: “{{reason}}”. मंजुरीची प्रतीक्षा.",
+    "voidBanner": "ही पावती रद्द आहे: {{reason}}.",
+    "replacedBy": "{{number}} ने दुरुस्त",
+    "replaces": "ही पावती दुरुस्त करते",
+    "recordCorrection": "दुरुस्त पेमेंट नोंदवा",
+    "linkInvalid": "ही पावती लिंक चुकीची आहे किंवा तिची मुदत संपली आहे."
+  },
+  "approvals": {
+    "title": "मंजुरी",
+    "subtitle": "पावती रद्द विनंत्या. मंजुरीनंतर पावती क्रमांक राहतो आणि पेमेंट रद्द होते.",
+    "empty": "काही प्रलंबित नाही",
+    "open": "मंजुरी उघडा",
+    "status": {
+      "pending": "प्रलंबित",
+      "approved": "मंजूर (रद्द)",
+      "rejected": "नामंजूर"
+    },
+    "requestedBy": "{{name}} यांनी विनंती केली, {{when}}",
+    "decidedBy": "{{name}} यांनी निर्णय घेतला",
+    "approve": "रद्द मंजूर करा",
+    "reject": "नामंजूर करा",
+    "approveTitle": "ही पावती रद्द करायची?",
+    "rejectTitle": "ही विनंती नामंजूर करायची?",
+    "approveMessage": "पावती {{number}} रद्द होईल आणि तिचे पेमेंट रद्द होईल. हे परत करता येणार नाही.",
+    "note": "टीप"
+  },
+  "collectors": {
+    "title": "वसुलीदार",
+    "subtitle": "कोण कोणाकडून किती वसुली करतो.",
+    "performance": "वसुलीदारानुसार वसुली",
+    "noneYet": "अजून वसुलीदार नाहीत",
+    "noneYetMessage": "खाली कार्यकर्त्याला लोक सोपवा.",
+    "name": "वसुलीदार",
+    "assigned": "सोपवलेले लोक",
+    "paymentsCount": "{{count}} पेमेंट्स",
+    "assignments": "सोपवणी",
+    "assignmentsHelp": "सेटिंग्जमध्ये परवानगी नसल्यास वसुलीदार फक्त सोपवलेल्या लोकांकडूनच वसुली करू शकतो.",
+    "collector": "वसुलीदार",
+    "assignPeople": "लोक सोपवा",
+    "assignCount": "{{count}} सोपवा",
+    "assigned_done": "{{count}} लोक सोपवले",
+    "moveNote": "आधीच दुसऱ्याला सोपवलेले लोक या वसुलीदाराकडे जातील.",
+    "unassign": "सोपवणी काढा",
+    "nobodyAssigned": "अजून कोणीही सोपवलेले नाही",
+    "noCollectors": "वसुली करू शकणारे वापरकर्ते नाहीत",
+    "noCollectorsMessage": "आधी कार्यकर्ता / वसुलीदार भूमिकेसह वापरकर्त्याला आमंत्रित करा.",
+    "today": "आज",
+    "thisMonth": "या महिन्यात",
+    "total": "माझी एकूण",
+    "paidThisMonth": "या महिन्यात {{count}} जणांनी भरले",
+    "recentReceipts": "माझ्या अलीकडील पावत्या"
   }
 }

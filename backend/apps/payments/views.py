@@ -6,6 +6,7 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 
+from apps.contributions import assignments
 from apps.core.scoping import scope_money
 from apps.core.tenancy import SCOPE_ALL
 from apps.core.viewsets import TenantModelViewSet
@@ -74,13 +75,14 @@ class PaymentViewSet(TenantModelViewSet):
             queryset = queryset.filter(collector=self.membership)
         return scope_money(queryset, self.org_context, "payments.view", self.request.user, person="payer")
 
-    def _check_can_collect(self):
+    def _check_can_collect(self, payer=None, event=None):
         if self.org_context.scope("payments.create") == SCOPE_ALL:
             return
-        # Collectors collect from people assigned to them (Phase 3). Until assignments exist they can collect
-        # only when the organization allows collecting from anyone.
-        if not (self.organization.settings or {}).get("allow_unassigned_collection"):
-            raise PermissionDenied(_("Your organization has not allowed collecting from unassigned people."))
+        if (self.organization.settings or {}).get("allow_unassigned_collection"):
+            return
+        # Collectors collect only from people assigned to them in this event.
+        if payer is None or not assignments.is_assigned(membership=self.membership, person=payer, event=event):
+            raise PermissionDenied(_("This person is not assigned to you for this event."))
 
     def _detail(self, payment, status_code=status.HTTP_200_OK):
         payment = self.get_base_queryset().get(pk=payment.pk)
@@ -88,10 +90,13 @@ class PaymentViewSet(TenantModelViewSet):
 
     @extend_schema(request=PaymentCreateSerializer, responses={201: PaymentSerializer, 200: PaymentSerializer})
     def create(self, request, *args, **kwargs):
-        self._check_can_collect()
         serializer = PaymentCreateSerializer(data=request.data, context=self.get_serializer_context())
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
+        self._check_can_collect(data["payer"], data["event"])
+        replaces = data.get("replaces_receipt")
+        if replaces is not None and not self.org_context.has("receipts.void_approve"):
+            raise PermissionDenied()
         key = request.META.get("HTTP_IDEMPOTENCY_KEY") or data.get("idempotency_key") or None
         payment, created = services.record_payment(
             org=self.organization,
@@ -108,6 +113,7 @@ class PaymentViewSet(TenantModelViewSet):
             lines=[services.LineInput(**line) for line in data["lines"]],
             collector=self.membership,
             idempotency_key=key,
+            replaces_receipt=replaces,
             request=request,
             actor=request.user,
         )

@@ -1,7 +1,7 @@
 from django.core.files.storage import default_storage
 from rest_framework import serializers
 
-from .models import Receipt
+from .models import Receipt, ReceiptVoidRequest
 
 
 class ReceiptSerializer(serializers.ModelSerializer):
@@ -10,6 +10,19 @@ class ReceiptSerializer(serializers.ModelSerializer):
     amount = serializers.DecimalField(source="payment.amount", max_digits=12, decimal_places=2, read_only=True)
     mode = serializers.CharField(source="payment.mode", read_only=True)
     logo_url = serializers.SerializerMethodField()
+    replaces_receipt_number = serializers.CharField(
+        source="replaces_receipt.receipt_number", default=None, read_only=True
+    )
+    replaced_by = serializers.SerializerMethodField()
+    pending_void_request = serializers.SerializerMethodField()
+
+    def get_replaced_by(self, obj) -> dict | None:
+        new = obj.replaced_by.first()
+        return {"id": str(new.pk), "receipt_number": new.receipt_number} if new else None
+
+    def get_pending_void_request(self, obj) -> dict | None:
+        pending = obj.void_requests.filter(status="pending").first()
+        return {"id": str(pending.pk), "reason": pending.reason} if pending else None
 
     class Meta:
         model = Receipt
@@ -28,6 +41,9 @@ class ReceiptSerializer(serializers.ModelSerializer):
             "void_reason",
             "voided_at",
             "replaces_receipt",
+            "replaces_receipt_number",
+            "replaced_by",
+            "pending_void_request",
             "snapshot",
             "logo_url",
         ]
@@ -42,3 +58,29 @@ class ReceiptSerializer(serializers.ModelSerializer):
         if request is not None and url.startswith("/"):
             return request.build_absolute_uri(url)
         return url
+
+
+class ReceiptVoidRequestSerializer(serializers.ModelSerializer):
+    receipt_number = serializers.CharField(source="receipt.receipt_number", read_only=True)
+    payer_name = serializers.CharField(source="receipt.payment.payer.full_name", read_only=True)
+    amount = serializers.DecimalField(source="receipt.payment.amount", max_digits=12, decimal_places=2, read_only=True)
+    requested_by_name = serializers.CharField(source="requested_by.full_name", read_only=True)
+    decided_by_name = serializers.CharField(source="decided_by.full_name", read_only=True, default=None)
+
+    class Meta:
+        model = ReceiptVoidRequest
+        fields = [
+            "id",
+            "receipt",
+            "receipt_number",
+            "payer_name",
+            "amount",
+            "reason",
+            "status",
+            "requested_by_name",
+            "decided_by_name",
+            "decided_at",
+            "decision_note",
+            "created_at",
+        ]
+        read_only_fields = fields

@@ -13,7 +13,9 @@
     "collect": "Collect",
     "contributions": "Contributions",
     "payments": "Payments",
-    "receipts": "Receipts"
+    "receipts": "Receipts",
+    "collectors": "Collectors",
+    "approvals": "Approvals"
   },
   "topbar": {
     "switchOrganization": "Switch organization",
@@ -431,7 +433,8 @@
     "success": "Receipt {{number}} issued",
     "pendingSaved": "Saved as pending. The receipt is issued when it clears.",
     "viewReceipt": "View receipt",
-    "another": "Record another"
+    "another": "Record another",
+    "correctionNote": "You are recording a correction. The new receipt will be linked to the voided one."
   },
   "payments": {
     "title": "Payments",
@@ -490,6 +493,64 @@
     "signature": "Authorised signatory",
     "void": "Void",
     "printHint": "PDF download and WhatsApp sharing come in the next update.",
-    "financialYear": "Financial year {{label}}"
+    "financialYear": "Financial year {{label}}",
+    "whatsapp": "Share on WhatsApp",
+    "downloadPdf": "Download PDF",
+    "shareReady": "Receipt link copied and WhatsApp opened",
+    "requestVoid": "Request void",
+    "sendVoidRequest": "Send for approval",
+    "voidExplain": "Receipt {{number}} keeps its number and is marked void once approved. The right payment can then be recorded as a correction.",
+    "voidRequested": "Void request sent for approval",
+    "voidPending": "Void requested: “{{reason}}”. Waiting for approval.",
+    "voidBanner": "This receipt is void: {{reason}}.",
+    "replacedBy": "Corrected by {{number}}",
+    "replaces": "This receipt corrects",
+    "recordCorrection": "Record corrected payment",
+    "linkInvalid": "This receipt link is invalid or has expired."
+  },
+  "approvals": {
+    "title": "Approvals",
+    "subtitle": "Receipt void requests. Approving keeps the receipt number and cancels the payment.",
+    "empty": "Nothing waiting",
+    "open": "Open approvals",
+    "status": {
+      "pending": "Waiting",
+      "approved": "Approved (void)",
+      "rejected": "Rejected"
+    },
+    "requestedBy": "Requested by {{name}}, {{when}}",
+    "decidedBy": "decided by {{name}}",
+    "approve": "Approve void",
+    "reject": "Reject",
+    "approveTitle": "Void this receipt?",
+    "rejectTitle": "Reject this request?",
+    "approveMessage": "Receipt {{number}} will be marked void and its payment cancelled. This cannot be undone.",
+    "note": "Note"
+  },
+  "collectors": {
+    "title": "Collectors",
+    "subtitle": "Who collects from whom, and how much.",
+    "performance": "Collections by collector",
+    "noneYet": "No collectors yet",
+    "noneYetMessage": "Assign people to a karyakarta below.",
+    "name": "Collector",
+    "assigned": "Assigned people",
+    "paymentsCount": "{{count}} payments",
+    "assignments": "Assignments",
+    "assignmentsHelp": "A collector can collect only from people assigned to them, unless Settings allows collecting from anyone.",
+    "collector": "Collector",
+    "assignPeople": "Assign people",
+    "assignCount": "Assign {{count}}",
+    "assigned_done": "{{count}} people assigned",
+    "moveNote": "People already assigned to someone else move to this collector.",
+    "unassign": "Remove assignment",
+    "nobodyAssigned": "Nobody assigned yet",
+    "noCollectors": "No users can collect",
+    "noCollectorsMessage": "Invite a user with the Karyakarta / Collector role first.",
+    "today": "Today",
+    "thisMonth": "This month",
+    "total": "My total",
+    "paidThisMonth": "{{count}} paid this month",
+    "recentReceipts": "My recent receipts"
   }
 }

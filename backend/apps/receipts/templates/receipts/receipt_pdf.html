@@ -1,0 +1,72 @@
+{% load i18n %}<!doctype html>
+<html lang="{{ language }}">
+<head>
+<meta charset="utf-8">
+<style>
+{{ font_css|safe }}
+@page { size: A5 landscape; margin: 10mm; }
+* { box-sizing: border-box; }
+body { font-family: 'Noto Sans', 'Noto Sans Devanagari', sans-serif; font-size: 9.5pt; color: #0f172a; margin: 0; }
+header { display: flex; gap: 10pt; align-items: flex-start; border-bottom: 2pt solid #b45309; padding-bottom: 6pt; }
+header img { width: 48pt; height: 48pt; object-fit: contain; }
+h1 { font-size: 14pt; margin: 0; }
+.muted { color: #475569; }
+.small { font-size: 8pt; }
+.row { display: flex; justify-content: space-between; align-items: baseline; margin-top: 6pt; }
+.title { font-size: 12pt; font-weight: 700; color: #9a3412; text-transform: uppercase; letter-spacing: 1pt; }
+.number { font-weight: 700; font-family: monospace; font-size: 11pt; }
+table { width: 100%; border-collapse: collapse; margin-top: 6pt; }
+th { text-align: left; border-top: 1pt solid #94a3b8; border-bottom: 1pt solid #94a3b8; padding: 3pt 0; font-weight: 600; }
+td { padding: 3pt 0; border-bottom: 0.5pt solid #e2e8f0; }
+.amount { text-align: right; white-space: nowrap; }
+tfoot td { border-top: 1.5pt solid #0f172a; border-bottom: none; font-weight: 700; font-size: 11pt; }
+dl { display: grid; grid-template-columns: 90pt 1fr; margin: 6pt 0 0; row-gap: 1pt; }
+dt { color: #475569; } dd { margin: 0; }
+footer { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 14pt; }
+.thanks { font-style: italic; color: #9a3412; }
+.sign { border-top: 0.75pt solid #64748b; padding-top: 2pt; font-size: 8pt; color: #475569; }
+.void { position: fixed; top: 40%; left: 25%; transform: rotate(-15deg); font-size: 48pt; font-weight: 700; color: rgba(220, 38, 38, 0.35); border: 4pt solid rgba(220, 38, 38, 0.35); padding: 4pt 18pt; }
+</style>
+</head>
+<body>
+{% if receipt.status == "void" %}<div class="void">{% trans "VOID" %}</div>{% endif %}
+<header>
+  {% if logo %}<img src="{{ logo }}" alt="">{% endif %}
+  <div>
+    <h1>{{ s.organization.name }}</h1>
+    {% if s.organization.address %}<div class="muted">{{ s.organization.address }}</div>{% endif %}
+    <div class="muted">{{ s.organization.phone }}{% if s.organization.phone and s.organization.email %} · {% endif %}{{ s.organization.email }}</div>
+    {% if s.organization.registration_number %}<div class="muted small">{{ s.organization.registration_type|default:_("Reg. no.") }}: {{ s.organization.registration_number }}</div>{% endif %}
+  </div>
+</header>
+<div class="row">
+  <span class="title">{% trans "Receipt" %}</span>
+  <span><span class="muted">{% trans "Receipt no." %}</span> <span class="number">{{ receipt.receipt_number }}</span></span>
+</div>
+<div class="muted">{{ s.event.name }} · {% blocktrans with label=s.financial_year %}Financial year {{ label }}{% endblocktrans %} · {{ paid_at|date:"j F Y" }}</div>
+<dl>
+  <dt>{% trans "Received from" %}</dt><dd><strong>{{ s.person.name }}</strong></dd>
+  {% if s.person.mobile %}<dt>{% trans "Mobile" %}</dt><dd>{{ s.person.mobile }}</dd>{% endif %}
+  {% if s.person.address %}<dt>{% trans "Address" %}</dt><dd>{{ s.person.address }}</dd>{% endif %}
+</dl>
+<table>
+  <thead><tr><th>{% trans "Details" %}</th><th class="amount">{% trans "Amount" %}</th></tr></thead>
+  <tbody>
+  {% for line in lines %}
+    <tr><td>{{ line.contribution_type }}{% if line.month %} · {{ line.month|date:"F Y" }}{% endif %}{% if line.fund %}<div class="muted small">{{ line.fund }}</div>{% endif %}</td><td class="amount">₹{{ line.amount }}</td></tr>
+  {% endfor %}
+  </tbody>
+  <tfoot><tr><td>{% trans "Total" %}</td><td class="amount">₹{{ s.total }}</td></tr></tfoot>
+</table>
+{% if words %}<div class="small muted" style="margin-top:3pt">{{ words }}</div>{% endif %}
+<dl>
+  <dt>{% trans "Payment mode" %}</dt><dd>{{ mode }}{% if s.reference_number %} · {{ s.reference_number }}{% endif %}{% if s.cheque_bank %} · {{ s.cheque_bank }}{% endif %}</dd>
+  {% if s.collector %}<dt>{% trans "Collected by" %}</dt><dd>{{ s.collector }}</dd>{% endif %}
+  {% if receipt.status == "void" %}<dt>{% trans "Void reason" %}</dt><dd>{{ receipt.void_reason }}</dd>{% endif %}
+</dl>
+<footer>
+  <span class="thanks">{% if s.thank_you_message %}{{ s.thank_you_message }}{% else %}{% trans "Thank you for your contribution." %}{% endif %}</span>
+  <span class="sign">{% trans "Authorised signatory" %}</span>
+</footer>
+</body>
+</html>

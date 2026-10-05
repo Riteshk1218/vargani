@@ -314,6 +314,7 @@ export interface PaymentInput {
   cheque_date?: string | null
   notes?: string
   lines: { contribution_type: string; amount: string; period_month?: string | null; notes?: string }[]
+  replaces_receipt?: string
 }
 
 export interface Contribution {
@@ -376,8 +377,80 @@ export interface Receipt {
   void_reason: string
   voided_at: string | null
   replaces_receipt: string | null
+  replaces_receipt_number: string | null
+  replaced_by: { id: string; receipt_number: string } | null
+  pending_void_request: { id: string; reason: string } | null
   snapshot: ReceiptSnapshot
   logo_url: string | null
+}
+
+export interface PublicReceipt {
+  receipt_number: string
+  status: 'issued' | 'void'
+  issued_at: string
+  language: string
+  snapshot: ReceiptSnapshot
+  logo_url: string | null
+}
+
+export interface ReceiptShareLink {
+  share_url: string
+  expires_at: string
+  whatsapp_text: string
+  whatsapp_url: string
+}
+
+export interface VoidRequest {
+  id: string
+  receipt: string
+  receipt_number: string
+  payer_name: string
+  amount: string
+  reason: string
+  status: 'pending' | 'approved' | 'rejected'
+  requested_by_name: string
+  decided_by_name: string | null
+  decided_at: string | null
+  decision_note: string
+  created_at: string
+}
+
+export interface CollectorAssignment {
+  id: string
+  event: string
+  collector: string
+  collector_name: string
+  person: string
+  person_name: string
+  person_mobile: string
+  person_area: string
+  is_active: boolean
+  active_from: string
+  active_to: string | null
+}
+
+export interface CollectorPerformance {
+  membership: string
+  name: string
+  role: string
+  assigned: number
+  payments: number
+  total: string
+  cash: string
+  upi: string
+  other: string
+}
+
+export interface CollectorDashboard {
+  today: string
+  this_week: string
+  this_month: string
+  total: string
+  by_mode: { cash: string; upi: string; other: string }
+  assigned: number
+  paid_this_month: number
+  pending_payments: number
+  recent_receipts: { id: string; receipt_number: string; payer_name: string; amount: string; issued_at: string }[]
 }
 
 export interface OutstandingReport {

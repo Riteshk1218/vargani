@@ -98,3 +98,28 @@ class Contribution(TenantModel):
             models.Index(fields=["organization", "event", "period_month"], name="contrib_org_period_idx"),
             models.Index(fields=["organization", "collector", "contributed_on"], name="contrib_org_collector_idx"),
         ]
+
+
+class CollectorAssignment(TenantModel):
+    """Which collector (karyakarta) collects from which person in an event. Ended, never deleted."""
+
+    event = models.ForeignKey("events.Event", on_delete=models.PROTECT, related_name="collector_assignments")
+    collector = models.ForeignKey(
+        "organizations.OrganizationMembership", on_delete=models.PROTECT, related_name="assignments"
+    )
+    person = models.ForeignKey("people.Person", on_delete=models.PROTECT, related_name="collector_assignments")
+    assigned_by = models.ForeignKey("accounts.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+    active_from = models.DateTimeField(auto_now_add=True)
+    active_to = models.DateTimeField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["person__full_name"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["event", "person"], condition=Q(is_active=True), name="assignment_one_active_per_person"
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["organization", "event", "collector", "is_active"], name="assign_collector_idx")
+        ]

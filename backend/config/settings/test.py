@@ -18,5 +18,11 @@ OTP_DEBUG_ECHO = False
 REFRESH_COOKIE_SECURE = False
 REST_FRAMEWORK = {
     **REST_FRAMEWORK,
-    "DEFAULT_THROTTLE_RATES": {"anon": "10000/min", "user": "10000/min", "auth": "10000/min", "otp": "10000/min"},
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "10000/min",
+        "user": "10000/min",
+        "auth": "10000/min",
+        "otp": "10000/min",
+        "public_receipt": "10000/min",
+    },
 }

@@ -1,4 +1,7 @@
 import type {
+  CollectorAssignment,
+  CollectorDashboard,
+  CollectorPerformance,
   Contribution,
   ContributionType,
   Fund,
@@ -7,7 +10,10 @@ import type {
   Paginated,
   Payment,
   PaymentInput,
+  PublicReceipt,
   Receipt,
+  ReceiptShareLink,
+  VoidRequest,
 } from '../types/api'
 import { api } from './apiClient'
 
@@ -49,4 +55,30 @@ export const contributionService = {
 export const receiptService = {
   list: (params: ListParams) => api.get<Paginated<Receipt>>('/receipts/', { params }).then((r) => r.data),
   get: (id: string) => api.get<Receipt>(`/receipts/${id}/`).then((r) => r.data),
+  pdf: (id: string) => api.get<Blob>(`/receipts/${id}/pdf/`, { responseType: 'blob' }).then((r) => r.data),
+  share: (id: string) => api.post<ReceiptShareLink>(`/receipts/${id}/share/`).then((r) => r.data),
+  requestVoid: (id: string, reason: string) => api.post<VoidRequest>(`/receipts/${id}/void-request/`, { reason }).then((r) => r.data),
+  voidRequests: (params: ListParams) => api.get<Paginated<VoidRequest>>('/receipt-void-requests/', { params }).then((r) => r.data),
+  decideVoid: (id: string, decision: 'approve' | 'reject', reason = '') =>
+    api.post<VoidRequest>(`/receipt-void-requests/${id}/${decision}/`, { reason }).then((r) => r.data),
+  public: (token: string) => api.get<PublicReceipt>(`/public/receipts/${token}/`).then((r) => r.data),
+}
+
+export const collectorService = {
+  assignments: (params: ListParams) => api.get<Paginated<CollectorAssignment>>('/collector-assignments/', { params }).then((r) => r.data),
+  assign: (event: string, collector: string, people: string[]) =>
+    api.post<CollectorAssignment[]>('/collector-assignments/bulk/', { event, collector, people }).then((r) => r.data),
+  end: (id: string) => api.post<CollectorAssignment>(`/collector-assignments/${id}/end/`).then((r) => r.data),
+  performance: (event: string) => api.get<{ results: CollectorPerformance[] }>('/collectors/', { params: { event } }).then((r) => r.data.results),
+  myDashboard: (event: string) => api.get<CollectorDashboard>('/collectors/me/dashboard/', { params: { event } }).then((r) => r.data),
+}
+
+/** Saves a Blob as a file in the browser. */
+export function saveBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  link.click()
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
 }

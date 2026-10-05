@@ -44,7 +44,7 @@ export const financialYearService = {
 }
 
 export const memberService = {
-  list: (params: { page?: number; search?: string }) =>
+  list: (params: { page?: number; search?: string; page_size?: number }) =>
     api.get<Paginated<Member>>('/members/', { params }).then((r) => r.data),
   update: (id: string, input: { role_id?: string; status?: Member['status'] }) =>
     api.patch<Member>(`/members/${id}/`, input).then((r) => r.data),

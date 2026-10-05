@@ -7,6 +7,7 @@ from types import SimpleNamespace
 import pytest
 
 from apps.audit.models import AuditLog
+from apps.contributions import assignments
 from apps.contributions.models import ContributionType
 from apps.events.models import Event, EventParticipant
 from apps.funds.models import Fund
@@ -14,6 +15,7 @@ from apps.organizations import services as org_services
 from apps.organizations.models import FinancialYear, OrganizationMembership
 from apps.payments.services import LineInput, record_payment
 from apps.people.models import Person
+from apps.receipts import voids
 
 pytestmark = pytest.mark.django_db
 
@@ -42,12 +44,18 @@ def world(make_org, make_user, add_member):
         payment, _ = record_payment(
             org=org, event=event, payer=person, mode="cash", lines=[LineInput(ctype, Decimal("100"))]
         )
+        receipt = payment.receipts.get()
+        collector = OrganizationMembership.objects.get(organization=org, user=add_member(org, "collector"))
+        void_request = voids.request_void(receipt, reason="Wrong amount", actor=org.admin_user)
+        (assignment,) = assignments.assign(org=org, event=event, collector=collector, people=[person])
         return SimpleNamespace(
+            void_request=void_request,
+            assignment=assignment,
             fund=fund,
             ctype=ctype,
             payment=payment,
             contribution=payment.lines.get(),
-            receipt=payment.receipts.get(),
+            receipt=receipt,
             org=org,
             fy=fy,
             event=event,
@@ -74,6 +82,8 @@ DETAIL_ROUTES = [
     ("payments", "payment"),
     ("contributions", "contribution"),
     ("receipts", "receipt"),
+    ("receipt-void-requests", "void_request"),
+    ("collector-assignments", "assignment"),
 ]
 
 WRITE_ROUTES = [
@@ -93,6 +103,12 @@ WRITE_ROUTES = [
     ("patch", "payments/{id}/", "payment", {"notes": "Hacked"}),
     ("post", "payments/{id}/confirm/", "payment", {}),
     ("post", "payments/{id}/cancel/", "payment", {}),
+    ("get", "receipts/{id}/pdf/", "receipt", None),
+    ("post", "receipts/{id}/share/", "receipt", {}),
+    ("post", "receipts/{id}/void-request/", "receipt", {"reason": "Hacked"}),
+    ("post", "receipt-void-requests/{id}/approve/", "void_request", {}),
+    ("post", "receipt-void-requests/{id}/reject/", "void_request", {}),
+    ("post", "collector-assignments/{id}/end/", "assignment", {}),
 ]
 
 

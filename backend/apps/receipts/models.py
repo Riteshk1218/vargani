@@ -56,8 +56,48 @@ class Receipt(TenantModel):
             models.UniqueConstraint(
                 fields=["payment"], condition=Q(status="issued"), name="receipt_one_issued_per_payment"
             ),
+            models.UniqueConstraint(
+                fields=["replaces_receipt"],
+                condition=Q(replaces_receipt__isnull=False),
+                name="receipt_corrected_once",
+            ),
         ]
         indexes = [models.Index(fields=["organization", "event", "issued_at"], name="receipt_org_event_idx")]
 
     def __str__(self):
         return self.receipt_number
+
+
+class ReceiptShare(TenantModel):
+    """A public, expiring link to one receipt (used for WhatsApp). Only the token hash is stored."""
+
+    receipt = models.ForeignKey(Receipt, on_delete=models.PROTECT, related_name="shares")
+    token_hash = models.CharField(max_length=64, unique=True)
+    expires_at = models.DateTimeField()
+    revoked_at = models.DateTimeField(null=True, blank=True)
+    view_count = models.PositiveIntegerField(default=0)
+
+
+class ReceiptVoidRequest(TenantModel):
+    """Request to void (and optionally correct) a receipt. Approval voids the receipt and cancels the payment."""
+
+    class Status(models.TextChoices):
+        PENDING = "pending"
+        APPROVED = "approved"
+        REJECTED = "rejected"
+
+    receipt = models.ForeignKey(Receipt, on_delete=models.PROTECT, related_name="void_requests")
+    requested_by = models.ForeignKey("accounts.User", on_delete=models.PROTECT, related_name="+")
+    reason = models.CharField(max_length=300)
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.PENDING)
+    decided_by = models.ForeignKey("accounts.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+    decided_at = models.DateTimeField(null=True, blank=True)
+    decision_note = models.CharField(max_length=300, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["receipt"], condition=Q(status="pending"), name="void_request_one_pending_per_receipt"
+            ),
+        ]

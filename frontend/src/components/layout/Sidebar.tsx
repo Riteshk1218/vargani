@@ -1,4 +1,4 @@
-import { CalendarDays, HandCoins, LayoutDashboard, ListChecks, ReceiptText, Settings, ShieldCheck, Users, Wallet, type LucideIcon } from 'lucide-react'
+import { CalendarDays, HandCoins, LayoutDashboard, ListChecks, ReceiptText, Settings, ShieldAlert, ShieldCheck, Users, UsersRound, Wallet, type LucideIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { NavLink } from 'react-router-dom'
 import { useOrg } from '../../context/OrgContext'
@@ -19,6 +19,8 @@ const NAV: NavItem[] = [
   { to: '/app/contributions', label: 'nav.contributions', icon: ListChecks, permission: 'contributions.view' },
   { to: '/app/payments', label: 'nav.payments', icon: Wallet, permission: 'payments.view' },
   { to: '/app/receipts', label: 'nav.receipts', icon: ReceiptText, permission: 'receipts.view' },
+  { to: '/app/collectors', label: 'nav.collectors', icon: UsersRound, permission: 'collectors.manage' },
+  { to: '/app/approvals', label: 'nav.approvals', icon: ShieldAlert, permission: 'receipts.void_approve' },
   { to: '/app/events', label: 'nav.events', icon: CalendarDays, permission: 'events.view' },
   { to: '/app/people', label: 'nav.people', icon: Users, permission: 'people.view' },
   { to: '/app/users', label: 'nav.users', icon: ShieldCheck, permission: 'members.view' },

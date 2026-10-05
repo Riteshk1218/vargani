@@ -5,7 +5,9 @@ import { ForgotPasswordPage } from '../pages/auth/ForgotPasswordPage'
 import { LoginPage } from '../pages/auth/LoginPage'
 import { RegisterPage } from '../pages/auth/RegisterPage'
 import { VerifyPage } from '../pages/auth/VerifyPage'
+import { ApprovalsPage } from '../pages/approvals/ApprovalsPage'
 import { CollectPage } from '../pages/collections/CollectPage'
+import { CollectorsPage } from '../pages/collectors/CollectorsPage'
 import { ContributionsPage } from '../pages/contributions/ContributionsPage'
 import { DashboardPage } from '../pages/dashboard/DashboardPage'
 import { EventDetailPage } from '../pages/events/EventDetailPage'
@@ -15,6 +17,7 @@ import { NotFoundPage } from '../pages/NotFoundPage'
 import { CreateOrganizationPage } from '../pages/onboarding/CreateOrganizationPage'
 import { PaymentsPage } from '../pages/payments/PaymentsPage'
 import { PeoplePage } from '../pages/people/PeoplePage'
+import { PublicReceiptPage } from '../pages/receipts/PublicReceiptPage'
 import { ReceiptPage } from '../pages/receipts/ReceiptPage'
 import { ReceiptsPage } from '../pages/receipts/ReceiptsPage'
 import { ProfilePage } from '../pages/settings/ProfilePage'
@@ -49,6 +52,8 @@ export function AppRoutes() {
             <Route path="payments" element={<RequirePermission permission="payments.view"><PaymentsPage /></RequirePermission>} />
             <Route path="receipts" element={<RequirePermission permission="receipts.view"><ReceiptsPage /></RequirePermission>} />
             <Route path="receipts/:id" element={<RequirePermission permission="receipts.view"><ReceiptPage /></RequirePermission>} />
+            <Route path="collectors" element={<RequirePermission permission="collectors.manage"><CollectorsPage /></RequirePermission>} />
+            <Route path="approvals" element={<RequirePermission permission="receipts.void_approve"><ApprovalsPage /></RequirePermission>} />
             <Route path="events" element={<RequirePermission permission="events.view"><EventsPage /></RequirePermission>} />
             <Route path="events/:id" element={<RequirePermission permission="events.view"><EventDetailPage /></RequirePermission>} />
             <Route path="people" element={<RequirePermission permission="people.view"><PeoplePage /></RequirePermission>} />
@@ -59,6 +64,7 @@ export function AppRoutes() {
           </Route>
         </Route>
       </Route>
+      <Route path="/r/:token" element={<PublicReceiptPage />} />
       <Route path="/" element={<Navigate to="/app/dashboard" replace />} />
       <Route path="*" element={<NotFoundPage />} />
     </Routes>

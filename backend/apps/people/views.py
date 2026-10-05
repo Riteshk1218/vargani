@@ -45,19 +45,30 @@ class PersonViewSet(TenantModelViewSet):
         return Person.objects.for_org(self.organization).alive()
 
     def scope_queryset(self, queryset):
+        queryset = self._filter_assigned(queryset)
         scope = self.org_context.scope("people.view")
         if scope == SCOPE_ALL:
             return queryset
         if scope == SCOPE_SELF:
             return queryset.filter(user=self.request.user)
-        # "assigned": people assigned to this collector. Collector assignments arrive with the collection
-        # module (Phase 3). Until then a collector sees people only when the organization allows collecting
-        # from anyone, because they must be able to find the person they are collecting from.
+        # "assigned": people assigned to this collector in any event. When the organization allows collecting
+        # from anyone, collectors can find everyone (they need to look up the person who is paying).
         if self.org_context.has("payments.create") and (self.organization.settings or {}).get(
             "allow_unassigned_collection"
         ):
             return queryset
-        return queryset.none()
+        return queryset.filter(
+            collector_assignments__collector=self.membership, collector_assignments__is_active=True
+        ).distinct()
+
+    def _filter_assigned(self, queryset):
+        params = self.request.query_params
+        if params.get("assigned_to_me") in ("1", "true"):
+            mine = {"collector_assignments__collector": self.membership, "collector_assignments__is_active": True}
+            if params.get("event"):
+                mine["collector_assignments__event_id"] = params["event"]
+            queryset = queryset.filter(**mine).distinct()
+        return queryset
 
     def perform_create(self, serializer):
         if (

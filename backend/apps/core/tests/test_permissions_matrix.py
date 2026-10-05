@@ -65,9 +65,9 @@ EXPECTED = {
     "manage funds": (1, 1, 0, 0, 0, 0),
     "view contribution types": (1, 1, 1, 1, 0, 0),
     "manage contribution types": (1, 1, 0, 0, 0, 0),
-    # Collectors need assignments (Phase 3) or the "allow unassigned collection" setting.
-    "record payment": (1, 1, 0, 0, 0, 0),
-    "record collection": (1, 1, 0, 0, 0, 0),
+    # Collectors hold the permission; which people they may collect from is checked per payer (assignments).
+    "record payment": (1, 1, 0, 1, 0, 0),
+    "record collection": (1, 1, 0, 1, 0, 0),
     "view payments": (1, 1, 0, 1, 0, 0),
     "view contributions": (1, 1, 0, 1, 0, 0),
     "view receipts": (1, 1, 0, 1, 0, 0),

@@ -3,7 +3,7 @@ import type { Receipt } from '../../types/api'
 import { formatMobile } from '../../utils/format'
 
 /** The printable receipt. Everything shown comes from the snapshot taken when the receipt was issued. */
-export function ReceiptView({ receipt }: { receipt: Receipt }) {
+export function ReceiptView({ receipt }: { receipt: Pick<Receipt, 'language' | 'snapshot' | 'status' | 'logo_url' | 'receipt_number'> }) {
   const { i18n } = useTranslation()
   const lang = receipt.language || 'en'
   const t = i18n.getFixedT(lang)

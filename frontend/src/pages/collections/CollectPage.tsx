@@ -53,6 +53,7 @@ export function CollectPage() {
   }, [params, events, activeEvent, setActiveEventId])
 
   const [person, setPerson] = useState<Person | null>(null)
+  const replaces = params.get('replaces')
   const presetPerson = params.get('person')
   const preset = useQuery({
     queryKey: ['org', activeOrgId, 'people', 'detail', presetPerson],
@@ -108,7 +109,7 @@ export function CollectPage() {
     setErrors({})
     setDone(null)
     setIdempotencyKey(newKey())
-    if (params.get('person')) setParams({})
+    if (params.get('person') || params.get('replaces')) setParams({})
   }
 
   const submit = async (event: FormEvent) => {
@@ -139,6 +140,7 @@ export function CollectPage() {
         period_month: typeById(line.typeId)?.kind === 'recurring_monthly' ? `${line.month}-01` : null,
       })),
     }
+    if (replaces) payload.replaces_receipt = replaces
     if (paidOn && paidOn !== today()) payload.paid_at = new Date(`${paidOn}T12:00:00`).toISOString()
 
     setSubmitting(true)
@@ -220,6 +222,7 @@ export function CollectPage() {
         </Card>
       ) : (
         <form onSubmit={submit} className="space-y-4" noValidate>
+          {replaces && <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900 ring-1 ring-amber-200">{t('collect.correctionNote')}</p>}
           <Card className="p-4">
             <PersonPicker person={person} onChange={setPerson} error={errors.payer} />
           </Card>

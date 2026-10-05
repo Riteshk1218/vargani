@@ -78,7 +78,7 @@ def build_snapshot(payment) -> dict:
     }
 
 
-def issue_receipt(payment, *, request=None, actor=None) -> Receipt:
+def issue_receipt(payment, *, request=None, actor=None, replaces=None) -> Receipt:
     """Issue the receipt for a successful payment. Must run inside the payment's transaction."""
     assert transaction.get_connection().in_atomic_block, "issue_receipt must run inside a transaction"
     series = series_for(payment.event)
@@ -98,6 +98,7 @@ def issue_receipt(payment, *, request=None, actor=None) -> Receipt:
         issued_at=timezone.now(),
         language=payment.organization.receipt_language or "en",
         snapshot=build_snapshot(payment),
+        replaces_receipt=replaces,
         created_by=actor,
         updated_by=actor,
     )
@@ -108,6 +109,11 @@ def issue_receipt(payment, *, request=None, actor=None) -> Receipt:
         action=RECEIPT_ISSUE,
         entity_type="receipts.receipt",
         entity_id=receipt.pk,
-        after={"receipt_number": receipt.receipt_number, "payment": str(payment.pk), "total": str(payment.amount)},
+        after={
+            "receipt_number": receipt.receipt_number,
+            "payment": str(payment.pk),
+            "total": str(payment.amount),
+            "replaces": replaces.receipt_number if replaces else None,
+        },
     )
     return receipt

@@ -5,8 +5,10 @@ from apps.core.fields import TenantPrimaryKeyRelatedField
 from apps.core.serializers import ImmutableFieldsMixin
 from apps.events.models import Event
 from apps.funds.models import Fund
+from apps.organizations.models import OrganizationMembership
+from apps.people.models import Person
 
-from .models import Contribution, ContributionType
+from .models import CollectorAssignment, Contribution, ContributionType
 
 
 class ContributionTypeSerializer(ImmutableFieldsMixin, serializers.ModelSerializer):
@@ -109,3 +111,40 @@ class ContributionSerializer(serializers.ModelSerializer):
 
     def get_collector_name(self, obj) -> str | None:
         return obj.collector.user.full_name if obj.collector else None
+
+
+class CollectorAssignmentSerializer(serializers.ModelSerializer):
+    person_name = serializers.CharField(source="person.full_name", read_only=True)
+    person_mobile = serializers.CharField(source="person.mobile", read_only=True)
+    person_area = serializers.CharField(source="person.area", read_only=True)
+    collector_name = serializers.CharField(source="collector.user.full_name", read_only=True)
+
+    class Meta:
+        model = CollectorAssignment
+        fields = [
+            "id",
+            "event",
+            "collector",
+            "collector_name",
+            "person",
+            "person_name",
+            "person_mobile",
+            "person_area",
+            "is_active",
+            "active_from",
+            "active_to",
+        ]
+        read_only_fields = fields
+
+
+class AssignInputSerializer(serializers.Serializer):
+    event = TenantPrimaryKeyRelatedField(queryset=Event.objects.filter(deleted_at__isnull=True))
+    collector = TenantPrimaryKeyRelatedField(queryset=OrganizationMembership.objects.filter(status="active"))
+    people = TenantPrimaryKeyRelatedField(
+        queryset=Person.objects.filter(deleted_at__isnull=True), many=True, allow_empty=False
+    )
+
+    def validate_people(self, value):
+        if len(value) > 500:
+            raise serializers.ValidationError(_("Assign at most 500 people at a time."))
+        return value

@@ -91,6 +91,19 @@ def _validate(*, org, event, payer, mode, status, paid_at, reference_number, amo
     return total
 
 
+def _validate_correction(old_receipt, event, status):
+    from apps.receipts.models import Receipt
+
+    if old_receipt.status != Receipt.Status.VOID:
+        raise ValidationError({"replaces_receipt": [_("Only a voided receipt can be corrected.")]})
+    if old_receipt.event_id != event.pk:
+        raise ValidationError({"replaces_receipt": [_("The corrected receipt must be in the same event.")]})
+    if old_receipt.replaced_by.exists():
+        raise ValidationError({"replaces_receipt": [_("This receipt has already been corrected.")]})
+    if status != Payment.Status.SUCCESSFUL:
+        raise ValidationError({"status": [_("A correction must be a received payment.")]})
+
+
 def record_payment(
     *,
     org,
@@ -107,6 +120,7 @@ def record_payment(
     notes="",
     collector=None,
     idempotency_key=None,
+    replaces_receipt=None,
     request=None,
     actor=None,
 ) -> tuple[Payment, bool]:
@@ -121,6 +135,8 @@ def record_payment(
             return existing, False
 
     paid_at = paid_at or timezone.now()
+    if replaces_receipt is not None:
+        _validate_correction(replaces_receipt, event, status)
     total = _validate(
         org=org,
         event=event,
@@ -197,7 +213,7 @@ def record_payment(
                 },
             )
             if status == Payment.Status.SUCCESSFUL:
-                issue_receipt(payment, request=request, actor=actor)
+                issue_receipt(payment, request=request, actor=actor, replaces=replaces_receipt)
     except IntegrityError:
         if idempotency_key:
             existing = Payment.objects.filter(organization=org, idempotency_key=idempotency_key).first()

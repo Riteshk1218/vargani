@@ -13,7 +13,9 @@
     "collect": "संग्रह करें",
     "contributions": "योगदान",
     "payments": "भुगतान",
-    "receipts": "रसीदें"
+    "receipts": "रसीदें",
+    "collectors": "संग्रहकर्ता",
+    "approvals": "स्वीकृतियाँ"
   },
   "topbar": {
     "switchOrganization": "संस्था बदलें",
@@ -431,7 +433,8 @@
     "success": "रसीद {{number}} जारी हुई",
     "pendingSaved": "लंबित के रूप में सहेजा गया। क्लियर होने पर रसीद जारी होगी।",
     "viewReceipt": "रसीद देखें",
-    "another": "एक और दर्ज करें"
+    "another": "एक और दर्ज करें",
+    "correctionNote": "आप सुधार दर्ज कर रहे हैं। नई रसीद रद्द रसीद से जुड़ी होगी।"
   },
   "payments": {
     "title": "भुगतान",
@@ -490,6 +493,64 @@
     "signature": "अधिकृत हस्ताक्षर",
     "void": "रद्द",
     "printHint": "PDF डाउनलोड और WhatsApp शेयरिंग अगले अपडेट में आएगी।",
-    "financialYear": "वित्तीय वर्ष {{label}}"
+    "financialYear": "वित्तीय वर्ष {{label}}",
+    "whatsapp": "WhatsApp पर भेजें",
+    "downloadPdf": "PDF डाउनलोड करें",
+    "shareReady": "रसीद लिंक कॉपी हुई और WhatsApp खुला",
+    "requestVoid": "रद्द करने का अनुरोध",
+    "sendVoidRequest": "स्वीकृति के लिए भेजें",
+    "voidExplain": "स्वीकृति के बाद रसीद {{number}} का नंबर वही रहेगा और वह रद्द दिखेगी। फिर सही भुगतान सुधार के रूप में दर्ज किया जा सकता है।",
+    "voidRequested": "रद्द अनुरोध स्वीकृति के लिए भेजा गया",
+    "voidPending": "रद्द अनुरोध: “{{reason}}”। स्वीकृति की प्रतीक्षा।",
+    "voidBanner": "यह रसीद रद्द है: {{reason}}।",
+    "replacedBy": "{{number}} द्वारा सुधारी गई",
+    "replaces": "यह रसीद सुधारती है",
+    "recordCorrection": "सुधारा हुआ भुगतान दर्ज करें",
+    "linkInvalid": "यह रसीद लिंक गलत है या समाप्त हो चुकी है।"
+  },
+  "approvals": {
+    "title": "स्वीकृतियाँ",
+    "subtitle": "रसीद रद्द अनुरोध। स्वीकृति पर रसीद नंबर रहता है और भुगतान रद्द होता है।",
+    "empty": "कुछ भी लंबित नहीं",
+    "open": "स्वीकृतियाँ खोलें",
+    "status": {
+      "pending": "लंबित",
+      "approved": "स्वीकृत (रद्द)",
+      "rejected": "अस्वीकृत"
+    },
+    "requestedBy": "{{name}} ने अनुरोध किया, {{when}}",
+    "decidedBy": "{{name}} ने निर्णय लिया",
+    "approve": "रद्द स्वीकृत करें",
+    "reject": "अस्वीकार करें",
+    "approveTitle": "यह रसीद रद्द करें?",
+    "rejectTitle": "यह अनुरोध अस्वीकार करें?",
+    "approveMessage": "रसीद {{number}} रद्द होगी और उसका भुगतान रद्द होगा। इसे वापस नहीं किया जा सकता।",
+    "note": "टिप्पणी"
+  },
+  "collectors": {
+    "title": "संग्रहकर्ता",
+    "subtitle": "कौन किससे कितना संग्रह करता है।",
+    "performance": "संग्रहकर्ता के अनुसार संग्रह",
+    "noneYet": "अभी कोई संग्रहकर्ता नहीं",
+    "noneYetMessage": "नीचे किसी कार्यकर्ता को लोग सौंपें।",
+    "name": "संग्रहकर्ता",
+    "assigned": "सौंपे गए लोग",
+    "paymentsCount": "{{count}} भुगतान",
+    "assignments": "आवंटन",
+    "assignmentsHelp": "सेटिंग्स में अनुमति न हो तो संग्रहकर्ता केवल सौंपे गए लोगों से ही संग्रह कर सकता है।",
+    "collector": "संग्रहकर्ता",
+    "assignPeople": "लोग सौंपें",
+    "assignCount": "{{count}} सौंपें",
+    "assigned_done": "{{count}} लोग सौंपे गए",
+    "moveNote": "पहले से किसी और को सौंपे गए लोग इस संग्रहकर्ता के पास आ जाएंगे।",
+    "unassign": "आवंटन हटाएं",
+    "nobodyAssigned": "अभी कोई नहीं सौंपा गया",
+    "noCollectors": "संग्रह करने वाले उपयोगकर्ता नहीं",
+    "noCollectorsMessage": "पहले कार्यकर्ता / संग्रहकर्ता भूमिका वाले उपयोगकर्ता को आमंत्रित करें।",
+    "today": "आज",
+    "thisMonth": "इस महीने",
+    "total": "मेरा कुल",
+    "paidThisMonth": "इस महीने {{count}} ने भुगतान किया",
+    "recentReceipts": "मेरी हाल की रसीदें"
   }
 }

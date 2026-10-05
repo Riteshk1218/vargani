@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-05 18:39+0000\n"
+"POT-Creation-Date: 2026-10-05 19:12+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -76,42 +76,47 @@ msgstr "तुमचा पासवर्ड रीसेट झाला आ�
 msgid "Your current password is incorrect."
 msgstr "तुमचा सध्याचा पासवर्ड चुकीचा आहे."
 
-#: apps/contributions/serializers.py:42 apps/funds/serializers.py:22
-#| msgid "Enter the event name."
+#: apps/contributions/assignments.py:31
+#| msgid "Add at least one contribution."
+msgid "This user cannot collect contributions."
+msgstr "हा वापरकर्ता वसुली करू शकत नाही."
+
+#: apps/contributions/serializers.py:44 apps/funds/serializers.py:22
 msgid "Enter a name."
 msgstr "नाव टाका."
 
-#: apps/contributions/serializers.py:54
-#| msgid "This person is already part of the event."
+#: apps/contributions/serializers.py:56
 msgid "This fund belongs to another event."
 msgstr "हा निधी दुसऱ्या कार्यक्रमाचा आहे."
 
-#: apps/contributions/serializers.py:58 apps/funds/serializers.py:27
+#: apps/contributions/serializers.py:60 apps/funds/serializers.py:27
 #: apps/payments/services.py:75
 msgid "Amount must be more than zero."
 msgstr "रक्कम शून्यापेक्षा जास्त असावी."
 
-#: apps/contributions/serializers.py:61
+#: apps/contributions/serializers.py:63
 msgid "Maximum must be at least the minimum."
 msgstr "कमाल रक्कम किमान रकमेपेक्षा कमी असू शकत नाही."
 
-#: apps/contributions/serializers.py:63
+#: apps/contributions/serializers.py:65
 msgid "Enter the amount expected from each person."
 msgstr "प्रत्येक व्यक्तीकडून अपेक्षित रक्कम टाका."
 
-#: apps/contributions/serializers.py:66 apps/events/serializers.py:78
+#: apps/contributions/serializers.py:68 apps/events/serializers.py:78
 msgid "End date must be on or after the start date."
 msgstr "शेवटची तारीख सुरुवातीच्या तारखेनंतर किंवा त्याच दिवशी हवी."
 
-#: apps/contributions/serializers.py:68
-#| msgid "This cannot be changed."
+#: apps/contributions/serializers.py:70
 msgid "This cannot be changed after collections exist."
 msgstr "वसुली झाल्यानंतर हे बदलता येत नाही."
 
-#: apps/contributions/serializers.py:75
-#| msgid "This person already has access to the organization."
+#: apps/contributions/serializers.py:77
 msgid "This event already has a contribution type with this name."
 msgstr "या कार्यक्रमात या नावाचा वर्गणी प्रकार आधीच आहे."
+
+#: apps/contributions/serializers.py:149
+msgid "Assign at most 500 people at a time."
+msgstr "एका वेळी जास्तीत जास्त 500 लोक सोपवा."
 
 #: apps/contributions/views.py:49
 msgid "Dues are tracked only for mandatory contribution types."
@@ -230,7 +235,6 @@ msgid "Start empty and choose the modules yourself."
 msgstr "रिकाम्यापासून सुरू करा आणि विभाग स्वतः निवडा."
 
 #: apps/funds/serializers.py:38
-#| msgid "This person already has access to the organization."
 msgid "This event already has a fund with this name."
 msgstr "या कार्यक्रमात या नावाचा निधी आधीच आहे."
 
@@ -312,12 +316,11 @@ msgstr "तुम्हाला या संस्थेत आधीच प�
 msgid "The organization must keep at least one active Organization Admin."
 msgstr "संस्थेत किमान एक सक्रिय संस्था प्रशासक असणे आवश्यक आहे."
 
-#: apps/payments/services.py:50 apps/payments/services.py:245
+#: apps/payments/services.py:50 apps/payments/services.py:261
 msgid "This event is not active. New collections are not allowed."
 msgstr "हा कार्यक्रम सक्रिय नाही. नवीन वसुली करता येणार नाही."
 
 #: apps/payments/services.py:54
-#| msgid "This person is already part of the event."
 msgid "This person is archived."
 msgstr "ही व्यक्ती संग्रहित केली आहे."
 
@@ -330,7 +333,6 @@ msgid "A new payment must be successful or pending."
 msgstr "नवीन पेमेंट यशस्वी किंवा प्रलंबित असणे आवश्यक आहे."
 
 #: apps/payments/services.py:60
-#| msgid "Enter the organization name."
 msgid "Enter the cheque or transaction number."
 msgstr "चेक किंवा व्यवहार क्रमांक टाका."
 
@@ -358,15 +360,149 @@ msgstr "ही वर्गणी कोणत्या महिन्याच
 msgid "Amount must equal the total of the contribution lines."
 msgstr "रक्कम सर्व वर्गणीच्या एकूण रकमेइतकी असावी."
 
-#: apps/payments/views.py:83
-msgid "Your organization has not allowed collecting from unassigned people."
-msgstr ""
-"तुमच्या संस्थेने न सोपवलेल्या व्यक्तींकडून वसुलीची परवानगी दिलेली नाही."
+#: apps/payments/services.py:98
+msgid "Only a voided receipt can be corrected."
+msgstr "फक्त रद्द पावतीच दुरुस्त करता येते."
+
+#: apps/payments/services.py:100
+msgid "The corrected receipt must be in the same event."
+msgstr "दुरुस्त करायची पावती त्याच कार्यक्रमातील असावी."
+
+#: apps/payments/services.py:102
+msgid "This receipt has already been corrected."
+msgstr "ही पावती आधीच दुरुस्त केली आहे."
+
+#: apps/payments/services.py:104
+msgid "A correction must be a received payment."
+msgstr "दुरुस्ती ही मिळालेले पेमेंट असावी."
+
+#: apps/payments/views.py:85
+#| msgid "This person is already part of the event."
+msgid "This person is not assigned to you for this event."
+msgstr "ही व्यक्ती या कार्यक्रमासाठी तुम्हाला सोपवलेली नाही."
 
 #: apps/people/serializers.py:44
 msgid "Enter the person's name."
 msgstr "व्यक्तीचे नाव टाका."
 
+#: apps/receipts/rendering.py:24
+msgid "Cash"
+msgstr "रोख"
+
+#: apps/receipts/rendering.py:25
+msgid "UPI"
+msgstr "UPI"
+
+#: apps/receipts/rendering.py:26
+msgid "Bank transfer"
+msgstr "बँक ट्रान्सफर"
+
+#: apps/receipts/rendering.py:27
+msgid "Cheque"
+msgstr "धनादेश"
+
+#: apps/receipts/rendering.py:28
+msgid "Online"
+msgstr "ऑनलाइन"
+
+#: apps/receipts/rendering.py:29
+msgid "Other"
+msgstr "इतर"
+
+#: apps/receipts/rendering.py:100
+#, python-format
+msgid ""
+"Namaskar %(name)s, thank you for your contribution of Rs %(amount)s to "
+"%(organization)s (%(event)s). Receipt no. %(number)s: %(url)s"
+msgstr ""
+"नमस्कार %(name)s, %(organization)s (%(event)s) साठी तुमच्या ₹%(amount)s "
+"योगदानाबद्दल धन्यवाद. पावती क्र. %(number)s: %(url)s"
+
+#: apps/receipts/templates/receipts/receipt_pdf.html:32
+msgid "VOID"
+msgstr "रद्द"
+
+#: apps/receipts/templates/receipts/receipt_pdf.html:39
+msgid "Reg. no."
+msgstr "नोंदणी क्र."
+
+#: apps/receipts/templates/receipts/receipt_pdf.html:43
+msgid "Receipt"
+msgstr "पावती"
+
+#: apps/receipts/templates/receipts/receipt_pdf.html:44
+msgid "Receipt no."
+msgstr "पावती क्र."
+
+#: apps/receipts/templates/receipts/receipt_pdf.html:46
+#, python-format
+msgid "Financial year %(label)s"
+msgstr "आर्थिक वर्ष %(label)s"
+
+#: apps/receipts/templates/receipts/receipt_pdf.html:48
+msgid "Received from"
+msgstr "यांच्याकडून मिळाले"
+
+#: apps/receipts/templates/receipts/receipt_pdf.html:49
+msgid "Mobile"
+msgstr "मोबाइल"
+
+#: apps/receipts/templates/receipts/receipt_pdf.html:50
+msgid "Address"
+msgstr "पत्ता"
+
+#: apps/receipts/templates/receipts/receipt_pdf.html:53
+msgid "Details"
+msgstr "तपशील"
+
+#: apps/receipts/templates/receipts/receipt_pdf.html:53
+msgid "Amount"
+msgstr "रक्कम"
+
+#: apps/receipts/templates/receipts/receipt_pdf.html:59
+msgid "Total"
+msgstr "एकूण"
+
+#: apps/receipts/templates/receipts/receipt_pdf.html:63
+msgid "Payment mode"
+msgstr "पेमेंट पद्धत"
+
+#: apps/receipts/templates/receipts/receipt_pdf.html:64
+msgid "Collected by"
+msgstr "वसूल करणारे"
+
+#: apps/receipts/templates/receipts/receipt_pdf.html:65
+msgid "Void reason"
+msgstr "रद्द करण्याचे कारण"
+
+#: apps/receipts/templates/receipts/receipt_pdf.html:68
+msgid "Thank you for your contribution."
+msgstr "तुमच्या योगदानाबद्दल धन्यवाद."
+
+#: apps/receipts/templates/receipts/receipt_pdf.html:69
+msgid "Authorised signatory"
+msgstr "अधिकृत स्वाक्षरी"
+
+#: apps/receipts/voids.py:24
+msgid "Give a reason for voiding this receipt."
+msgstr "ही पावती रद्द करण्याचे कारण द्या."
+
+#: apps/receipts/voids.py:28
+msgid "This receipt is already void."
+msgstr "ही पावती आधीच रद्द आहे."
+
+#: apps/receipts/voids.py:30
+msgid "A void request for this receipt is already waiting for approval."
+msgstr "या पावतीची रद्द विनंती आधीच मंजुरीच्या प्रतीक्षेत आहे."
+
+#: apps/receipts/voids.py:61
+msgid "Someone other than the requester must approve this."
+msgstr "विनंती करणाऱ्याशिवाय दुसऱ्या व्यक्तीने हे मंजूर करावे."
+
 #: config/settings/base.py:98
 msgid "English"
 msgstr "English"
+
+#~ msgid "Your organization has not allowed collecting from unassigned people."
+#~ msgstr ""
+#~ "तुमच्या संस्थेने न सोपवलेल्या व्यक्तींकडून वसुलीची परवानगी दिलेली नाही."

@@ -228,6 +228,59 @@ T = {
         "आपकी संस्था ने बिना सौंपे गए लोगों से संग्रह की अनुमति नहीं दी है।",
     ),
     "English": ("English", "English"),
+    # Phase 3
+    "This user cannot collect contributions.": ("हा वापरकर्ता वसुली करू शकत नाही.", "यह उपयोगकर्ता संग्रह नहीं कर सकता।"),
+    "Assign at most 500 people at a time.": ("एका वेळी जास्तीत जास्त 500 लोक सोपवा.", "एक बार में अधिकतम 500 लोग सौंपें।"),
+    "Only a voided receipt can be corrected.": ("फक्त रद्द पावतीच दुरुस्त करता येते.", "केवल रद्द रसीद ही सुधारी जा सकती है।"),
+    "The corrected receipt must be in the same event.": (
+        "दुरुस्त करायची पावती त्याच कार्यक्रमातील असावी.",
+        "सुधारी जाने वाली रसीद उसी कार्यक्रम की होनी चाहिए।",
+    ),
+    "This receipt has already been corrected.": ("ही पावती आधीच दुरुस्त केली आहे.", "यह रसीद पहले ही सुधारी जा चुकी है।"),
+    "A correction must be a received payment.": ("दुरुस्ती ही मिळालेले पेमेंट असावी.", "सुधार प्राप्त भुगतान होना चाहिए।"),
+    "This person is not assigned to you for this event.": (
+        "ही व्यक्ती या कार्यक्रमासाठी तुम्हाला सोपवलेली नाही.",
+        "यह व्यक्ति इस कार्यक्रम के लिए आपको सौंपा नहीं गया है।",
+    ),
+    "Namaskar %(name)s, thank you for your contribution of Rs %(amount)s to %(organization)s (%(event)s). "
+    "Receipt no. %(number)s: %(url)s": (
+        "नमस्कार %(name)s, %(organization)s (%(event)s) साठी तुमच्या ₹%(amount)s योगदानाबद्दल धन्यवाद. "
+        "पावती क्र. %(number)s: %(url)s",
+        "नमस्कार %(name)s, %(organization)s (%(event)s) के लिए आपके ₹%(amount)s योगदान के लिए धन्यवाद। "
+        "रसीद क्र. %(number)s: %(url)s",
+    ),
+    "VOID": ("रद्द", "रद्द"),
+    "Reg. no.": ("नोंदणी क्र.", "पंजीकरण क्र."),
+    "Receipt": ("पावती", "रसीद"),
+    "Receipt no.": ("पावती क्र.", "रसीद क्र."),
+    "Financial year %(label)s": ("आर्थिक वर्ष %(label)s", "वित्तीय वर्ष %(label)s"),
+    "Received from": ("यांच्याकडून मिळाले", "से प्राप्त"),
+    "Mobile": ("मोबाइल", "मोबाइल"),
+    "Address": ("पत्ता", "पता"),
+    "Details": ("तपशील", "विवरण"),
+    "Amount": ("रक्कम", "राशि"),
+    "Total": ("एकूण", "कुल"),
+    "Payment mode": ("पेमेंट पद्धत", "भुगतान का तरीका"),
+    "Collected by": ("वसूल करणारे", "संग्रहकर्ता"),
+    "Void reason": ("रद्द करण्याचे कारण", "रद्द करने का कारण"),
+    "Thank you for your contribution.": ("तुमच्या योगदानाबद्दल धन्यवाद.", "आपके योगदान के लिए धन्यवाद।"),
+    "Authorised signatory": ("अधिकृत स्वाक्षरी", "अधिकृत हस्ताक्षरकर्ता"),
+    "Give a reason for voiding this receipt.": ("ही पावती रद्द करण्याचे कारण द्या.", "यह रसीद रद्द करने का कारण दें।"),
+    "This receipt is already void.": ("ही पावती आधीच रद्द आहे.", "यह रसीद पहले से रद्द है।"),
+    "A void request for this receipt is already waiting for approval.": (
+        "या पावतीची रद्द विनंती आधीच मंजुरीच्या प्रतीक्षेत आहे.",
+        "इस रसीद का रद्द अनुरोध पहले से स्वीकृति की प्रतीक्षा में है।",
+    ),
+    "Someone other than the requester must approve this.": (
+        "विनंती करणाऱ्याशिवाय दुसऱ्या व्यक्तीने हे मंजूर करावे.",
+        "अनुरोध करने वाले के अलावा किसी और को इसे स्वीकृत करना होगा।",
+    ),
+    "Cash": ("रोख", "नकद"),
+    "UPI": ("UPI", "UPI"),
+    "Bank transfer": ("बँक ट्रान्सफर", "बैंक ट्रांसफर"),
+    "Cheque": ("धनादेश", "चेक"),
+    "Online": ("ऑनलाइन", "ऑनलाइन"),
+    "Other": ("इतर", "अन्य"),
 }
 
 
