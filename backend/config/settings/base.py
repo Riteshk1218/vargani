@@ -4,6 +4,7 @@ from datetime import timedelta
 from pathlib import Path
 
 import environ
+from celery.schedules import crontab
 from django.utils.translation import gettext_lazy as _
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -42,6 +43,9 @@ INSTALLED_APPS = [
     "apps.receipts",
     "apps.expenses",
     "apps.reports",
+    "apps.notifications",
+    "apps.portal",
+    "apps.gateway",
 ]
 
 MIDDLEWARE = [
@@ -210,6 +214,13 @@ CELERY_BROKER_URL = env("CELERY_BROKER_URL", default=REDIS_URL)
 CELERY_TASK_ALWAYS_EAGER = env.bool("CELERY_TASK_ALWAYS_EAGER", default=False)
 CELERY_TASK_EAGER_PROPAGATES = True
 CELERY_TIMEZONE = "UTC"
+CELERY_BEAT_SCHEDULE = {
+    "monthly-dues-reminders": {
+        "task": "apps.portal.tasks.send_monthly_reminders",
+        # 5th of each month, 04:30 UTC (10:00 IST)
+        "schedule": crontab(minute=30, hour=4, day_of_month=5),
+    },
+}
 
 # --- Email / OTP ------------------------------------------------------------
 EMAIL_BACKEND = env("EMAIL_BACKEND", default="django.core.mail.backends.console.EmailBackend")
@@ -231,6 +242,9 @@ OTP_DEBUG_ECHO = env.bool("OTP_DEBUG_ECHO", default=False)
 
 INVITATION_TTL_DAYS = 7
 FRONTEND_URL = env("FRONTEND_URL", default="http://localhost:5173")
+API_PUBLIC_URL = env("API_PUBLIC_URL", default="http://localhost:8000")
+# Encrypts payment gateway secrets at rest. Empty means a key derived from SECRET_KEY (development only).
+FIELD_ENCRYPTION_KEY = env("FIELD_ENCRYPTION_KEY", default="")
 
 LOGGING = {
     "version": 1,

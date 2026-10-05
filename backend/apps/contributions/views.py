@@ -13,6 +13,7 @@ from apps.core.tenancy import SCOPE_ALL
 from apps.core.viewsets import TenantModelViewSet, TenantReadOnlyViewSet
 from apps.events.models import Event
 from apps.payments.models import Payment
+from apps.portal import reminders
 
 from . import selectors
 from .models import Contribution, ContributionType
@@ -33,10 +34,23 @@ class ContributionTypeViewSet(TenantModelViewSet):
         "create": "contribution_types.manage",
         "partial_update": "contribution_types.manage",
         "outstanding": "contributions.view",
+        "remind": ("notifications.send", "contributions.view"),
     }
 
     def get_base_queryset(self):
         return ContributionType.objects.for_org(self.organization).select_related("fund", "event")
+
+    @extend_schema(request=None, responses=OpenApiTypes.OBJECT)
+    @action(detail=True, methods=["post"])
+    def remind(self, request, pk=None):
+        """Remind everyone who still owes on this mandatory type: in the app if they have a login, otherwise
+        a WhatsApp link for each person is returned."""
+        if not self.org_context.has("notifications.send") and self.org_context.scope("contributions.view") != SCOPE_ALL:
+            raise PermissionDenied()
+        ctype = self.get_object()
+        if not ctype.is_mandatory:
+            raise BusinessRuleViolation(_("Reminders need a mandatory contribution type with an expected amount."))
+        return Response(reminders.send(ctype, request=request, actor=request.user))
 
     @extend_schema(responses=OpenApiTypes.OBJECT)
     @action(detail=True, methods=["get"])

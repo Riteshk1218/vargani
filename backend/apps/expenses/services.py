@@ -16,6 +16,7 @@ from rest_framework.exceptions import ValidationError
 from apps.audit import services as audit
 from apps.core.exceptions import BusinessRuleViolation, InvalidStateTransition
 from apps.events.models import Event
+from apps.notifications import hooks as notify
 from apps.organizations.models import FinancialYear
 
 from .models import Expense, OtherIncome
@@ -120,6 +121,8 @@ def submit(expense, *, request=None, actor=None) -> Expense:
         expense.updated_by = actor
         expense.save()
         _audit(expense, SUBMIT, request=request, actor=actor, before=before)
+        if expense.status == Expense.Status.SUBMITTED:
+            notify.expense_submitted(expense, actor)
     return expense
 
 
@@ -137,6 +140,7 @@ def approve(expense, *, approver_membership, request=None, actor=None) -> Expens
         expense.updated_by = actor
         expense.save()
         _audit(expense, APPROVE, request=request, actor=actor, before=before)
+        notify.expense_decided(expense, actor, approved=True)
     return expense
 
 
@@ -156,6 +160,7 @@ def reject(expense, *, reason, request=None, actor=None) -> Expense:
         expense.updated_by = actor
         expense.save()
         _audit(expense, REJECT, request=request, actor=actor, before=before)
+        notify.expense_decided(expense, actor, approved=False)
     return expense
 
 

@@ -45,14 +45,18 @@ def _org_today(org, moment: datetime) -> date:
     return timezone.localtime(moment, tz).date()
 
 
-def _validate(*, org, event, payer, mode, status, paid_at, reference_number, amount, lines):
+def _validate(*, org, event, payer, mode, status, paid_at, reference_number, amount, lines, online=False):
     if event.status != Event.Status.ACTIVE:
         raise BusinessRuleViolation(_("This event is not active. New collections are not allowed."))
     if event.financial_year.status == FinancialYear.Status.CLOSED:
         raise BusinessRuleViolation(_("This financial year is closed."))
     if payer.deleted_at is not None or not payer.is_active:
         raise ValidationError({"payer": [_("This person is archived.")]})
-    if mode not in MANUAL_MODES:
+    if (
+        mode not in PaymentMode.values
+        or online != (mode == PaymentMode.ONLINE)
+        or (online and status != Payment.Status.PENDING)
+    ):
         raise ValidationError({"mode": [_("This payment mode cannot be recorded manually.")]})
     if status not in (Payment.Status.SUCCESSFUL, Payment.Status.PENDING):
         raise ValidationError({"status": [_("A new payment must be successful or pending.")]})
@@ -121,6 +125,8 @@ def record_payment(
     collector=None,
     idempotency_key=None,
     replaces_receipt=None,
+    online=False,
+    gateway="",
     request=None,
     actor=None,
 ) -> tuple[Payment, bool]:
@@ -147,6 +153,7 @@ def record_payment(
         reference_number=reference_number,
         amount=amount,
         lines=lines,
+        online=online,
     )
     line_status = Contribution.Status.CONFIRMED if status == Payment.Status.SUCCESSFUL else Contribution.Status.PENDING
     contributed_on = _org_today(org, paid_at)
@@ -167,6 +174,7 @@ def record_payment(
                 cheque_date=cheque_date,
                 collector=collector,
                 idempotency_key=idempotency_key or None,
+                gateway=gateway,
                 notes=notes,
                 created_by=actor,
                 updated_by=actor,

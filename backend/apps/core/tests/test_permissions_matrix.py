@@ -52,6 +52,9 @@ def endpoint_cases(org):
         "audit report": ("get", "/api/v1/reports/audit/", None),
         "export general report": ("post", "/api/v1/reports/people/exports/", {"format": "csv"}),
         "export financial report": ("post", "/api/v1/reports/income-expense/exports/", {"format": "csv"}),
+        "send announcement": ("post", "/api/v1/announcements/", {}),
+        "payment gateway keys": ("get", "/api/v1/gateway/config/", None),
+        "my notifications": ("get", "/api/v1/notifications/", None),
     }
 
 
@@ -91,6 +94,9 @@ EXPECTED = {
     "audit report": (1, 1, 0, 0, 0, 0),
     "export general report": (1, 1, 1, 0, 0, 0),
     "export financial report": (1, 1, 0, 0, 0, 0),
+    "send announcement": (1, 0, 1, 0, 0, 0),
+    "payment gateway keys": (1, 0, 0, 0, 0, 0),
+    "my notifications": (1, 1, 1, 1, 1, 1),
 }
 
 

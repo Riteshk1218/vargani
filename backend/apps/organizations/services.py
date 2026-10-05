@@ -27,6 +27,7 @@ DEFAULT_SETTINGS = {
     "allow_unassigned_collection": False,
     "require_expense_approval": True,
     "member_portal_enabled": False,
+    "auto_reminders": False,
 }
 SETTINGS_TYPES = {key: type(value) for key, value in DEFAULT_SETTINGS.items()}
 

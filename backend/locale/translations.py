@@ -10,6 +10,98 @@ from pathlib import Path
 import polib
 
 T = {
+    "%(actor)s asked to void receipt %(number)s (₹%(amount)s): %(reason)s": (
+        "%(actor)s यांनी पावती %(number)s (₹%(amount)s) रद्द करण्याची विनंती केली: %(reason)s",
+        "%(actor)s ने रसीद %(number)s (₹%(amount)s) रद्द करने का अनुरोध किया: %(reason)s",
+    ),
+    "%(actor)s sent ₹%(amount)s paid to %(payee)s for approval.": (
+        "%(actor)s यांनी %(payee)s यांना दिलेले ₹%(amount)s मंजुरीसाठी पाठवले.",
+        "%(actor)s ने %(payee)s को दिए गए ₹%(amount)s मंज़ूरी के लिए भेजे।",
+    ),
+    "Choose a user who has access to this organization.": (
+        "या संस्थेत प्रवेश असलेला वापरकर्ता निवडा.",
+        "ऐसा उपयोगकर्ता चुनें जिसकी इस संस्था तक पहुँच हो।",
+    ),
+    "Contribution reminder": ("वर्गणी स्मरणपत्र", "योगदान अनुस्मारक"),
+    "Enter your mobile number.": ("तुमचा मोबाइल नंबर टाका.", "अपना मोबाइल नंबर दर्ज करें।"),
+    "Expense approved": ("खर्च मंजूर", "खर्च स्वीकृत"),
+    "Expense rejected": ("खर्च नाकारला", "खर्च अस्वीकृत"),
+    "Expense waiting for approval": ("खर्च मंजुरीच्या प्रतीक्षेत", "खर्च मंज़ूरी की प्रतीक्षा में"),
+    "Member": ("सभासद", "सदस्य"),
+    "Namaskar %(name)s, ₹%(amount)s is due for %(type)s (%(event)s) to %(organization)s. Thank you.": (
+        "नमस्कार %(name)s, %(organization)s कडे %(type)s (%(event)s) साठी ₹%(amount)s बाकी आहे. धन्यवाद.",
+        "नमस्कार %(name)s, %(organization)s को %(type)s (%(event)s) के लिए ₹%(amount)s बकाया है। धन्यवाद।",
+    ),
+    "Online payment": ("ऑनलाइन पेमेंट", "ऑनलाइन भुगतान"),
+    "Online payment failed": ("ऑनलाइन पेमेंट अयशस्वी", "ऑनलाइन भुगतान विफल"),
+    "Online payment is not available right now. Please try again later or pay your collector.": (
+        "ऑनलाइन पेमेंट सध्या उपलब्ध नाही. कृपया नंतर प्रयत्न करा किंवा तुमच्या वसुलीदाराकडे भरा.",
+        "ऑनलाइन भुगतान अभी उपलब्ध नहीं है। कृपया बाद में प्रयास करें या अपने संग्रहकर्ता को भुगतान करें।",
+    ),
+    "Payment not completed": ("पेमेंट पूर्ण झाले नाही", "भुगतान पूरा नहीं हुआ"),
+    "Payment not found.": ("पेमेंट सापडले नाही.", "भुगतान नहीं मिला।"),
+    "Receipt void requested": ("पावती रद्द करण्याची विनंती", "रसीद रद्द करने का अनुरोध"),
+    "Receipt voided": ("पावती रद्द झाली", "रसीद रद्द हुई"),
+    "Reminders need a mandatory contribution type with an expected amount.": (
+        "स्मरणपत्रांसाठी अपेक्षित रक्कम असलेला अनिवार्य वर्गणी प्रकार लागतो.",
+        "अनुस्मारक के लिए अपेक्षित राशि वाला अनिवार्य योगदान प्रकार चाहिए।",
+    ),
+    "Thank you for your contribution": ("तुमच्या योगदानाबद्दल धन्यवाद", "आपके योगदान के लिए धन्यवाद"),
+    "The amount paid does not match the order.": (
+        "भरलेली रक्कम ऑर्डरशी जुळत नाही.",
+        "भुगतान की गई राशि ऑर्डर से मेल नहीं खाती।",
+    ),
+    "The member portal is not available for this organization.": (
+        "या संस्थेसाठी सभासद पोर्टल उपलब्ध नाही.",
+        "इस संस्था के लिए सदस्य पोर्टल उपलब्ध नहीं है।",
+    ),
+    "The payment could not be verified.": ("पेमेंटची पडताळणी होऊ शकली नाही.", "भुगतान का सत्यापन नहीं हो सका।"),
+    "This gateway payment was already used.": ("हे गेटवे पेमेंट आधीच वापरले गेले आहे.", "यह गेटवे भुगतान पहले ही उपयोग हो चुका है।"),
+    "This login is already linked to another person here.": (
+        "हे लॉगिन येथे आधीच दुसऱ्या व्यक्तीशी जोडलेले आहे.",
+        "यह लॉगिन यहाँ पहले से किसी अन्य व्यक्ति से जुड़ा है।",
+    ),
+    "This payment is no longer waiting for the gateway.": (
+        "हे पेमेंट आता गेटवेच्या प्रतीक्षेत नाही.",
+        "यह भुगतान अब गेटवे की प्रतीक्षा में नहीं है।",
+    ),
+    "This person is already linked to another login. Unlink it first.": (
+        "ही व्यक्ती आधीच दुसऱ्या लॉगिनशी जोडलेली आहे. आधी ते जोडणी काढा.",
+        "यह व्यक्ति पहले से किसी अन्य लॉगिन से जुड़ा है। पहले उसे हटाएँ।",
+    ),
+    "Void request rejected": ("रद्द करण्याची विनंती नाकारली", "रद्द करने का अनुरोध अस्वीकृत"),
+    "Your login is not linked to a member record yet. Please contact your organization.": (
+        "तुमचे लॉगिन अद्याप सभासद नोंदीशी जोडलेले नाही. कृपया तुमच्या संस्थेशी संपर्क साधा.",
+        "आपका लॉगिन अभी किसी सदस्य रिकॉर्ड से नहीं जुड़ा है। कृपया अपनी संस्था से संपर्क करें।",
+    ),
+    "Your payment of ₹%(amount)s for %(event)s did not go through. Any money deducted will be returned.": (
+        "%(event)s साठी तुमचे ₹%(amount)s चे ऑनलाइन पेमेंट पूर्ण झाले नाही. पैसे कापले गेले असल्यास तुमची बँक ते परत करेल.",
+        "%(event)s के लिए आपका ₹%(amount)s का ऑनलाइन भुगतान पूरा नहीं हुआ। यदि पैसे कटे हैं तो आपका बैंक उन्हें लौटा देगा।",
+    ),
+    "Your request to void receipt %(number)s was approved by %(actor)s.": (
+        "पावती %(number)s रद्द करण्याची तुमची विनंती %(actor)s यांनी मंजूर केली.",
+        "रसीद %(number)s रद्द करने का आपका अनुरोध %(actor)s ने स्वीकार किया।",
+    ),
+    "Your request to void receipt %(number)s was rejected by %(actor)s.": (
+        "पावती %(number)s रद्द करण्याची तुमची विनंती %(actor)s यांनी नाकारली.",
+        "रसीद %(number)s रद्द करने का आपका अनुरोध %(actor)s ने अस्वीकार किया।",
+    ),
+    "₹%(amount)s is due for %(type)s (%(event)s). Please pay your collector or online.": (
+        "%(type)s (%(event)s) साठी ₹%(amount)s बाकी आहे. कृपया वसुलीदाराकडे किंवा ऑनलाइन भरा.",
+        "%(type)s (%(event)s) के लिए ₹%(amount)s बकाया है। कृपया संग्रहकर्ता को या ऑनलाइन भुगतान करें।",
+    ),
+    "₹%(amount)s paid to %(payee)s was approved by %(actor)s.": (
+        "%(payee)s यांना दिलेले ₹%(amount)s %(actor)s यांनी मंजूर केले.",
+        "%(payee)s को दिए गए ₹%(amount)s %(actor)s ने स्वीकृत किए।",
+    ),
+    "₹%(amount)s paid to %(payee)s was rejected by %(actor)s: %(reason)s": (
+        "%(payee)s यांना दिलेले ₹%(amount)s %(actor)s यांनी नाकारले: %(reason)s",
+        "%(payee)s को दिए गए ₹%(amount)s %(actor)s ने अस्वीकार किए: %(reason)s",
+    ),
+    "₹%(amount)s received for %(event)s. Receipt no. %(number)s.": (
+        "%(event)s साठी ₹%(amount)s मिळाले. पावती क्र. %(number)s.",
+        "%(event)s के लिए ₹%(amount)s प्राप्त हुए। रसीद क्र. %(number)s।",
+    ),
     "Please wait before requesting another code.": (
         "दुसरा कोड मागण्यापूर्वी कृपया थोडा वेळ थांबा.",
         "दूसरा कोड मांगने से पहले कृपया थोड़ा इंतज़ार करें।",

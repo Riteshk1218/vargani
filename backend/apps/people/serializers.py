@@ -11,6 +11,8 @@ class PersonSerializer(serializers.ModelSerializer):
     alt_mobile = MobileField(required=False, allow_blank=True, allow_null=True)
     person_types = serializers.ListField(child=serializers.ChoiceField(choices=PersonType.choices), required=False)
     has_login = serializers.SerializerMethodField()
+    linked_user = serializers.UUIDField(source="user_id", read_only=True, allow_null=True)
+    linked_user_name = serializers.SerializerMethodField()
 
     class Meta:
         model = Person
@@ -30,13 +32,26 @@ class PersonSerializer(serializers.ModelSerializer):
             "notes",
             "is_active",
             "has_login",
+            "linked_user",
+            "linked_user_name",
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["id", "is_active", "has_login", "created_at", "updated_at"]
+        read_only_fields = [
+            "id",
+            "is_active",
+            "has_login",
+            "linked_user",
+            "linked_user_name",
+            "created_at",
+            "updated_at",
+        ]
 
     def get_has_login(self, obj) -> bool:
         return obj.user_id is not None
+
+    def get_linked_user_name(self, obj) -> str | None:
+        return obj.user.full_name if obj.user_id else None
 
     def validate_full_name(self, value):
         value = " ".join(value.split())

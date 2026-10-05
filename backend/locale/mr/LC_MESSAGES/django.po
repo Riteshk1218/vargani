@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-05 19:34+0000\n"
+"POT-Creation-Date: 2026-10-05 21:47+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -40,7 +40,8 @@ msgid "Your verification code"
 msgstr "तुमचा पडताळणी कोड"
 
 #: apps/accounts/otp.py:82 apps/accounts/views.py:69
-#: apps/accounts/views.py:181
+#: apps/accounts/views.py:181 apps/portal/auth_views.py:73
+#: apps/portal/auth_views.py:78
 msgid "The code is invalid or has expired."
 msgstr "कोड चुकीचा आहे किंवा त्याची मुदत संपली आहे."
 
@@ -85,13 +86,13 @@ msgstr "हा वापरकर्ता वसुली करू शकत �
 msgid "Enter a name."
 msgstr "नाव टाका."
 
-#: apps/contributions/serializers.py:56 apps/expenses/services.py:190
+#: apps/contributions/serializers.py:56 apps/expenses/services.py:195
 msgid "This fund belongs to another event."
 msgstr "हा निधी दुसऱ्या कार्यक्रमाचा आहे."
 
 #: apps/contributions/serializers.py:60 apps/expenses/serializers.py:114
 #: apps/expenses/serializers.py:179 apps/funds/serializers.py:27
-#: apps/payments/services.py:75
+#: apps/payments/services.py:79
 msgid "Amount must be more than zero."
 msgstr "रक्कम शून्यापेक्षा जास्त असावी."
 
@@ -119,7 +120,11 @@ msgstr "या कार्यक्रमात या नावाचा व�
 msgid "Assign at most 500 people at a time."
 msgstr "एका वेळी जास्तीत जास्त 500 लोक सोपवा."
 
-#: apps/contributions/views.py:49
+#: apps/contributions/views.py:52
+msgid "Reminders need a mandatory contribution type with an expected amount."
+msgstr "स्मरणपत्रांसाठी अपेक्षित रक्कम असलेला अनिवार्य वर्गणी प्रकार लागतो."
+
+#: apps/contributions/views.py:63
 msgid "Dues are tracked only for mandatory contribution types."
 msgstr "थकबाकी फक्त अनिवार्य वर्गणी प्रकारांसाठी मोजली जाते."
 
@@ -183,7 +188,7 @@ msgstr "अज्ञात विभाग किंवा चुकीचे �
 msgid "An event cannot move to another financial year."
 msgstr "कार्यक्रम दुसऱ्या आर्थिक वर्षात हलवता येत नाही."
 
-#: apps/events/serializers.py:74 apps/expenses/services.py:35
+#: apps/events/serializers.py:74 apps/expenses/services.py:36
 #: apps/payments/services.py:52
 msgid "This financial year is closed."
 msgstr "हे आर्थिक वर्ष बंद आहे."
@@ -237,7 +242,6 @@ msgid "Start empty and choose the modules yourself."
 msgstr "रिकाम्यापासून सुरू करा आणि विभाग स्वतः निवडा."
 
 #: apps/expenses/attachments.py:32
-#| msgid "Upload a PNG, JPG, JPEG or WEBP image."
 msgid "Upload a JPG, PNG or WEBP image, or a PDF."
 msgstr "JPG, PNG किंवा WEBP फोटो, किंवा PDF अपलोड करा."
 
@@ -250,41 +254,169 @@ msgid "An expense can have at most 10 attachments."
 msgstr "एका खर्चाला जास्तीत जास्त 10 बिले जोडता येतात."
 
 #: apps/expenses/serializers.py:38
-#| msgid "A financial year with this label already exists."
 msgid "A category with this name already exists."
 msgstr "या नावाचा प्रकार आधीच आहे."
 
 #: apps/expenses/serializers.py:120
-#| msgid "Enter a name."
 msgid "Enter who was paid."
 msgstr "कोणाला पैसे दिले ते लिहा."
 
-#: apps/expenses/services.py:33
+#: apps/expenses/services.py:34
 msgid "This event is closed. Money records cannot be added or changed."
 msgstr "हा कार्यक्रम बंद आहे. पैशांच्या नोंदी जोडता किंवा बदलता येणार नाहीत."
 
-#: apps/expenses/services.py:40
-#| msgid "Payment date cannot be in the future."
+#: apps/expenses/services.py:41
 msgid "The date cannot be in the future."
 msgstr "तारीख भविष्यातील असू शकत नाही."
 
-#: apps/expenses/services.py:129 apps/receipts/voids.py:61
+#: apps/expenses/services.py:132 apps/receipts/voids.py:63
 msgid "Someone other than the requester must approve this."
 msgstr "विनंती करणाऱ्याशिवाय दुसऱ्या व्यक्तीने हे मंजूर करावे."
 
-#: apps/expenses/services.py:146 apps/expenses/services.py:166
-#: apps/expenses/services.py:202
-#| msgid "Void reason"
+#: apps/expenses/services.py:150 apps/expenses/services.py:171
+#: apps/expenses/services.py:207
 msgid "Give a reason."
 msgstr "कारण द्या."
 
-#: apps/expenses/services.py:172
+#: apps/expenses/services.py:177
 msgid "Only an approver can void an approved expense."
 msgstr "मंजूर खर्च फक्त मंजुरी देणारेच रद्द करू शकतात."
 
 #: apps/funds/serializers.py:38
 msgid "This event already has a fund with this name."
 msgstr "या कार्यक्रमात या नावाचा निधी आधीच आहे."
+
+#: apps/gateway/services.py:33
+msgid ""
+"Online payment is not available right now. Please try again later or pay "
+"your collector."
+msgstr ""
+"ऑनलाइन पेमेंट सध्या उपलब्ध नाही. कृपया नंतर प्रयत्न करा किंवा तुमच्या "
+"वसुलीदाराकडे भरा."
+
+#: apps/gateway/services.py:54
+msgid "Online payment"
+msgstr "ऑनलाइन पेमेंट"
+
+#: apps/gateway/services.py:99
+msgid "This payment is no longer waiting for the gateway."
+msgstr "हे पेमेंट आता गेटवेच्या प्रतीक्षेत नाही."
+
+#: apps/gateway/services.py:101
+msgid "The amount paid does not match the order."
+msgstr "भरलेली रक्कम ऑर्डरशी जुळत नाही."
+
+#: apps/gateway/services.py:108
+msgid "This gateway payment was already used."
+msgstr "हे गेटवे पेमेंट आधीच वापरले गेले आहे."
+
+#: apps/gateway/services.py:118
+msgid "Payment not found."
+msgstr "पेमेंट सापडले नाही."
+
+#: apps/gateway/services.py:128
+msgid "The payment could not be verified."
+msgstr "पेमेंटची पडताळणी होऊ शकली नाही."
+
+#: apps/gateway/services.py:181
+msgid "Online payment failed"
+msgstr "ऑनलाइन पेमेंट अयशस्वी"
+
+#: apps/notifications/templates.py:12
+msgid "Expense waiting for approval"
+msgstr "खर्च मंजुरीच्या प्रतीक्षेत"
+
+#: apps/notifications/templates.py:13
+#, python-format
+msgid "%(actor)s sent ₹%(amount)s paid to %(payee)s for approval."
+msgstr "%(actor)s यांनी %(payee)s यांना दिलेले ₹%(amount)s मंजुरीसाठी पाठवले."
+
+#: apps/notifications/templates.py:16
+msgid "Expense approved"
+msgstr "खर्च मंजूर"
+
+#: apps/notifications/templates.py:17
+#, python-format
+msgid "₹%(amount)s paid to %(payee)s was approved by %(actor)s."
+msgstr "%(payee)s यांना दिलेले ₹%(amount)s %(actor)s यांनी मंजूर केले."
+
+#: apps/notifications/templates.py:20
+msgid "Expense rejected"
+msgstr "खर्च नाकारला"
+
+#: apps/notifications/templates.py:21
+#, python-format
+msgid "₹%(amount)s paid to %(payee)s was rejected by %(actor)s: %(reason)s"
+msgstr ""
+"%(payee)s यांना दिलेले ₹%(amount)s %(actor)s यांनी नाकारले: %(reason)s"
+
+#: apps/notifications/templates.py:24
+msgid "Receipt void requested"
+msgstr "पावती रद्द करण्याची विनंती"
+
+#: apps/notifications/templates.py:25
+#, python-format
+msgid "%(actor)s asked to void receipt %(number)s (₹%(amount)s): %(reason)s"
+msgstr ""
+"%(actor)s यांनी पावती %(number)s (₹%(amount)s) रद्द करण्याची विनंती केली: "
+"%(reason)s"
+
+#: apps/notifications/templates.py:28
+msgid "Receipt voided"
+msgstr "पावती रद्द झाली"
+
+#: apps/notifications/templates.py:29
+#, python-format
+msgid "Your request to void receipt %(number)s was approved by %(actor)s."
+msgstr ""
+"पावती %(number)s रद्द करण्याची तुमची विनंती %(actor)s यांनी मंजूर केली."
+
+#: apps/notifications/templates.py:32
+msgid "Void request rejected"
+msgstr "रद्द करण्याची विनंती नाकारली"
+
+#: apps/notifications/templates.py:33
+#, python-format
+msgid "Your request to void receipt %(number)s was rejected by %(actor)s."
+msgstr "पावती %(number)s रद्द करण्याची तुमची विनंती %(actor)s यांनी नाकारली."
+
+#: apps/notifications/templates.py:36
+msgid "Thank you for your contribution"
+msgstr "तुमच्या योगदानाबद्दल धन्यवाद"
+
+#: apps/notifications/templates.py:37
+#, python-format
+msgid "₹%(amount)s received for %(event)s. Receipt no. %(number)s."
+msgstr "%(event)s साठी ₹%(amount)s मिळाले. पावती क्र. %(number)s."
+
+#: apps/notifications/templates.py:40
+msgid "Contribution reminder"
+msgstr "वर्गणी स्मरणपत्र"
+
+#: apps/notifications/templates.py:41
+#, python-format
+msgid ""
+"₹%(amount)s is due for %(type)s (%(event)s). Please pay your collector or "
+"online."
+msgstr ""
+"%(type)s (%(event)s) साठी ₹%(amount)s बाकी आहे. कृपया वसुलीदाराकडे किंवा "
+"ऑनलाइन भरा."
+
+#: apps/notifications/templates.py:44
+msgid "Payment not completed"
+msgstr "पेमेंट पूर्ण झाले नाही"
+
+#: apps/notifications/templates.py:46
+#, python-format
+#| msgid ""
+#| "Your online payment of ₹%(amount)s for %(event)s did not go through. If "
+#| "money was deducted, your bank will return it."
+msgid ""
+"Your payment of ₹%(amount)s for %(event)s did not go through. Any money "
+"deducted will be returned."
+msgstr ""
+"%(event)s साठी तुमचे ₹%(amount)s चे ऑनलाइन पेमेंट पूर्ण झाले नाही. पैसे "
+"कापले गेले असल्यास तुमची बँक ते परत करेल."
 
 #: apps/organizations/serializers.py:49
 msgid "Enter the organization name."
@@ -306,35 +438,35 @@ msgstr "या नावाचे आर्थिक वर्ष आधीच �
 msgid "This financial year overlaps another financial year."
 msgstr "हे आर्थिक वर्ष दुसऱ्या आर्थिक वर्षाशी जुळते."
 
-#: apps/organizations/services.py:95
+#: apps/organizations/services.py:96
 msgid "Unknown setting."
 msgstr "अज्ञात सेटिंग."
 
-#: apps/organizations/services.py:97
+#: apps/organizations/services.py:98
 msgid "Invalid value."
 msgstr "चुकीचे मूल्य."
 
-#: apps/organizations/services.py:111
+#: apps/organizations/services.py:112
 msgid "Upload a PNG, JPG, JPEG or WEBP image."
 msgstr "PNG, JPG, JPEG किंवा WEBP प्रतिमा अपलोड करा."
 
-#: apps/organizations/services.py:117
+#: apps/organizations/services.py:118
 msgid "The file is too large."
 msgstr "फाइल खूप मोठी आहे."
 
-#: apps/organizations/services.py:141
+#: apps/organizations/services.py:142
 msgid "The image is too small. Use at least 512 × 512 pixels."
 msgstr "प्रतिमा खूप लहान आहे. किमान 512 × 512 पिक्सेल वापरा."
 
-#: apps/organizations/services.py:203
+#: apps/organizations/services.py:204
 msgid "A closed financial year cannot be made current."
 msgstr "बंद आर्थिक वर्ष चालू करता येत नाही."
 
-#: apps/organizations/services.py:275
+#: apps/organizations/services.py:276
 msgid "This person already has access to the organization."
 msgstr "या व्यक्तीला संस्थेत आधीच प्रवेश आहे."
 
-#: apps/organizations/services.py:309
+#: apps/organizations/services.py:310
 #, python-format
 msgid ""
 "You have been invited to join %(org)s as %(role)s. Open this link to accept:"
@@ -343,28 +475,28 @@ msgstr ""
 "तुम्हाला %(org)s मध्ये %(role)s म्हणून सामील होण्याचे निमंत्रण आहे. "
 "स्वीकारण्यासाठी ही लिंक उघडा: %(link)s"
 
-#: apps/organizations/services.py:314
+#: apps/organizations/services.py:315
 #, python-format
 msgid "Invitation to %(org)s"
 msgstr "%(org)s कडून निमंत्रण"
 
-#: apps/organizations/services.py:334
+#: apps/organizations/services.py:335
 msgid "This invitation is invalid or has expired."
 msgstr "हे निमंत्रण अवैध आहे किंवा त्याची मुदत संपली आहे."
 
-#: apps/organizations/services.py:341
+#: apps/organizations/services.py:342
 msgid "This invitation was sent to a different email or mobile number."
 msgstr "हे निमंत्रण दुसऱ्या ईमेल किंवा मोबाइल नंबरवर पाठवले होते."
 
-#: apps/organizations/services.py:351
+#: apps/organizations/services.py:352
 msgid "You already have access to this organization."
 msgstr "तुम्हाला या संस्थेत आधीच प्रवेश आहे."
 
-#: apps/organizations/services.py:405
+#: apps/organizations/services.py:406
 msgid "The organization must keep at least one active Organization Admin."
 msgstr "संस्थेत किमान एक सक्रिय संस्था प्रशासक असणे आवश्यक आहे."
 
-#: apps/payments/services.py:50 apps/payments/services.py:261
+#: apps/payments/services.py:50 apps/payments/services.py:269
 msgid "This event is not active. New collections are not allowed."
 msgstr "हा कार्यक्रम सक्रिय नाही. नवीन वसुली करता येणार नाही."
 
@@ -372,55 +504,55 @@ msgstr "हा कार्यक्रम सक्रिय नाही. न�
 msgid "This person is archived."
 msgstr "ही व्यक्ती संग्रहित केली आहे."
 
-#: apps/payments/services.py:56
+#: apps/payments/services.py:60
 msgid "This payment mode cannot be recorded manually."
 msgstr "ही पेमेंट पद्धत हाताने नोंदवता येत नाही."
 
-#: apps/payments/services.py:58
+#: apps/payments/services.py:62
 msgid "A new payment must be successful or pending."
 msgstr "नवीन पेमेंट यशस्वी किंवा प्रलंबित असणे आवश्यक आहे."
 
-#: apps/payments/services.py:60
+#: apps/payments/services.py:64
 msgid "Enter the cheque or transaction number."
 msgstr "चेक किंवा व्यवहार क्रमांक टाका."
 
-#: apps/payments/services.py:62
+#: apps/payments/services.py:66
 msgid "Payment date cannot be in the future."
 msgstr "पेमेंटची तारीख भविष्यातील असू शकत नाही."
 
-#: apps/payments/services.py:64
+#: apps/payments/services.py:68
 msgid "Add at least one contribution."
 msgstr "किमान एक वर्गणी जोडा."
 
-#: apps/payments/services.py:71
+#: apps/payments/services.py:75
 msgid "This contribution type belongs to another event."
 msgstr "हा वर्गणी प्रकार दुसऱ्या कार्यक्रमाचा आहे."
 
-#: apps/payments/services.py:73
+#: apps/payments/services.py:77
 msgid "This contribution type is archived."
 msgstr "हा वर्गणी प्रकार संग्रहित केला आहे."
 
-#: apps/payments/services.py:78
+#: apps/payments/services.py:82
 msgid "Select the month this contribution is for."
 msgstr "ही वर्गणी कोणत्या महिन्याची आहे ते निवडा."
 
-#: apps/payments/services.py:90
+#: apps/payments/services.py:94
 msgid "Amount must equal the total of the contribution lines."
 msgstr "रक्कम सर्व वर्गणीच्या एकूण रकमेइतकी असावी."
 
-#: apps/payments/services.py:98
+#: apps/payments/services.py:102
 msgid "Only a voided receipt can be corrected."
 msgstr "फक्त रद्द पावतीच दुरुस्त करता येते."
 
-#: apps/payments/services.py:100
+#: apps/payments/services.py:104
 msgid "The corrected receipt must be in the same event."
 msgstr "दुरुस्त करायची पावती त्याच कार्यक्रमातील असावी."
 
-#: apps/payments/services.py:102
+#: apps/payments/services.py:106
 msgid "This receipt has already been corrected."
 msgstr "ही पावती आधीच दुरुस्त केली आहे."
 
-#: apps/payments/services.py:104
+#: apps/payments/services.py:108
 msgid "A correction must be a received payment."
 msgstr "दुरुस्ती ही मिळालेले पेमेंट असावी."
 
@@ -428,9 +560,50 @@ msgstr "दुरुस्ती ही मिळालेले पेमें
 msgid "This person is not assigned to you for this event."
 msgstr "ही व्यक्ती या कार्यक्रमासाठी तुम्हाला सोपवलेली नाही."
 
-#: apps/people/serializers.py:44
+#: apps/people/serializers.py:59
 msgid "Enter the person's name."
 msgstr "व्यक्तीचे नाव टाका."
+
+#: apps/people/views.py:123
+msgid "Choose a user who has access to this organization."
+msgstr "या संस्थेत प्रवेश असलेला वापरकर्ता निवडा."
+
+#: apps/portal/auth_views.py:49
+msgid "Enter your mobile number."
+msgstr "तुमचा मोबाइल नंबर टाका."
+
+#: apps/portal/auth_views.py:75
+msgid "Member"
+msgstr "सभासद"
+
+#: apps/portal/linking.py:46
+msgid "This person is already linked to another login. Unlink it first."
+msgstr "ही व्यक्ती आधीच दुसऱ्या लॉगिनशी जोडलेली आहे. आधी ते जोडणी काढा."
+
+#: apps/portal/linking.py:48
+msgid "This login is already linked to another person here."
+msgstr "हे लॉगिन येथे आधीच दुसऱ्या व्यक्तीशी जोडलेले आहे."
+
+#: apps/portal/reminders.py:32
+#, python-format
+msgid ""
+"Namaskar %(name)s, ₹%(amount)s is due for %(type)s (%(event)s) to "
+"%(organization)s. Thank you."
+msgstr ""
+"नमस्कार %(name)s, %(organization)s कडे %(type)s (%(event)s) साठी ₹%(amount)s"
+" बाकी आहे. धन्यवाद."
+
+#: apps/portal/views.py:38
+msgid "The member portal is not available for this organization."
+msgstr "या संस्थेसाठी सभासद पोर्टल उपलब्ध नाही."
+
+#: apps/portal/views.py:44
+msgid ""
+"Your login is not linked to a member record yet. Please contact your "
+"organization."
+msgstr ""
+"तुमचे लॉगिन अद्याप सभासद नोंदीशी जोडलेले नाही. कृपया तुमच्या संस्थेशी संपर्क"
+" साधा."
 
 #: apps/receipts/rendering.py:24
 msgid "Cash"
@@ -456,7 +629,7 @@ msgstr "ऑनलाइन"
 msgid "Other"
 msgstr "इतर"
 
-#: apps/receipts/rendering.py:100
+#: apps/receipts/rendering.py:90
 #, python-format
 msgid ""
 "Namaskar %(name)s, thank you for your contribution of Rs %(amount)s to "
@@ -544,35 +717,34 @@ msgstr "तुमच्या योगदानाबद्दल धन्य�
 msgid "Authorised signatory"
 msgstr "अधिकृत स्वाक्षरी"
 
-#: apps/receipts/voids.py:24
+#: apps/receipts/voids.py:25
 msgid "Give a reason for voiding this receipt."
 msgstr "ही पावती रद्द करण्याचे कारण द्या."
 
-#: apps/receipts/voids.py:28
+#: apps/receipts/voids.py:29
 msgid "This receipt is already void."
 msgstr "ही पावती आधीच रद्द आहे."
 
-#: apps/receipts/voids.py:30
+#: apps/receipts/voids.py:31
 msgid "A void request for this receipt is already waiting for approval."
 msgstr "या पावतीची रद्द विनंती आधीच मंजुरीच्या प्रतीक्षेत आहे."
 
-#: apps/reports/exporters.py:56
+#: apps/reports/exporters.py:57
 #: apps/reports/templates/reports/report_pdf.html:36
 #, python-format
 msgid "Generated on %(when)s"
 msgstr "%(when)s रोजी तयार"
 
-#: apps/reports/exporters.py:94
+#: apps/reports/exporters.py:95
 #, python-format
-#| msgid "Financial year %(label)s"
 msgid "Total: %(label)s"
 msgstr "एकूण: %(label)s"
 
-#: apps/reports/exporters.py:95
+#: apps/reports/exporters.py:96
 msgid "Rows"
 msgstr "ओळी"
 
-#: apps/reports/exporters.py:95 apps/reports/registry.py:543
+#: apps/reports/exporters.py:96 apps/reports/registry.py:543
 msgid "Balance"
 msgstr "शिल्लक"
 
@@ -585,7 +757,6 @@ msgid "Sponsorship"
 msgstr "प्रायोजकत्व"
 
 #: apps/reports/registry.py:37
-#| msgid "Bank transfer"
 msgid "Bank interest"
 msgstr "बँक व्याज"
 
@@ -713,7 +884,6 @@ msgid "Date"
 msgstr "तारीख"
 
 #: apps/reports/registry.py:202 apps/reports/registry.py:396
-#| msgid "This contribution type is archived."
 msgid "Contribution type"
 msgstr "वर्गणी प्रकार"
 
@@ -736,7 +906,6 @@ msgstr "महिना"
 
 #: apps/reports/registry.py:231 apps/reports/registry.py:297
 #: apps/reports/registry.py:325
-#| msgid "Payment mode"
 msgid "Payments"
 msgstr "पेमेंट्स"
 
@@ -758,7 +927,6 @@ msgid "Other income"
 msgstr "इतर उत्पन्न"
 
 #: apps/reports/registry.py:294 apps/reports/registry.py:627
-#| msgid "Payment mode"
 msgid "Payment mode summary"
 msgstr "पेमेंट पद्धतीनुसार सारांश"
 
@@ -771,12 +939,10 @@ msgid "Collector-wise collection"
 msgstr "वसुलीदारानुसार वसुली"
 
 #: apps/reports/registry.py:324
-#| msgid "Collected by"
 msgid "Collector"
 msgstr "वसुलीदार"
 
 #: apps/reports/registry.py:355 apps/reports/registry.py:641
-#| msgid "Receipt"
 msgid "Receipt register"
 msgstr "पावती नोंदवही"
 
@@ -907,27 +1073,22 @@ msgid "Changed fields"
 msgstr "बदललेली माहिती"
 
 #: apps/reports/registry.py:586
-#| msgid "Address"
 msgid "IP address"
 msgstr "IP पत्ता"
 
 #: apps/reports/services.py:39
-#| msgid "End date must be after the start date."
 msgid "The end date must be after the start date."
 msgstr "शेवटची तारीख सुरुवातीनंतर असावी."
 
 #: apps/reports/services.py:66
-#| msgid "Not found."
 msgid "Event not found."
 msgstr "कार्यक्रम सापडला नाही."
 
 #: apps/reports/services.py:71
-#| msgid "Select an event (event parameter)."
 msgid "Select an event."
 msgstr "कार्यक्रम निवडा."
 
 #: apps/reports/services.py:77
-#| msgid "This financial year is closed."
 msgid "Financial year not found."
 msgstr "आर्थिक वर्ष सापडले नाही."
 
@@ -946,7 +1107,7 @@ msgid ""
 msgstr ""
 "फक्त पहिल्या %(n)s ओळी दाखवल्या आहेत. पूर्ण यादीसाठी Excel किंवा CSV वापरा."
 
-#: config/settings/base.py:99
+#: config/settings/base.py:103
 msgid "English"
 msgstr "English"
 

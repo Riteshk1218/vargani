@@ -9,6 +9,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.audit import services as audit
+from apps.notifications import hooks as notify
 
 from .models import Receipt, ReceiptSeries
 
@@ -116,4 +117,5 @@ def issue_receipt(payment, *, request=None, actor=None, replaces=None) -> Receip
             "replaces": replaces.receipt_number if replaces else None,
         },
     )
+    notify.receipt_issued(receipt, actor)
     return receipt

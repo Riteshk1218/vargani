@@ -1,14 +1,19 @@
 import django_filters
 from django.db.models import Q
 from django.forms.models import model_to_dict
+from django.utils.translation import gettext as _
+from drf_spectacular.utils import extend_schema
+from rest_framework import serializers
 from rest_framework.decorators import action
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.response import Response
 
 from apps.audit import services as audit
 from apps.core.phone import normalize_mobile
 from apps.core.tenancy import SCOPE_ALL, SCOPE_SELF
 from apps.core.viewsets import TenantModelViewSet
+from apps.organizations.models import OrganizationMembership
+from apps.portal import linking
 
 from .models import Person, PersonType
 from .serializers import PersonSerializer
@@ -26,6 +31,10 @@ class PersonFilter(django_filters.FilterSet):
         return queryset.filter(person_types__contains=[value])
 
 
+class LinkUserSerializer(serializers.Serializer):
+    user = serializers.UUIDField()
+
+
 class PersonViewSet(TenantModelViewSet):
     queryset = Person.objects.all()
     serializer_class = PersonSerializer
@@ -39,6 +48,8 @@ class PersonViewSet(TenantModelViewSet):
         "partial_update": "people.manage",
         "archive": "people.manage",
         "check_duplicates": ("people.manage", "people.create"),
+        "link_user": "people.manage",
+        "unlink_user": "people.manage",
     }
 
     def get_base_queryset(self):
@@ -94,6 +105,29 @@ class PersonViewSet(TenantModelViewSet):
             before=before,
             after=model_to_dict(person),
         )
+        return Response(self.get_serializer(person).data)
+
+    @extend_schema(request=LinkUserSerializer, responses=PersonSerializer)
+    @action(detail=True, methods=["post"], url_path="link-user")
+    def link_user(self, request, pk=None):
+        """Link this person to a user who has access to the organization (for the member portal)."""
+        person = self.get_object()
+        body = LinkUserSerializer(data=request.data)
+        body.is_valid(raise_exception=True)
+        membership = (
+            OrganizationMembership.objects.filter(organization=self.organization, user_id=body.validated_data["user"])
+            .select_related("user")
+            .first()
+        )
+        if membership is None:
+            raise ValidationError({"user": [_("Choose a user who has access to this organization.")]})
+        linking.link(person, membership.user, request=request, actor=request.user)
+        return Response(self.get_serializer(person).data)
+
+    @extend_schema(request=None, responses=PersonSerializer)
+    @action(detail=True, methods=["post"], url_path="unlink-user")
+    def unlink_user(self, request, pk=None):
+        person = linking.unlink(self.get_object(), request=request, actor=request.user)
         return Response(self.get_serializer(person).data)
 
     @action(detail=False, methods=["get"], url_path="check-duplicates")

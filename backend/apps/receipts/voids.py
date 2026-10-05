@@ -9,6 +9,7 @@ from django.utils.translation import gettext as _
 from apps.audit import services as audit
 from apps.contributions.models import Contribution
 from apps.core.exceptions import BusinessRuleViolation, InvalidStateTransition
+from apps.notifications import hooks as notify
 from apps.payments.models import Payment
 
 from .models import Receipt, ReceiptVoidRequest
@@ -45,6 +46,7 @@ def request_void(receipt, *, reason, request=None, actor=None) -> ReceiptVoidReq
             entity_id=receipt.pk,
             after={"receipt_number": receipt.receipt_number, "reason": reason, "request": str(void_request.pk)},
         )
+        notify.void_requested(void_request, receipt, actor)
     return void_request
 
 
@@ -102,6 +104,7 @@ def approve(void_request, *, approver_membership, note="", request=None, actor=N
                 "request": str(void_request.pk),
             },
         )
+        notify.void_decided(void_request, receipt, actor, approved=True)
     return void_request
 
 
@@ -123,4 +126,5 @@ def reject(void_request, *, note="", request=None, actor=None) -> ReceiptVoidReq
             entity_id=void_request.receipt_id,
             after=model_to_dict(void_request, fields=["status", "decision_note"]),
         )
+        notify.void_decided(void_request, void_request.receipt, actor, approved=False)
     return void_request

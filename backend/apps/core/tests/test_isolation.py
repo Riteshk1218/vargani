@@ -142,6 +142,9 @@ WRITE_ROUTES = [
     ("post", "expenses/{id}/attachments/", "expense", {}),
     ("patch", "other-income/{id}/", "income", {"description": "Hacked"}),
     ("post", "other-income/{id}/void/", "income", {"reason": "Hacked"}),
+    ("post", "contribution-types/{id}/remind/", "ctype", {}),
+    ("post", "people/{id}/link-user/", "person", {"user": "00000000-0000-0000-0000-000000000000"}),
+    ("post", "people/{id}/unlink-user/", "person", {}),
 ]
 
 
@@ -256,3 +259,20 @@ def test_dashboard_counts_are_per_organization(world, client_for):
         f"/api/v1/dashboard/summary/?event={world.b.event.pk}"
     )
     assert response.status_code == 404
+
+
+def test_member_portal_in_org_a_cannot_reach_org_b(world, client_for):
+    """A linked member of A sees nothing of B, whether by header or by guessing ids."""
+    from apps.portal import linking  # noqa: PLC0415
+
+    world.a.org.settings["member_portal_enabled"] = True
+    world.a.org.save(update_fields=["settings"])
+    member = OrganizationMembership.objects.get(pk=world.a.membership.pk).user
+    linking.link(world.a.person, member)
+    client = client_for(member, world.a.org)
+    assert client.get("/api/v1/portal/me/").data["person"]["id"] == str(world.a.person.pk)
+    assert client.get(f"/api/v1/portal/receipts/{world.b.receipt.pk}/").status_code == 404
+    assert client.get(f"/api/v1/portal/receipts/{world.b.receipt.pk}/pdf/").status_code == 404
+    assert client_for(member, world.b.org).get("/api/v1/portal/me/").status_code in (403, 404)
+    receipts = client.get("/api/v1/portal/receipts/").data
+    assert [r["id"] for r in receipts] == [str(world.a.receipt.pk)]
