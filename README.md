@@ -14,7 +14,7 @@ One platform for any organization that collects contributions (Ganeshotsav manda
 
 **Phase 3:** receipt PDFs, WhatsApp sharing, void and correction requests with approval, collector assignments.
 
-**Phase 4:** expenses with bill uploads and approval, other income, 15 reports (collections by month, fund, mode and collector, dues, receipts, expenses, income and expenditure, audit and more) with CSV, Excel and PDF export, audit log screen.
+**Phase 4:** expenses with bill uploads and approval, other income, 14 reports (collections by month, fund, mode and collector, dues, receipts, expenses, income and expenditure, audit and more) with CSV, Excel and PDF export, audit log screen.
 
 **Phase 5:** member portal (members log in with a mobile code and see only their own dues, payments and receipts), online payments through each organization's own Razorpay account, in-app notifications in the reader's language, announcements, monthly dues reminders.
 
