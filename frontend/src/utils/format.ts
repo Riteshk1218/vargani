@@ -45,3 +45,32 @@ export function suggestFinancialYear(today = new Date()) {
     end_date: `${startYear + 1}-03-31`,
   }
 }
+
+/** Exact decimal-string addition in paise (no floating point): ["500", "0.50"] → "500.50". */
+export function sumMoney(values: (string | null | undefined)[]): string {
+  let paise = 0n
+  for (const value of values) {
+    const match = /^(-?)(\d*)(?:\.(\d{0,2}))?$/.exec((value ?? '').trim())
+    if (!match || (!match[2] && !match[3])) continue
+    const amount = BigInt(match[2] || '0') * 100n + BigInt((match[3] ?? '').padEnd(2, '0') || '0')
+    paise += match[1] ? -amount : amount
+  }
+  const negative = paise < 0n
+  const abs = negative ? -paise : paise
+  return `${negative ? '-' : ''}${abs / 100n}.${String(abs % 100n).padStart(2, '0')}`
+}
+
+/** "2027-08-01" → "Aug 2027" in the current language. */
+export function formatMonth(value: string | null | undefined): string {
+  if (!value) return '—'
+  const date = new Date(`${value.slice(0, 7)}-01T00:00:00`)
+  if (Number.isNaN(date.getTime())) return value
+  return new Intl.DateTimeFormat(locale(), { month: 'short', year: 'numeric' }).format(date)
+}
+
+export function formatDateTime(value: string | null | undefined): string {
+  if (!value) return '—'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  return new Intl.DateTimeFormat(locale(), { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' }).format(date)
+}

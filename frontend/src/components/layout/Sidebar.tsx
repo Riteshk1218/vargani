@@ -1,4 +1,4 @@
-import { CalendarDays, LayoutDashboard, Settings, ShieldCheck, Users, type LucideIcon } from 'lucide-react'
+import { CalendarDays, HandCoins, LayoutDashboard, ListChecks, ReceiptText, Settings, ShieldCheck, Users, Wallet, type LucideIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { NavLink } from 'react-router-dom'
 import { useOrg } from '../../context/OrgContext'
@@ -12,9 +12,13 @@ interface NavItem {
   permission?: string
 }
 
-// Contributions, Payments, Receipts, Expenses, Collectors and Reports are added as their phases ship.
+// Expenses, Collectors and Reports are added as their phases ship.
 const NAV: NavItem[] = [
   { to: '/app/dashboard', label: 'nav.dashboard', icon: LayoutDashboard },
+  { to: '/app/collect', label: 'nav.collect', icon: HandCoins, permission: 'payments.create' },
+  { to: '/app/contributions', label: 'nav.contributions', icon: ListChecks, permission: 'contributions.view' },
+  { to: '/app/payments', label: 'nav.payments', icon: Wallet, permission: 'payments.view' },
+  { to: '/app/receipts', label: 'nav.receipts', icon: ReceiptText, permission: 'receipts.view' },
   { to: '/app/events', label: 'nav.events', icon: CalendarDays, permission: 'events.view' },
   { to: '/app/people', label: 'nav.people', icon: Users, permission: 'people.view' },
   { to: '/app/users', label: 'nav.users', icon: ShieldCheck, permission: 'members.view' },

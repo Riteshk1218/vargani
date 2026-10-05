@@ -5,13 +5,18 @@ import { ForgotPasswordPage } from '../pages/auth/ForgotPasswordPage'
 import { LoginPage } from '../pages/auth/LoginPage'
 import { RegisterPage } from '../pages/auth/RegisterPage'
 import { VerifyPage } from '../pages/auth/VerifyPage'
+import { CollectPage } from '../pages/collections/CollectPage'
+import { ContributionsPage } from '../pages/contributions/ContributionsPage'
 import { DashboardPage } from '../pages/dashboard/DashboardPage'
 import { EventDetailPage } from '../pages/events/EventDetailPage'
 import { EventsPage } from '../pages/events/EventsPage'
 import { AcceptInvitePage } from '../pages/invite/AcceptInvitePage'
 import { NotFoundPage } from '../pages/NotFoundPage'
 import { CreateOrganizationPage } from '../pages/onboarding/CreateOrganizationPage'
+import { PaymentsPage } from '../pages/payments/PaymentsPage'
 import { PeoplePage } from '../pages/people/PeoplePage'
+import { ReceiptPage } from '../pages/receipts/ReceiptPage'
+import { ReceiptsPage } from '../pages/receipts/ReceiptsPage'
 import { ProfilePage } from '../pages/settings/ProfilePage'
 import { SettingsPage } from '../pages/settings/SettingsPage'
 import { UsersPage } from '../pages/users/UsersPage'
@@ -39,6 +44,11 @@ export function AppRoutes() {
           <Route path="/app" element={<AppLayout />}>
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<DashboardPage />} />
+            <Route path="collect" element={<RequirePermission permission="payments.create"><CollectPage /></RequirePermission>} />
+            <Route path="contributions" element={<RequirePermission permission="contributions.view"><ContributionsPage /></RequirePermission>} />
+            <Route path="payments" element={<RequirePermission permission="payments.view"><PaymentsPage /></RequirePermission>} />
+            <Route path="receipts" element={<RequirePermission permission="receipts.view"><ReceiptsPage /></RequirePermission>} />
+            <Route path="receipts/:id" element={<RequirePermission permission="receipts.view"><ReceiptPage /></RequirePermission>} />
             <Route path="events" element={<RequirePermission permission="events.view"><EventsPage /></RequirePermission>} />
             <Route path="events/:id" element={<RequirePermission permission="events.view"><EventDetailPage /></RequirePermission>} />
             <Route path="people" element={<RequirePermission permission="people.view"><PeoplePage /></RequirePermission>} />

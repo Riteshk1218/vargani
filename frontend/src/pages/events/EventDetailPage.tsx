@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, UserPlus } from 'lucide-react'
+import { ArrowLeft, HandCoins, UserPlus } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router-dom'
@@ -16,6 +16,7 @@ import { eventService } from '../../services/events'
 import { peopleService } from '../../services/people'
 import type { EventParticipant } from '../../types/api'
 import { formatDate, formatMobile, formatMoney } from '../../utils/format'
+import { EventMoneySetup } from './EventMoneySetup'
 import { STATUS_TONE } from './EventsPage'
 
 const PARTICIPATION_ROLES: EventParticipant['participation_role'][] = ['participant', 'volunteer', 'karyakarta', 'guest']
@@ -60,7 +61,13 @@ export function EventDetailPage() {
         title={e.name}
         description={`${e.code} · ${e.financial_year_label}`}
         actions={
-          canManage &&
+          <div className="flex gap-2">
+            {can('payments.create') && e.status === 'active' && (
+              <Link to={`/app/collect?event=${e.id}`}>
+                <Button icon={<HandCoins className="size-4" />}>{t('collect.title')}</Button>
+              </Link>
+            )}
+            {canManage &&
           (e.status === 'closed' ? (
             <Button variant="secondary" onClick={() => setConfirm('reopen')}>
               {t('events.reopen')}
@@ -69,7 +76,8 @@ export function EventDetailPage() {
             <Button variant="secondary" onClick={() => setConfirm('close')}>
               {t('events.close')}
             </Button>
-          ) : null)
+          ) : null)}
+          </div>
         }
       />
       <div className="grid gap-4 lg:grid-cols-3">
@@ -135,6 +143,7 @@ export function EventDetailPage() {
           )}
         </Card>
       </div>
+      {can('contribution_types.view') && <EventMoneySetup eventId={id} />}
       <AddParticipantModal eventId={id} open={adding} onClose={() => setAdding(false)} />
       <ConfirmDialog
         open={confirm !== null}

@@ -83,15 +83,34 @@ api.interceptors.response.use(
   },
 )
 
+type DetailNode = { code: string; message: string } | DetailNode[] | { [key: string]: DetailNode }
+
+function isMessage(node: unknown): node is { code: string; message: string } {
+  return typeof node === 'object' && node !== null && 'message' in node && 'code' in node
+}
+
+/** Nested errors (e.g. one line of a payment) become dotted keys: {"lines": {"0": {"amount": [...]}}} → "lines.0.amount". */
+function flattenDetails(prefix: string, node: unknown, out: Record<string, string[]>) {
+  const key = (part: string | number) => (prefix ? `${prefix}.${part}` : String(part))
+  if (Array.isArray(node)) {
+    node.forEach((item, index) => {
+      if (isMessage(item)) (out[prefix] ??= []).push(item.message)
+      else flattenDetails(key(index), item, out)
+    })
+  } else if (isMessage(node)) {
+    ;(out[prefix] ??= []).push(node.message)
+  } else if (typeof node === 'object' && node !== null) {
+    for (const [field, child] of Object.entries(node as Record<string, DetailNode>)) flattenDetails(key(field), child, out)
+  }
+}
+
 export function toApiError(error: unknown): ApiError {
   if (error instanceof ApiError) return error
   if (axios.isAxiosError(error)) {
     const body = error.response?.data as ApiErrorBody | undefined
     if (body?.error) {
       const details: Record<string, string[]> = {}
-      for (const [field, items] of Object.entries(body.error.details ?? {})) {
-        if (Array.isArray(items)) details[field] = items.map((item) => item.message)
-      }
+      flattenDetails('', body.error.details ?? {}, details)
       return new ApiError(error.response!.status, body.error.code, body.error.message, details, body.request_id)
     }
     if (!error.response) return new ApiError(0, 'network_error', i18n.t('errors.network'))

@@ -197,11 +197,195 @@ export interface InvitationPreview {
   expires_at?: string
 }
 
+export interface MoneyBreakdown {
+  collected: string
+  contributors: number
+  payments: number
+  by_type: { id: string; name: string; total: string; count: number }[]
+  by_fund: { id: string | null; name: string | null; total: string }[]
+  by_month: { month: string; total: string }[]
+  by_mode: { mode: PaymentMode; total: string; count: number }[]
+  target_amount: string | null
+}
+
+export interface FinancialSummary extends MoneyBreakdown {
+  pending_payments: number
+  income: string
+  expenses: string | null
+  balance: string
+  recent_payments: { id: string; payer_name: string; amount: string; mode: PaymentMode; paid_at: string; receipt_number: string | null }[]
+}
+
 export interface DashboardSummary {
   events: { total: number; active: number }
   people?: { total: number; active: number }
   members?: { total: number }
   current_financial_year: { id: string; label: string } | null
-  financial: null | Record<string, unknown>
+  financial: FinancialSummary | null
   event?: { id: string; name: string; status: EventStatus; target_amount: string | null; participants: number | null }
+}
+
+export interface Fund {
+  id: string
+  event: string
+  name: string
+  description: string
+  target_amount: string | null
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export type ContributionKind = 'one_time' | 'recurring_monthly'
+
+export interface ContributionType {
+  id: string
+  event: string
+  fund: string | null
+  fund_name: string | null
+  name: string
+  kind: ContributionKind
+  suggested_min: string | null
+  suggested_max: string | null
+  target_amount: string | null
+  is_mandatory: boolean
+  start_date: string | null
+  end_date: string | null
+  description: string
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export type PaymentMode = 'cash' | 'upi' | 'bank_transfer' | 'cheque' | 'online' | 'other'
+export type PaymentStatus = 'pending' | 'successful' | 'failed' | 'cancelled' | 'refunded'
+export type ContributionStatus = 'pending' | 'confirmed' | 'cancelled' | 'refunded'
+
+export interface PaymentLine {
+  id: string
+  contribution_type: string
+  contribution_type_name: string
+  fund: string | null
+  fund_name: string | null
+  period_month: string | null
+  amount: string
+  status: ContributionStatus
+  notes: string
+}
+
+export interface ReceiptRef {
+  id: string
+  receipt_number: string
+  status: 'issued' | 'void'
+  issued_at: string
+}
+
+export interface Payment {
+  id: string
+  event: string
+  event_name: string
+  payer: string
+  payer_name: string
+  payer_mobile: string
+  amount: string
+  mode: PaymentMode
+  status: PaymentStatus
+  paid_at: string
+  reference_number: string
+  cheque_bank: string
+  cheque_date: string | null
+  collector_name: string | null
+  notes: string
+  status_reason: string
+  lines: PaymentLine[]
+  receipt: ReceiptRef | null
+  created_at: string
+}
+
+export interface PaymentInput {
+  event: string
+  payer: string
+  mode: PaymentMode
+  status?: 'successful' | 'pending'
+  paid_at?: string
+  amount?: string
+  reference_number?: string
+  cheque_bank?: string
+  cheque_date?: string | null
+  notes?: string
+  lines: { contribution_type: string; amount: string; period_month?: string | null; notes?: string }[]
+}
+
+export interface Contribution {
+  id: string
+  event: string
+  person: string
+  person_name: string
+  contribution_type: string
+  contribution_type_name: string
+  fund: string | null
+  fund_name: string | null
+  payment: string
+  mode: PaymentMode
+  period_month: string | null
+  amount: string
+  contributed_on: string
+  status: ContributionStatus
+  collector_name: string | null
+  notes: string
+  created_at: string
+}
+
+export interface ReceiptSnapshot {
+  organization: {
+    name: string
+    address: string
+    phone: string
+    email: string
+    registration_type: string
+    registration_number: string
+    logo: string | null
+  }
+  person: { name: string; mobile: string; address: string }
+  event: { name: string; code: string }
+  financial_year: string
+  lines: { contribution_type: string; fund: string | null; period_month: string | null; amount: string }[]
+  total: string
+  currency: string
+  mode: PaymentMode
+  reference_number: string
+  cheque_bank: string
+  cheque_date: string | null
+  paid_at: string
+  collector: string | null
+  thank_you_message: string
+}
+
+export interface Receipt {
+  id: string
+  receipt_number: string
+  status: 'issued' | 'void'
+  issued_at: string
+  language: string
+  event: string
+  payment: string
+  payer: string
+  payer_name: string
+  amount: string
+  mode: PaymentMode
+  void_reason: string
+  voided_at: string | null
+  replaces_receipt: string | null
+  snapshot: ReceiptSnapshot
+  logo_url: string | null
+}
+
+export interface OutstandingReport {
+  expected_per_person: string
+  participants: number
+  total_expected: string
+  total_paid: string
+  total_due: string
+  people_with_dues: number
+  results: { person: string; person_name: string; mobile: string; expected: string; paid: string; due: string }[]
 }

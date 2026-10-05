@@ -1,4 +1,4 @@
-import { formatMobile, formatMoney, initials, suggestFinancialYear } from '../utils/format'
+import { formatMobile, formatMoney, initials, sumMoney, suggestFinancialYear } from '../utils/format'
 
 describe('format helpers', () => {
   it('formats money from decimal strings with Indian grouping', () => {
@@ -19,5 +19,12 @@ describe('format helpers', () => {
   it('suggests the April–March financial year', () => {
     expect(suggestFinancialYear(new Date(2026, 9, 5))).toEqual({ label: '2026–27', start_date: '2026-04-01', end_date: '2027-03-31' })
     expect(suggestFinancialYear(new Date(2027, 1, 10)).label).toBe('2026–27')
+  })
+
+  it('adds money exactly, without floating point errors', () => {
+    expect(sumMoney(['500', '700', '1000', '400'])).toBe('2600.00')
+    expect(sumMoney(['0.1', '0.2'])).toBe('0.30')
+    expect(sumMoney(['300.5', '200.05', '', 'abc'])).toBe('500.55')
+    expect(sumMoney([])).toBe('0.00')
   })
 })

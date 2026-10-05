@@ -50,4 +50,23 @@ describe('api client', () => {
     const error = toApiError(Object.assign(new Error('Network Error'), { isAxiosError: true }))
     expect(error.code).toBe('network_error')
   })
+
+  it('flattens nested errors such as one line of a payment', () => {
+    const body = {
+      error: {
+        code: 'validation_error',
+        message: 'Some fields are invalid.',
+        details: {
+          lines: { '1': { amount: [{ code: 'invalid', message: 'Amount must be more than zero.' }] } },
+          payer: [{ code: 'does_not_exist', message: 'Invalid pk.' }],
+          items: [{}, { amount: [{ code: 'min_value', message: 'Too small.' }] }],
+        },
+      },
+      request_id: 'req-2',
+    }
+    const error = toApiError(Object.assign(new Error('Bad Request'), { isAxiosError: true, response: { status: 400, data: body } }))
+    expect(error.fieldError('lines.1.amount')).toBe('Amount must be more than zero.')
+    expect(error.fieldError('payer')).toBe('Invalid pk.')
+    expect(error.fieldError('items.1.amount')).toBe('Too small.')
+  })
 })
