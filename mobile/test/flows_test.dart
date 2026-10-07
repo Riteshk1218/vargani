@@ -1,0 +1,197 @@
+import 'dart:convert';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:vargani_app/api/api_client.dart';
+import 'package:vargani_app/main.dart';
+import 'package:vargani_app/state/app_state.dart';
+
+/// A small fake of the Vargani API with the response shapes the real server returns.
+class FakeApi {
+  FakeApi({required this.role});
+  final String role; // collector | member
+  final requests = <http.Request>[];
+  final collections = <Map<String, dynamic>>[];
+
+  static const org = 'org-1', event = 'ev-1', ct = 'ct-1';
+
+  Map<String, dynamic> get permissions => role == 'collector'
+      ? {'payments.create': 'assigned', 'receipts.view': 'own', 'receipts.share': 'own', 'portal.self': 'self'}
+      : {'portal.self': 'self'};
+
+  http.Response _json(Object body, [int status = 200]) =>
+      http.Response.bytes(utf8.encode(jsonEncode(body)), status, headers: {'content-type': 'application/json'});
+
+  Future<http.Response> handle(http.Request r) async {
+    requests.add(r);
+    final p = r.url.path.replaceFirst('/api/v1', '');
+    switch ((r.method, p)) {
+      case ('POST', '/auth/login/'):
+        final b = jsonDecode(r.body);
+        if (b['password'] != 'right') {
+          return _json({'error': {'code': 'invalid_credentials', 'message': 'Wrong login details.', 'details': {}}}, 400);
+        }
+        return _json({'access': 'A', 'refresh': 'R', 'user': {}});
+      case ('POST', '/auth/otp/request/'):
+        return _json({'verification': {'destination': '+91******122', 'channel': 'sms'}, 'debug_code': '123456'});
+      case ('POST', '/auth/otp/verify/'):
+        return _json({'access': 'A', 'refresh': 'R', 'user': {}});
+      case ('GET', '/me/'):
+        return _json({'full_name': role == 'collector' ? 'Kiran' : 'Ritesh', 'preferred_language': 'en'});
+      case ('PATCH', '/me/'):
+        return _json({});
+      case ('GET', '/me/organizations/'):
+        return _json([
+          {'id': org, 'name': 'Demo Mandal', 'logo_url': null, 'role': {'code': role, 'name': role}}
+        ]);
+      case ('GET', '/me/organizations/$org/'):
+        return _json({
+          'organization': {'id': org, 'name': 'Demo Mandal', 'logo_url': null},
+          'role': {'code': role, 'name': role},
+          'permissions': permissions,
+        });
+      case ('GET', '/events/'):
+        return _json({'count': 1, 'next': null, 'results': [
+          {'id': event, 'name': 'Ganesh Chaturthi 2026', 'start_date': '2026-08-01', 'end_date': '2026-12-31'}
+        ]});
+      case ('GET', '/notifications/unread-count/'):
+        return _json({'unread': 2});
+      case ('GET', '/collectors/me/dashboard/'):
+        return _json({'today': '651.00', 'this_week': '651.00', 'this_month': '1651.00', 'total': '110000.50',
+          'by_mode': {'cash': '0.00', 'upi': '651.00'}, 'assigned': 2, 'paid_this_month': 1, 'recent_receipts': []});
+      case ('GET', '/people/'):
+        return _json({'count': 1, 'next': null, 'results': [
+          {'id': 'p-1', 'full_name': 'Sunita More', 'mobile': '+919822001133', 'area': 'Shivaji Nagar'}
+        ]});
+      case ('GET', '/contribution-types/'):
+        return _json({'count': 1, 'next': null, 'results': [
+          {'id': ct, 'name': 'Ganesh Vargani', 'fund_name': 'Utsav Fund', 'kind': 'one_time',
+           'suggested_min': '500.00', 'suggested_max': '700.00'}
+        ]});
+      case ('POST', '/collections/'):
+        final b = jsonDecode(r.body) as Map<String, dynamic>;
+        collections.add({...b, 'key': r.headers['Idempotency-Key']});
+        return _json({'id': 'pay-1', 'amount': '651.00', 'receipt': {'id': 'rc-1', 'receipt_number': 'GC-2026-00002'}}, 201);
+      case ('GET', '/receipts/rc-1/'):
+        return _json(_receipt);
+      case ('GET', '/portal/me/'):
+        return _json({'person': {'full_name': 'Ritesh Patil'}, 'organization': {'name': 'Demo Mandal'},
+          'events': [{'id': event, 'name': 'Ganesh Chaturthi 2026', 'status': 'active'}], 'online_payments': true});
+      case ('GET', '/portal/summary/'):
+        return _json({'total_paid': '300.00', 'total_due': '300.00', 'by_type': [], 'dues': [
+          {'contribution_type': ct, 'name': 'Ganesh Vargani', 'expected': '600.00', 'paid': '300.00', 'due': '300.00'}
+        ]});
+    }
+    return _json({'error': {'code': 'not_found', 'message': 'Not found: ${r.method} $p', 'details': {}}}, 404);
+  }
+
+  static final _receipt = {
+    'id': 'rc-1', 'receipt_number': 'GC-2026-00002', 'status': 'issued', 'amount': '651.00', 'logo_url': null,
+    'snapshot': {
+      'organization': {'name': 'Demo Mandal', 'address': 'Pune'},
+      'person': {'name': 'Sunita More', 'mobile': '+919822001133'},
+      'event': {'name': 'Ganesh Chaturthi 2026'},
+      'lines': [{'contribution_type': 'Ganesh Vargani', 'fund': 'Utsav Fund', 'amount': '651.00'}],
+      'total': '651.00', 'mode': 'upi', 'reference_number': 'UPI123', 'collector': 'Kiran',
+      'paid_at': '2026-10-07T15:55:51Z',
+    },
+  };
+}
+
+Future<(AppState, FakeApi)> start(WidgetTester tester, String role) async {
+  SharedPreferences.setMockInitialValues({});
+  final prefs = await SharedPreferences.getInstance();
+  final fake = FakeApi(role: role);
+  final state = AppState(
+    api: ApiClient(baseUrl: 'https://api.test', tokens: MemoryTokenStore(), httpClient: MockClient(fake.handle)),
+    prefs: prefs,
+  );
+  await tester.binding.setSurfaceSize(const Size(420, 900));
+  await tester.pumpWidget(VarganiApp(state: state));
+  await state.load();
+  await tester.pumpAndSettle();
+  return (state, fake);
+}
+
+void main() {
+  testWidgets('collector logs in, records a collection once and sees the receipt', (tester) async {
+    final (_, fake) = await start(tester, 'collector');
+
+    await tester.enterText(find.byKey(const Key('login-identifier')), 'kiran@demo.test');
+    await tester.enterText(find.byKey(const Key('login-password')), 'wrong');
+    await tester.tap(find.byKey(const Key('login-submit')));
+    await tester.pumpAndSettle();
+    expect(find.text('Wrong login details.'), findsOneWidget);
+
+    await tester.enterText(find.byKey(const Key('login-password')), 'right');
+    await tester.tap(find.byKey(const Key('login-submit')));
+    await tester.pumpAndSettle();
+
+    // Organization picked automatically (only one); dashboard for the active event.
+    expect(find.text('Demo Mandal'), findsOneWidget);
+    expect(find.text('Ganesh Chaturthi 2026'), findsOneWidget);
+    expect(find.text('₹1,10,000.50'), findsOneWidget);
+    expect(find.text('2'), findsWidgets); // unread badge
+
+    await tester.tap(find.text('People'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Sunita More'));
+    await tester.pumpAndSettle();
+
+    // Only one type: preselected. Bad amount shows a local error.
+    await tester.enterText(find.byKey(const Key('collect-amount-0')), '12.345');
+    await tester.pump();
+    expect(find.text('Enter an amount such as 500 or 750.50'), findsOneWidget);
+    await tester.enterText(find.byKey(const Key('collect-amount-0')), '651');
+    await tester.tap(find.byKey(const Key('mode-upi')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('collect-reference')), 'UPI123');
+    await tester.ensureVisible(find.byKey(const Key('collect-save')));
+    await tester.tap(find.byKey(const Key('collect-save')));
+    await tester.pumpAndSettle();
+
+    expect(fake.collections, hasLength(1));
+    final c = fake.collections.single;
+    expect(c['payer'], 'p-1');
+    expect(c['mode'], 'upi');
+    expect(c['reference_number'], 'UPI123');
+    expect(c['lines'], [{'contribution_type': 'ct-1', 'amount': '651.00'}]);
+    expect(c['key'], isNotEmpty);
+    expect(fake.requests.last.headers['X-Organization-ID'], 'org-1');
+
+    expect(find.text('Receipt issued'), findsWidgets);
+    expect(find.text('Receipt no. GC-2026-00002'), findsOneWidget);
+    expect(find.byKey(const Key('receipt-whatsapp')), findsOneWidget);
+  });
+
+  testWidgets('member logs in with an SMS code and sees dues in Marathi', (tester) async {
+    final (state, fake) = await start(tester, 'member');
+
+    await tester.tap(find.text('Member'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('otp-mobile')), '9822001122');
+    await tester.tap(find.byKey(const Key('otp-send')));
+    await tester.pumpAndSettle();
+    expect(find.text('Code sent to +91******122'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('otp-verify')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Ritesh Patil'), findsOneWidget);
+    expect(find.text('Ganesh Vargani'), findsOneWidget);
+    expect(find.byKey(const Key('member-pay')), findsOneWidget);
+    expect(find.text('Collect'), findsNothing); // no collector screens for members
+
+    await tester.tap(find.text('Settings'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('lang-mr')));
+    await tester.pumpAndSettle();
+    expect(state.language, 'mr');
+    expect(find.text('सेटिंग्ज'), findsWidgets);
+    final patch = fake.requests.where((r) => r.method == 'PATCH').single;
+    expect(jsonDecode(patch.body), {'preferred_language': 'mr'});
+    expect(fake.requests.last.headers['Accept-Language'], 'mr');
+  });
+}
