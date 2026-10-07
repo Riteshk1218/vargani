@@ -1,0 +1,70 @@
+# Try Vargani on your own computer: website, mobile app (in the browser) and API, with demo data.
+# Needs Docker Desktop. Start: double-click START-DEMO.bat (Windows) or run ./start-demo.sh (Mac/Linux).
+#   Website:     http://localhost:8080
+#   Mobile app:  http://localhost:8081
+# For trying out only: the passwords and keys below are public. Never use this file for the live site.
+name: vargani-demo
+
+x-api-env: &api-env
+  DJANGO_SETTINGS_MODULE: config.settings.dev
+  DJANGO_SECRET_KEY: demo-only-not-secret-3c1f9a7e2b
+  DJANGO_DEBUG: "true"
+  DJANGO_ALLOWED_HOSTS: "*"
+  DATABASE_URL: postgres://vargani:vargani@db:5432/vargani
+  REDIS_URL: redis://redis:6379/0
+  MEDIA_ROOT: /srv/media
+  FRONTEND_URL: http://localhost:8080
+  API_PUBLIC_URL: http://localhost:8080
+  OTP_DEBUG_ECHO: "true"           # login codes are shown on screen instead of being sent by SMS
+  SMS_BACKEND: apps.accounts.sms.ConsoleSMSBackend
+  EMAIL_BACKEND: django.core.mail.backends.console.EmailBackend
+  PUSH_BACKEND: console
+  CELERY_TASK_ALWAYS_EAGER: "true"
+  FIELD_ENCRYPTION_KEY: ZGVtby1vbmx5LW5vdC1zZWNyZXQta2V5LTMyYnl0ZXM=
+
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: vargani
+      POSTGRES_USER: vargani
+      POSTGRES_PASSWORD: vargani
+    volumes: [demo-db:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vargani"]
+      interval: 3s
+      retries: 30
+
+  redis:
+    image: redis:7
+
+  api:
+    build: ../backend
+    command: sh -c "python manage.py migrate --noinput && python manage.py runserver 0.0.0.0:8000"
+    environment: *api-env
+    volumes: [demo-media:/srv/media]
+    depends_on:
+      db: { condition: service_healthy }
+      redis: { condition: service_started }
+
+  demo-data:
+    build: ../backend
+    command: python scripts/seed_demo.py
+    environment:
+      DEMO_API: http://api:8000
+    depends_on: [api]
+    restart: "no"
+
+  web:
+    build: ../frontend
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./mobile-web:/srv/mobile:ro
+    ports:
+      - "8080:80"   # website
+      - "8081:81"   # mobile app in the browser
+    depends_on: [api]
+
+volumes:
+  demo-db:
+  demo-media:

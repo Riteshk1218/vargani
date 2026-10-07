@@ -4,6 +4,8 @@ One platform for any organization that collects contributions (Ganeshotsav manda
 
 - `backend/` — Django REST API at `/api/v1/` (the only way to the data, for the website and the FlutterFlow app)
 - `frontend/` — React + TypeScript website
+- `mobile/` — Flutter mobile app (Android, iOS later)
+- `demo/` — one-click local demo with sample data
 - Architecture, database, API and roadmap docs: `architecture/` in the project files
 
 ## Status
@@ -30,6 +32,11 @@ One platform for any organization that collects contributions (Ganeshotsav manda
 | Building the mobile app in FlutterFlow | `docs/mobile/FLUTTERFLOW_GUIDE.md` |
 | API contract (OpenAPI, Postman) | `docs/api/` |
 | Privacy policy and Play Store data-safety drafts | `docs/legal/` (have them reviewed before publishing) |
+
+## Try it on your laptop
+
+Double-click `demo/START-DEMO.bat` (needs Docker Desktop): website on http://localhost:8080 and the mobile app on
+http://localhost:8081, with a sample mandal and logins. Steps in `demo/README.md`.
 
 ## Quick start (Docker)
 

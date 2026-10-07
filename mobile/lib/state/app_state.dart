@@ -7,7 +7,11 @@ import '../l10n/strings.dart';
 
 /// Default API address, set at build time:
 /// flutter build apk --dart-define=API_BASE=https://api.your-domain.in
+/// Built for the web with `--dart-define=API_BASE=` (empty), the app uses the address it was
+/// opened from, so one web server can serve the app and forward /api to Django.
 const defaultApiBase = String.fromEnvironment('API_BASE', defaultValue: 'http://10.0.2.2:8000');
+
+String initialApiBase() => defaultApiBase.isEmpty && kIsWeb ? Uri.base.origin : defaultApiBase;
 
 class SecureTokenStore implements TokenStore {
   static const _key = 'refresh_token';
@@ -60,7 +64,7 @@ class AppState extends ChangeNotifier {
 
   Future<void> load() async {
     _prefs ??= await SharedPreferences.getInstance();
-    api.baseUrl = _prefs!.getString('api_base') ?? defaultApiBase;
+    api.baseUrl = _prefs!.getString('api_base') ?? initialApiBase();
     api.language = _prefs!.getString('language') ?? 'en';
     final savedOrg = _prefs!.getString('org_id');
     try {

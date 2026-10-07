@@ -23,6 +23,13 @@ Safety built in:
   refresh fails.
 - Online payments are confirmed only by the server after it checks Razorpay's signature.
 
+## Try it without building anything
+
+`demo/README.md` starts the website, this app (in the browser) and the API on a laptop with Docker
+Desktop and sample data. `demo/mobile-web/` is this app built for the browser with
+`flutter build web --release --no-web-resources-cdn --dart-define=API_BASE=` (empty API_BASE means "use the
+address the page was opened from"); rebuild it after changing the app.
+
 ## Run it
 
 ```bash
@@ -88,6 +95,6 @@ lib/
   screens/                  login, organization picker, collector, member, receipts, alerts, settings
   widgets/common.dart       loading/error states, cards, event switcher
 test/                       unit and widget tests (fake API with the real response shapes)
-tool/seed_demo.py           creates a demo organization through the API (dev only)
-tool/e2e.mjs                browser walkthrough of the web build against a real API (dev only)
+../backend/scripts/seed_demo.py  creates a demo organization through the API (dev only)
+tool/e2e.mjs                    browser walkthrough of the web build against a real API (dev only)
 ```

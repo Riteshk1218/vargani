@@ -1,10 +1,10 @@
 {
-    "name": "vargani_app",
-    "short_name": "vargani_app",
+    "name": "Vargani",
+    "short_name": "Vargani",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
-    "theme_color": "#0175C2",
+    "theme_color": "#E65100",
     "description": "Vargani contribution management",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,

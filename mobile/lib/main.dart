@@ -9,7 +9,7 @@ import 'widgets/common.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  final state = AppState(api: ApiClient(baseUrl: defaultApiBase, tokens: SecureTokenStore()));
+  final state = AppState(api: ApiClient(baseUrl: initialApiBase(), tokens: SecureTokenStore()));
   runApp(VarganiApp(state: state));
   state.load();
 }

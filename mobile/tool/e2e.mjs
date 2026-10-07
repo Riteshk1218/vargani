@@ -1,4 +1,4 @@
-// Browser walkthrough of the web build against a real API seeded with tool/seed_demo.py.
+// Browser walkthrough of the web build against a real API seeded with backend/scripts/seed_demo.py.
 // flutter build web --no-web-resources-cdn --dart-define=API_BASE=http://localhost:8000
 // serve build/web on :8080 (add http://localhost:8080 to CORS_ALLOWED_ORIGINS), then: node tool/e2e.mjs
 import { chromium } from 'playwright';
