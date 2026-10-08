@@ -30,6 +30,8 @@ export const expenseService = {
   get: (id: string) => api.get<Expense>(`/expenses/${id}/`).then((r) => r.data),
   create: (input: ExpenseInput) => api.post<Expense>('/expenses/', input).then((r) => r.data),
   update: (id: string, input: Partial<ExpenseInput>) => api.patch<Expense>(`/expenses/${id}/`, input).then((r) => r.data),
+  /** Organization Admin only. */
+  remove: (id: string) => api.delete(`/expenses/${id}/`),
   act: (id: string, action: ExpenseAction, reason = '') => api.post<Expense>(`/expenses/${id}/${action}/`, { reason }).then((r) => r.data),
   upload: (id: string, file: File) => {
     const form = new FormData()
@@ -44,9 +46,12 @@ export const expenseService = {
 export const otherIncomeService = {
   list: (params: ListParams) => api.get<Paginated<OtherIncome>>('/other-income/', { params }).then((r) => r.data),
   create: (input: OtherIncomeInput) => api.post<OtherIncome>('/other-income/', input).then((r) => r.data),
-  update: (id: string, input: Pick<OtherIncome, 'description' | 'reference_number'>) =>
+  /** Everyone may change description and reference; an Organization Admin may change every field. */
+  update: (id: string, input: Partial<OtherIncomeInput>) =>
     api.patch<OtherIncome>(`/other-income/${id}/`, input).then((r) => r.data),
   void: (id: string, reason: string) => api.post<OtherIncome>(`/other-income/${id}/void/`, { reason }).then((r) => r.data),
+  /** Organization Admin only. */
+  remove: (id: string) => api.delete(`/other-income/${id}/`),
 }
 
 export const reportService = {

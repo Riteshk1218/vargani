@@ -9,6 +9,7 @@ export const PAYMENT_TONE: Record<PaymentStatus, 'green' | 'amber' | 'red' | 'gr
   failed: 'red',
   cancelled: 'gray',
   refunded: 'gray',
+  deleted: 'red',
 }
 
 export const EXPENSE_STATUSES: ExpenseStatus[] = ['draft', 'submitted', 'approved', 'rejected', 'void']

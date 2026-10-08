@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { PiggyBank, Plus } from 'lucide-react'
+import { Pencil, PiggyBank, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../../components/ui/Button'
@@ -22,11 +22,19 @@ import { INCOME_SOURCES, MANUAL_MODES } from '../../utils/payments'
 /** Income that does not come from a person: donation box (hundi), sponsorship, bank interest, sales. */
 export function OtherIncomePage() {
   const { t } = useTranslation()
-  const { activeOrgId, detail } = useOrg()
+  const { activeOrgId, detail, can } = useOrg()
   const { activeEvent } = useEvents()
+  const queryClient = useQueryClient()
+  const onError = useApiErrors()
+  const isAdmin = can('records.admin_edit')
   const [source, setSource] = useState('')
   const [page, setPage] = useState(1)
-  const [adding, setAdding] = useState(false)
+  const [adding, setAdding] = useState<OtherIncome | true | false>(false)
+  const remove = useMutation({
+    mutationFn: (id: string) => otherIncomeService.remove(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['org', activeOrgId] }),
+    onError,
+  })
   const [voiding, setVoiding] = useState<OtherIncome | null>(null)
   const eventId = activeEvent?.id
   const currency = detail?.organization.currency
@@ -98,6 +106,18 @@ export function OtherIncomePage() {
                             {t('expenses.actions.void')}
                           </Button>
                         )}
+                        {isAdmin && (
+                          <>
+                            <Button size="sm" variant="ghost" aria-label={t('common.edit')} icon={<Pencil className="size-4" />} onClick={() => setAdding(i)} />
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              aria-label={t('common.delete')}
+                              icon={<Trash2 className="size-4" />}
+                              onClick={() => window.confirm(t('income.deleteConfirm')) && remove.mutate(i.id)}
+                            />
+                          </>
+                        )}
                       </div>
                     </li>
                   ))}
@@ -108,13 +128,14 @@ export function OtherIncomePage() {
           </>
         )}
       </Card>
-      {adding && eventId && <IncomeFormModal eventId={eventId} onClose={() => setAdding(false)} />}
+      {adding && eventId && <IncomeFormModal eventId={eventId} income={adding === true ? null : adding} onClose={() => setAdding(false)} />}
       <VoidIncomeModal income={voiding} onClose={() => setVoiding(null)} />
     </div>
   )
 }
 
-function IncomeFormModal({ eventId, onClose }: { eventId: string; onClose: () => void }) {
+/** Add income, or (Organization Admin) change any field of existing income. */
+function IncomeFormModal({ eventId, income, onClose }: { eventId: string; income: OtherIncome | null; onClose: () => void }) {
   const { t } = useTranslation()
   const { activeOrgId } = useOrg()
   const queryClient = useQueryClient()
@@ -122,18 +143,18 @@ function IncomeFormModal({ eventId, onClose }: { eventId: string; onClose: () =>
   const funds = useQuery({ queryKey: ['org', activeOrgId, 'funds', eventId], queryFn: () => fundService.list(eventId) })
   const [form, setForm] = useState<OtherIncomeInput>({
     event: eventId,
-    fund: null,
-    source: 'donation_box',
-    amount: '',
-    received_on: todayIso(),
-    mode: 'cash',
-    reference_number: '',
-    description: '',
+    fund: income?.fund ?? null,
+    source: income?.source ?? 'donation_box',
+    amount: income?.amount ?? '',
+    received_on: income?.received_on ?? todayIso(),
+    mode: income?.mode ?? 'cash',
+    reference_number: income?.reference_number ?? '',
+    description: income?.description ?? '',
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
   const set = (key: keyof OtherIncomeInput) => (e: { target: { value: string } }) => setForm((f) => ({ ...f, [key]: e.target.value }))
   const save = useMutation({
-    mutationFn: () => otherIncomeService.create(form),
+    mutationFn: () => (income ? otherIncomeService.update(income.id, form) : otherIncomeService.create(form)),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['org', activeOrgId] })
       notify(t('common.saved'))
@@ -149,7 +170,7 @@ function IncomeFormModal({ eventId, onClose }: { eventId: string; onClose: () =>
   return (
     <Modal
       open
-      title={t('income.add')}
+      title={income ? t('income.edit') : t('income.add')}
       onClose={onClose}
       footer={
         <>

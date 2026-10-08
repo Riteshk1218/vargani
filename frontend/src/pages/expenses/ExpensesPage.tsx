@@ -16,7 +16,7 @@ import { expenseCategoryService, expenseService, type ExpenseAction } from '../.
 import { saveBlob } from '../../services/finance'
 import { toApiError } from '../../services/apiClient'
 import type { Expense, ExpenseInput, PaymentMode } from '../../types/api'
-import { formatBytes, formatDate, formatDateTime, formatMoney, todayIso } from '../../utils/format'
+import { formatBytes, formatDate, formatDateTime, formatMoney, formatStamp, todayIso } from '../../utils/format'
 import { EXPENSE_STATUSES, EXPENSE_TONE, MANUAL_MODES } from '../../utils/payments'
 
 export function ExpensesPage() {
@@ -99,11 +99,12 @@ export function ExpensesPage() {
                       <button type="button" onClick={() => setSelectedId(e.id)} className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm hover:bg-slate-50">
                         <div className="min-w-0">
                           <p className="truncate font-medium">
-                            {e.payee}
+                            {expenseTitle(e)}
                             {e.attachments.length > 0 && <Paperclip className="ml-1 inline size-3.5 text-slate-400" aria-label={t('expenses.hasBills')} />}
                           </p>
                           <p className="truncate text-slate-500">
-                            {formatDate(e.expense_date)} · {e.category_name} · {t(`mode.${e.mode}`)}
+                            {expenseWhen(e)} · {e.category_name} · {t(`mode.${e.mode}`)}
+                            {e.created_by_name && ` · ${e.created_by_name}`}
                           </p>
                         </div>
                         <div className="shrink-0 text-right">
@@ -136,6 +137,21 @@ export function ExpensesPage() {
   )
 }
 
+/** Who was paid, else the purpose, else the category. */
+function expenseTitle(e: Expense) {
+  return e.payee || e.description.split('\n')[0] || e.category_name
+}
+
+/** "08-Oct-2026, 10:35 PM", or just the date when no time was recorded. */
+function expenseWhen(e: Expense) {
+  return e.expense_time ? formatStamp(`${e.expense_date}T${e.expense_time}`) : formatDate(e.expense_date)
+}
+
+function nowTime() {
+  const now = new Date()
+  return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+}
+
 function ExpenseFormModal({ expense, eventId, onClose, onSaved }: { expense: Expense | null; eventId: string; onClose: () => void; onSaved: (e: Expense) => void }) {
   const { t } = useTranslation()
   const { activeOrgId } = useOrg()
@@ -147,15 +163,23 @@ function ExpenseFormModal({ expense, eventId, onClose, onSaved }: { expense: Exp
     category: expense?.category ?? '',
     amount: expense?.amount ?? '',
     expense_date: expense?.expense_date ?? todayIso(),
+    expense_time: expense ? (expense.expense_time?.slice(0, 5) ?? '') : nowTime(),
     mode: expense?.mode ?? 'cash',
     payee: expense?.payee ?? '',
     description: expense?.description ?? '',
     reference_number: expense?.reference_number ?? '',
   }))
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [bill, setBill] = useState<File | null>(null)
   const set = (key: keyof ExpenseInput) => (e: { target: { value: string } }) => setForm((f) => ({ ...f, [key]: e.target.value }))
   const save = useMutation({
-    mutationFn: () => (expense ? expenseService.update(expense.id, form) : expenseService.create(form)),
+    mutationFn: async (andSubmit: boolean) => {
+      const input = { ...form, expense_time: form.expense_time || null }
+      let saved = expense ? await expenseService.update(expense.id, input) : await expenseService.create(input)
+      if (bill) await expenseService.upload(saved.id, bill)
+      if (andSubmit) saved = await expenseService.act(saved.id, 'submit')
+      return saved
+    },
     onSuccess: async (saved) => {
       await queryClient.invalidateQueries({ queryKey: ['org', activeOrgId] })
       notify(t('common.saved'))
@@ -169,6 +193,7 @@ function ExpenseFormModal({ expense, eventId, onClose, onSaved }: { expense: Exp
     },
   })
   const active = categories.data?.filter((c) => c.is_active || c.id === form.category) ?? []
+  const canSubmit = !expense || expense.status === 'draft' || expense.status === 'rejected'
 
   return (
     <Modal
@@ -180,13 +205,18 @@ function ExpenseFormModal({ expense, eventId, onClose, onSaved }: { expense: Exp
           <Button variant="secondary" onClick={onClose}>
             {t('common.cancel')}
           </Button>
-          <Button loading={save.isPending} onClick={() => save.mutate()}>
-            {t('common.save')}
+          <Button variant={canSubmit ? 'secondary' : 'primary'} loading={save.isPending && !save.variables} onClick={() => save.mutate(false)}>
+            {canSubmit ? t('expenses.saveDraft') : t('common.save')}
           </Button>
+          {canSubmit && (
+            <Button icon={<Send className="size-4" />} loading={save.isPending && save.variables} onClick={() => save.mutate(true)}>
+              {t('expenses.saveAndSubmit')}
+            </Button>
+          )}
         </>
       }
     >
-      <form className="grid gap-3 sm:grid-cols-2" onSubmit={(e) => (e.preventDefault(), save.mutate())}>
+      <form className="grid gap-3 sm:grid-cols-2" onSubmit={(e) => (e.preventDefault(), save.mutate(false))}>
         <SelectInput label={t('expenses.category')} required value={form.category} error={errors.category} onChange={set('category')}>
           <option value="">{t('common.choose')}</option>
           {active.map((c) => (
@@ -196,8 +226,10 @@ function ExpenseFormModal({ expense, eventId, onClose, onSaved }: { expense: Exp
           ))}
         </SelectInput>
         <TextInput label={t('common.amount')} required inputMode="decimal" value={form.amount} error={errors.amount} onChange={set('amount')} />
-        <TextInput className="sm:col-span-2" label={t('expenses.payee')} required value={form.payee} maxLength={200} error={errors.payee} onChange={set('payee')} />
+        <TextArea className="sm:col-span-2" label={t('expenses.purpose')} rows={2} value={form.description} error={errors.description} onChange={set('description')} />
+        <TextInput className="sm:col-span-2" label={t('expenses.payee')} hint={t('common.optional')} value={form.payee} maxLength={200} error={errors.payee} onChange={set('payee')} />
         <TextInput label={t('expenses.date')} type="date" required max={todayIso()} value={form.expense_date} error={errors.expense_date} onChange={set('expense_date')} />
+        <TextInput label={t('expenses.time')} type="time" value={form.expense_time ?? ''} error={errors.expense_time} onChange={set('expense_time')} />
         <SelectInput label={t('collect.mode')} value={form.mode} error={errors.mode} onChange={(e) => setForm((f) => ({ ...f, mode: e.target.value as PaymentMode }))}>
           {MANUAL_MODES.map((m) => (
             <option key={m} value={m}>
@@ -206,7 +238,18 @@ function ExpenseFormModal({ expense, eventId, onClose, onSaved }: { expense: Exp
           ))}
         </SelectInput>
         <TextInput className="sm:col-span-2" label={t('collect.reference')} hint={t('common.optional')} value={form.reference_number} maxLength={100} onChange={set('reference_number')} />
-        <TextArea className="sm:col-span-2" label={t('common.description')} hint={t('common.optional')} rows={3} value={form.description} onChange={set('description')} />
+        <label className="text-sm sm:col-span-2">
+          <span className="mb-1 block font-medium text-slate-700">
+            {t('expenses.billPhoto')} <span className="font-normal text-slate-500">({t('common.optional')})</span>
+          </span>
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp,application/pdf"
+            capture="environment"
+            className="block w-full text-sm"
+            onChange={(ev) => setBill(ev.target.files?.[0] ?? null)}
+          />
+        </label>
       </form>
     </Modal>
   )
@@ -245,12 +288,32 @@ function ExpenseDetailModal({ id, onClose, onEdit }: { id: string; onClose: () =
   })
   const e = expense.data
   const currency = detail?.organization.currency
-  const changeable = e && ['draft', 'submitted', 'rejected'].includes(e.status)
+  const isAdmin = can('records.admin_edit')
+  const changeable = e && (isAdmin || ['draft', 'submitted', 'rejected'].includes(e.status))
   const canCreate = can('expenses.create')
+  const [deleting, setDeleting] = useState(false)
+  const destroy = useMutation({
+    mutationFn: () => expenseService.remove(id),
+    onSuccess: async () => {
+      await refresh()
+      notify(t('expenses.deleted'))
+      onClose()
+    },
+    onError,
+  })
   const canApprove = can('expenses.approve')
   const needsReason = action === 'reject' || action === 'void'
 
-  const footer = !e ? null : action ? (
+  const footer = !e ? null : deleting ? (
+    <>
+      <Button variant="secondary" onClick={() => setDeleting(false)}>
+        {t('common.back')}
+      </Button>
+      <Button variant="danger" loading={destroy.isPending} onClick={() => destroy.mutate()}>
+        {t('expenses.delete')}
+      </Button>
+    </>
+  ) : action ? (
     <>
       <Button variant="secondary" onClick={() => setAction(null)}>
         {t('common.back')}
@@ -261,6 +324,11 @@ function ExpenseDetailModal({ id, onClose, onEdit }: { id: string; onClose: () =
     </>
   ) : (
     <>
+      {isAdmin && (
+        <Button variant="ghost" icon={<Trash2 className="size-4" />} onClick={() => setDeleting(true)}>
+          {t('expenses.delete')}
+        </Button>
+      )}
       {canCreate && e.status !== 'void' && (e.status !== 'approved' || canApprove) && (
         <Button variant="ghost" icon={<X className="size-4" />} onClick={() => setAction('void')}>
           {t('expenses.actions.void')}
@@ -290,12 +358,14 @@ function ExpenseDetailModal({ id, onClose, onEdit }: { id: string; onClose: () =
   )
 
   return (
-    <Modal open title={e ? e.payee : t('expenses.title')} onClose={onClose} footer={footer} size="lg">
+    <Modal open title={e ? expenseTitle(e) : t('expenses.title')} onClose={onClose} footer={footer} size="lg">
       {!e ? (
         expense.isError ? <ErrorState onRetry={() => void expense.refetch()} /> : <SkeletonRows rows={3} />
+      ) : deleting ? (
+        <p className="text-sm">{t('expenses.deleteMessage', { amount: formatMoney(e.amount, currency) })}</p>
       ) : action ? (
         <div className="space-y-3 text-sm">
-          <p>{t(`expenses.confirm.${action}`, { amount: formatMoney(e.amount, currency), payee: e.payee })}</p>
+          <p>{t(`expenses.confirm.${action}`, { amount: formatMoney(e.amount, currency), payee: expenseTitle(e) })}</p>
           {needsReason && <TextInput label={t('payments.reason')} required value={reason} maxLength={300} onChange={(ev) => setReason(ev.target.value)} />}
         </div>
       ) : (
@@ -311,8 +381,14 @@ function ExpenseDetailModal({ id, onClose, onEdit }: { id: string; onClose: () =
           <dl className="grid grid-cols-[8rem_1fr] gap-y-1">
             <dt className="text-slate-500">{t('expenses.category')}</dt>
             <dd>{e.category_name}</dd>
-            <dt className="text-slate-500">{t('expenses.date')}</dt>
-            <dd>{formatDate(e.expense_date)}</dd>
+            <dt className="text-slate-500">{t('payments.dateTime')}</dt>
+            <dd>{expenseWhen(e)}</dd>
+            {e.payee && (
+              <>
+                <dt className="text-slate-500">{t('expenses.payee')}</dt>
+                <dd>{e.payee}</dd>
+              </>
+            )}
             <dt className="text-slate-500">{t('collect.mode')}</dt>
             <dd>
               {t(`mode.${e.mode}`)}
@@ -320,7 +396,7 @@ function ExpenseDetailModal({ id, onClose, onEdit }: { id: string; onClose: () =
             </dd>
             {e.description && (
               <>
-                <dt className="text-slate-500">{t('common.description')}</dt>
+                <dt className="text-slate-500">{t('expenses.purpose')}</dt>
                 <dd className="whitespace-pre-line">{e.description}</dd>
               </>
             )}

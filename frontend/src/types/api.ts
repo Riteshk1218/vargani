@@ -266,7 +266,7 @@ export interface ContributionType {
 }
 
 export type PaymentMode = 'cash' | 'upi' | 'bank_transfer' | 'cheque' | 'online' | 'other'
-export type PaymentStatus = 'pending' | 'successful' | 'failed' | 'cancelled' | 'refunded'
+export type PaymentStatus = 'pending' | 'successful' | 'failed' | 'cancelled' | 'refunded' | 'deleted'
 export type ContributionStatus = 'pending' | 'confirmed' | 'cancelled' | 'refunded'
 
 export interface PaymentLine {
@@ -292,9 +292,12 @@ export interface Payment {
   id: string
   event: string
   event_name: string
-  payer: string
+  payer: string | null
   payer_name: string
   payer_mobile: string
+  is_anonymous: boolean
+  financial_year: string
+  financial_year_label: string
   amount: string
   mode: PaymentMode
   status: PaymentStatus
@@ -310,9 +313,19 @@ export interface Payment {
   created_at: string
 }
 
+/** A contributor added while collecting. */
+export interface NewPersonInput {
+  full_name: string
+  mobile?: string
+  area?: string
+  address_line?: string
+}
+
 export interface PaymentInput {
   event: string
-  payer: string
+  /** Empty for an anonymous (no name) collection. */
+  payer: string | null
+  new_person?: NewPersonInput | null
   mode: PaymentMode
   status?: 'successful' | 'pending'
   paid_at?: string
@@ -324,6 +337,11 @@ export interface PaymentInput {
   lines: { contribution_type: string; amount: string; period_month?: string | null; notes?: string }[]
   replaces_receipt?: string
 }
+
+/** Organization Admin edit: send only what changes; `lines` replaces every line. */
+export type PaymentEditInput = Partial<
+  Pick<PaymentInput, 'payer' | 'new_person' | 'mode' | 'paid_at' | 'reference_number' | 'cheque_bank' | 'cheque_date' | 'notes' | 'lines'>
+>
 
 export interface Contribution {
   id: string
@@ -355,7 +373,7 @@ export interface ReceiptSnapshot {
     registration_number: string
     logo: string | null
   }
-  person: { name: string; mobile: string; address: string }
+  person: { name: string; mobile: string; address: string; anonymous?: boolean }
   event: { name: string; code: string }
   financial_year: string
   lines: { contribution_type: string; fund: string | null; period_month: string | null; amount: string }[]
@@ -366,6 +384,7 @@ export interface ReceiptSnapshot {
   cheque_bank: string
   cheque_date: string | null
   paid_at: string
+  timezone?: string
   collector: string | null
   thank_you_message: string
 }
@@ -378,7 +397,7 @@ export interface Receipt {
   language: string
   event: string
   payment: string
-  payer: string
+  payer: string | null
   payer_name: string
   amount: string
   mode: PaymentMode
@@ -500,6 +519,7 @@ export interface Expense {
   category_name: string
   amount: string
   expense_date: string
+  expense_time: string | null
   mode: PaymentMode
   payee: string
   description: string
@@ -522,7 +542,9 @@ export interface Expense {
   updated_at: string
 }
 
-export type ExpenseInput = Pick<Expense, 'event' | 'category' | 'amount' | 'expense_date' | 'mode' | 'payee' | 'description' | 'reference_number'>
+export type ExpenseInput = Pick<Expense, 'event' | 'category' | 'amount' | 'expense_date' | 'mode' | 'payee' | 'description' | 'reference_number'> & {
+  expense_time?: string | null
+}
 
 export interface OtherIncome {
   id: string
@@ -673,4 +695,21 @@ export interface ReminderResult {
   notified: number
   already_reminded: number
   whatsapp: { person: string; name: string; mobile: string; due: string; whatsapp_url: string }[]
+}
+
+export interface EventFinance {
+  event: { id: string; name: string; status: EventStatus }
+  financial_year: { id: string; label: string }
+  collection: string
+  other_income: string
+  approved_expenses: string
+  pending_expenses: string
+  rejected_expenses: string
+  balance: string
+}
+
+export interface FinancialSummary {
+  organization: { id: string; name: string }
+  events: EventFinance[]
+  total: Omit<EventFinance, 'event' | 'financial_year'>
 }

@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { CheckCircle2, Plus, ReceiptText, Search, Trash2, UserRound } from 'lucide-react'
+import { CheckCircle2, Plus, ReceiptText, Search, Trash2, UserPlus, UserRound, UserX } from 'lucide-react'
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useSearchParams } from 'react-router-dom'
@@ -14,8 +14,8 @@ import { useDebounced } from '../../hooks/useDebounced'
 import { toApiError } from '../../services/apiClient'
 import { contributionTypeService, paymentService } from '../../services/finance'
 import { peopleService } from '../../services/people'
-import type { ContributionType, Payment, PaymentInput, PaymentMode, Person } from '../../types/api'
-import { formatMobile, formatMoney, sumMoney } from '../../utils/format'
+import type { ContributionType, NewPersonInput, Payment, PaymentInput, PaymentMode, Person } from '../../types/api'
+import { formatMobile, formatMoney, formatStamp, sumMoney } from '../../utils/format'
 import { MANUAL_MODES } from '../../utils/payments'
 
 const MONEY = /^\d+(\.\d{1,2})?$/
@@ -53,6 +53,8 @@ export function CollectPage() {
   }, [params, events, activeEvent, setActiveEventId])
 
   const [person, setPerson] = useState<Person | null>(null)
+  const [payerKind, setPayerKind] = useState<PayerKind>('existing')
+  const [newPerson, setNewPerson] = useState<NewPersonInput>({ full_name: '' })
   const replaces = params.get('replaces')
   const presetPerson = params.get('person')
   const preset = useQuery({
@@ -98,6 +100,8 @@ export function CollectPage() {
 
   const reset = () => {
     setPerson(null)
+    setPayerKind('existing')
+    setNewPerson({ full_name: '' })
     setLines([blankLine(1)])
     setMode('cash')
     setReference('')
@@ -115,18 +119,20 @@ export function CollectPage() {
   const submit = async (event: FormEvent) => {
     event.preventDefault()
     const found: Record<string, string> = {}
-    if (!person) found.payer = t('collect.choosePerson')
+    if (payerKind === 'new' && !newPerson.full_name.trim()) found['new_person.full_name'] = t('validation.required')
     lines.forEach((line, index) => {
       if (!MONEY.test(line.amount) || sumMoney([line.amount]) === '0.00') found[`lines.${index}.amount`] = t('validation.amount')
       if (typeById(line.typeId)?.kind === 'recurring_monthly' && !line.month) found[`lines.${index}.period_month`] = t('validation.required')
     })
     if ((mode === 'cheque' || mode === 'bank_transfer') && !reference.trim()) found.reference_number = t('validation.required')
     setErrors(found)
-    if (Object.keys(found).length || !person) return
+    if (Object.keys(found).length) return
 
     const payload: PaymentInput = {
       event: eventId,
-      payer: person.id,
+      // Who paid is optional: an existing person, a new person, or nobody named (anonymous).
+      payer: payerKind === 'existing' && person ? person.id : null,
+      new_person: payerKind === 'new' ? { ...newPerson, full_name: newPerson.full_name.trim() } : null,
       mode,
       status: mode === 'cheque' && pending ? 'pending' : 'successful',
       amount: total,
@@ -151,7 +157,11 @@ export function CollectPage() {
     } catch (error) {
       const apiError = toApiError(error)
       const fieldErrors: Record<string, string> = {}
-      for (const [field, messages] of Object.entries(apiError.details)) if (messages[0]) fieldErrors[field] = messages[0]
+      for (const [field, messages] of Object.entries(apiError.details)) {
+        if (Array.isArray(messages) && messages[0]) fieldErrors[field] = messages[0]
+        else if (messages && typeof messages === 'object')
+          for (const [sub, list] of Object.entries(messages as unknown as Record<string, string[]>)) if (list?.[0]) fieldErrors[`${field}.${sub}`] = list[0]
+      }
       setErrors(fieldErrors)
       notify(apiError.message || t('errors.generic'), 'error')
     } finally {
@@ -180,6 +190,9 @@ export function CollectPage() {
           </h1>
           <p className="mt-1 text-slate-600">
             {done.payer_name} · {formatMoney(done.amount, currency)} · {t(`mode.${done.mode}`)}
+          </p>
+          <p className="mt-1 text-sm text-slate-500" data-testid="collect-stamp">
+            {done.event_name} · {t('finance.fy', { label: done.financial_year_label })} · {formatStamp(done.paid_at)}
           </p>
           <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
             {done.receipt && (
@@ -224,7 +237,15 @@ export function CollectPage() {
         <form onSubmit={submit} className="space-y-4" noValidate>
           {replaces && <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900 ring-1 ring-amber-200">{t('collect.correctionNote')}</p>}
           <Card className="p-4">
-            <PersonPicker person={person} onChange={setPerson} error={errors.payer} />
+            <PayerChoice
+              kind={payerKind}
+              onKind={setPayerKind}
+              person={person}
+              onPerson={setPerson}
+              newPerson={newPerson}
+              onNewPerson={setNewPerson}
+              errors={errors}
+            />
           </Card>
 
           <Card className="space-y-4 p-4">
@@ -305,7 +326,15 @@ export function CollectPage() {
                 </option>
               ))}
             </SelectInput>
-            <TextInput label={t('collect.paidOn')} type="date" max={today()} value={paidOn} error={errors.paid_at} onChange={(e) => setPaidOn(e.target.value)} />
+            <TextInput
+              label={t('collect.paidOn')}
+              type="date"
+              max={today()}
+              value={paidOn}
+              hint={paidOn === today() ? t('collect.timeAuto') : undefined}
+              error={errors.paid_at}
+              onChange={(e) => setPaidOn(e.target.value)}
+            />
             {mode !== 'cash' && (
               <TextInput
                 label={mode === 'cheque' ? t('collect.chequeNumber') : t('collect.reference')}
@@ -331,6 +360,92 @@ export function CollectPage() {
           </Button>
         </form>
       )}
+    </div>
+  )
+}
+
+type PayerKind = 'existing' | 'new' | 'anonymous'
+
+/** Who paid: optional. An existing person, a new person typed in now, or no name (anonymous). */
+export function PayerChoice({
+  kind,
+  onKind,
+  person,
+  onPerson,
+  newPerson,
+  onNewPerson,
+  errors,
+}: {
+  kind: PayerKind
+  onKind: (kind: PayerKind) => void
+  person: Person | null
+  onPerson: (p: Person | null) => void
+  newPerson: NewPersonInput
+  onNewPerson: (p: NewPersonInput) => void
+  errors: Record<string, string>
+}) {
+  const { t } = useTranslation()
+  const { can } = useOrg()
+  const canAdd = can('people.create') || can('people.manage')
+  const options: { value: PayerKind; label: string; icon: React.ReactNode }[] = [
+    { value: 'existing', label: t('collect.payerExisting'), icon: <UserRound className="size-4" aria-hidden /> },
+    ...(canAdd ? [{ value: 'new' as const, label: t('collect.payerNew'), icon: <UserPlus className="size-4" aria-hidden /> }] : []),
+    { value: 'anonymous', label: t('collect.payerAnonymous'), icon: <UserX className="size-4" aria-hidden /> },
+  ]
+  return (
+    <div className="space-y-3">
+      <div>
+        <p className="mb-1.5 text-sm font-medium text-slate-700">
+          {t('collect.person')} <span className="font-normal text-slate-500">({t('common.optional')})</span>
+        </p>
+        <div role="radiogroup" aria-label={t('collect.person')} className="grid grid-cols-3 gap-2">
+          {options.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              role="radio"
+              aria-checked={kind === option.value}
+              onClick={() => onKind(option.value)}
+              className={
+                'flex items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-sm ring-1 ' +
+                (kind === option.value ? 'bg-brand-50 font-semibold text-brand-800 ring-brand-300' : 'text-slate-600 ring-slate-200 hover:bg-slate-50')
+              }
+            >
+              {option.icon}
+              {option.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      {kind === 'existing' && <PersonPicker person={person} onChange={onPerson} error={errors.payer} />}
+      {kind === 'new' && (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <TextInput
+            label={t('people.fullName')}
+            required
+            value={newPerson.full_name}
+            error={errors['new_person.full_name']}
+            onChange={(e) => onNewPerson({ ...newPerson, full_name: e.target.value })}
+          />
+          <TextInput
+            label={t('people.mobile')}
+            inputMode="tel"
+            hint={t('common.optional')}
+            value={newPerson.mobile ?? ''}
+            error={errors['new_person.mobile']}
+            onChange={(e) => onNewPerson({ ...newPerson, mobile: e.target.value })}
+          />
+          <TextInput
+            className="sm:col-span-2"
+            label={t('people.area')}
+            hint={t('common.optional')}
+            value={newPerson.area ?? ''}
+            onChange={(e) => onNewPerson({ ...newPerson, area: e.target.value })}
+          />
+          <p className="text-sm text-slate-500 sm:col-span-2">{t('collect.newPersonSaved')}</p>
+        </div>
+      )}
+      {kind === 'anonymous' && <p className="rounded-lg bg-slate-50 p-3 text-sm text-slate-600">{t('collect.anonymousNote')}</p>}
     </div>
   )
 }
@@ -368,7 +483,14 @@ function PersonPicker({ person, onChange, error }: { person: Person | null; onCh
   return (
     <div className="space-y-2">
       <div className="relative">
-        <TextInput label={t('collect.person')} placeholder={t('collect.searchPerson')} value={search} error={error} onChange={(e) => setSearch(e.target.value)} />
+        <TextInput
+          label={t('collect.searchPerson')}
+          placeholder={t('collect.searchPerson')}
+          hint={t('collect.leaveEmptyAnonymous')}
+          value={search}
+          error={error}
+          onChange={(e) => setSearch(e.target.value)}
+        />
         <Search className="pointer-events-none absolute right-3 top-9 size-4 text-slate-400" aria-hidden />
       </div>
       {people.isLoading ? (

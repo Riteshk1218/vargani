@@ -8,7 +8,9 @@ import type {
   MoneyBreakdown,
   OutstandingReport,
   Paginated,
+  FinancialSummary,
   Payment,
+  PaymentEditInput,
   PaymentInput,
   PublicReceipt,
   Receipt,
@@ -42,9 +44,17 @@ export const paymentService = {
   /** The idempotency key makes a retry after a network error return the first payment instead of a duplicate. */
   record: (input: PaymentInput, idempotencyKey: string) =>
     api.post<Payment>('/collections/', input, { headers: { 'Idempotency-Key': idempotencyKey } }).then((r) => r.data),
+  /** Organization Admin only. */
+  adminEdit: (id: string, input: PaymentEditInput) => api.post<Payment>(`/payments/${id}/edit/`, input).then((r) => r.data),
+  /** Organization Admin only: the payment leaves every list and total; its receipt is voided. */
+  adminDelete: (id: string, reason = '') => api.delete<Payment>(`/payments/${id}/`, { data: { reason } }).then((r) => r.data),
   updateNotes: (id: string, notes: string) => api.patch<Payment>(`/payments/${id}/`, { notes }).then((r) => r.data),
   changeStatus: (id: string, action: 'confirm' | 'cancel' | 'fail', reason = '') =>
     api.post<Payment>(`/payments/${id}/${action}/`, { reason }).then((r) => r.data),
+}
+
+export const financeService = {
+  summary: (params: ListParams = {}) => api.get<FinancialSummary>('/finance/summary/', { params }).then((r) => r.data),
 }
 
 export const contributionService = {

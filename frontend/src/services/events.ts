@@ -13,6 +13,8 @@ export const eventService = {
   update: (id: string, input: EventInput) => api.patch<EventItem>(`/events/${id}/`, input).then((r) => r.data),
   transition: (id: string, action: 'close' | 'reopen' | 'activate' | 'archive') =>
     api.post<EventItem>(`/events/${id}/${action}/`).then((r) => r.data),
+  /** Organization Admin only: the event disappears from every list and summary. */
+  remove: (id: string) => api.delete(`/events/${id}/`),
   templates: () => api.get<EventTemplate[]>('/event-templates/').then((r) => r.data),
   participants: (event: string, params: { page?: number; search?: string }) =>
     api.get<Paginated<EventParticipant>>('/event-participants/', { params: { event, ...params } }).then((r) => r.data),

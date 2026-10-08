@@ -10,7 +10,13 @@ export function ReceiptView({ receipt }: { receipt: Pick<Receipt, 'language' | '
   const s = receipt.snapshot
   const locale = { en: 'en-IN', mr: 'mr-IN', hi: 'hi-IN' }[lang] ?? 'en-IN'
   const money = (value: string) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: s.currency || 'INR' }).format(Number(value))
-  const date = (value: string) => new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(value))
+  // "08-Oct-2026, 10:35 PM" in the organization's time zone, whatever the viewer's computer is set to.
+  const stamp = (value: string) => {
+    const zone = s.timezone || 'Asia/Kolkata'
+    const parts = (options: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat(locale, { timeZone: zone, ...options }).format(new Date(value))
+    const time = new Intl.DateTimeFormat('en-IN', { timeZone: zone, hour: '2-digit', minute: '2-digit', hour12: true }).format(new Date(value)).toUpperCase()
+    return `${parts({ day: '2-digit' })}-${parts({ month: 'short' })}-${parts({ year: 'numeric' })}, ${time}`
+  }
   const month = (value: string) => new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' }).format(new Date(`${value}T00:00:00`))
 
   return (
@@ -45,14 +51,22 @@ export function ReceiptView({ receipt }: { receipt: Pick<Receipt, 'language' | '
           </span>
         </p>
       </div>
-      <p className="text-sm text-slate-600">
-        {s.event.name} · {t('receipts.financialYear', { label: s.financial_year })} · {date(s.paid_at)}
-      </p>
-
       <dl className="mt-4 grid gap-1 text-sm">
         <div className="flex gap-2">
+          <dt className="w-36 shrink-0 text-slate-500">{t('finance.event')}</dt>
+          <dd>{s.event.name}</dd>
+        </div>
+        <div className="flex gap-2">
+          <dt className="w-36 shrink-0 text-slate-500">{t('finance.financialYear')}</dt>
+          <dd>{s.financial_year}</dd>
+        </div>
+        <div className="flex gap-2">
+          <dt className="w-36 shrink-0 text-slate-500">{t('payments.dateTime')}</dt>
+          <dd data-testid="receipt-stamp">{stamp(s.paid_at)}</dd>
+        </div>
+        <div className="flex gap-2">
           <dt className="w-36 shrink-0 text-slate-500">{t('receipts.receivedFrom')}</dt>
-          <dd className="font-semibold">{s.person.name}</dd>
+          <dd className="font-semibold">{s.person.anonymous ? t('collect.anonymousName') : s.person.name}</dd>
         </div>
         {s.person.mobile && (
           <div className="flex gap-2">

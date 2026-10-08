@@ -1,8 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, HandCoins, UserPlus } from 'lucide-react'
+import { ArrowLeft, HandCoins, Trash2, UserPlus } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Button } from '../../components/ui/Button'
 import { Badge, Card, PageHeader } from '../../components/ui/Card'
 import { SelectInput, TextInput } from '../../components/ui/Field'
@@ -47,6 +47,17 @@ export function EventDetailPage() {
     onError,
   })
 
+  const navigate = useNavigate()
+  const remove = useMutation({
+    mutationFn: () => eventService.remove(id),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['org', activeOrgId] })
+      notify(t('events.deleted'))
+      navigate('/app/events')
+    },
+    onError,
+  })
+
   if (event.isLoading) return <Spinner />
   if (event.isError) return <ErrorState message={t('errors.notFound')} />
   const e = event.data!
@@ -77,6 +88,16 @@ export function EventDetailPage() {
               {t('events.close')}
             </Button>
           ) : null)}
+            {can('records.admin_edit') && (
+              <Button
+                variant="ghost"
+                icon={<Trash2 className="size-4" />}
+                loading={remove.isPending}
+                onClick={() => window.confirm(t('events.deleteConfirm', { name: e.name })) && remove.mutate()}
+              >
+                {t('common.delete')}
+              </Button>
+            )}
           </div>
         }
       />

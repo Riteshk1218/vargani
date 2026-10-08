@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { HandCoins, ReceiptText, Search } from 'lucide-react'
+import { HandCoins, Pencil, ReceiptText, Search, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
@@ -16,11 +16,12 @@ import { useApiErrors } from '../../hooks/useApiErrors'
 import { useDebounced } from '../../hooks/useDebounced'
 import { paymentService } from '../../services/finance'
 import type { Payment, PaymentStatus } from '../../types/api'
-import { formatDateTime, formatMobile, formatMoney, formatMonth } from '../../utils/format'
+import { formatMobile, formatMoney, formatMonth, formatStamp } from '../../utils/format'
 import { MANUAL_MODES, PAYMENT_TONE } from '../../utils/payments'
+import { PaymentEditModal } from './PaymentEditModal'
 
 
-const STATUSES: PaymentStatus[] = ['successful', 'pending', 'failed', 'cancelled']
+const STATUSES: PaymentStatus[] = ['successful', 'pending', 'failed', 'cancelled', 'deleted']
 
 export function PaymentsPage() {
   const { t } = useTranslation()
@@ -94,9 +95,9 @@ export function PaymentsPage() {
                     <li key={p.id}>
                       <button type="button" onClick={() => setSelected(p)} className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm hover:bg-slate-50">
                         <div className="min-w-0">
-                          <p className="truncate font-medium">{p.payer_name}</p>
+                          <p className={p.is_anonymous ? 'truncate font-medium italic text-slate-600' : 'truncate font-medium'}>{p.payer_name}</p>
                           <p className="truncate text-slate-500">
-                            {formatDateTime(p.paid_at)} · {t(`mode.${p.mode}`)}
+                            {formatStamp(p.paid_at)} · {t(`mode.${p.mode}`)}
                             {p.receipt && ` · ${p.receipt.receipt_number}`}
                           </p>
                         </div>
@@ -114,14 +115,14 @@ export function PaymentsPage() {
           </>
         )}
       </Card>
-      <PaymentDetailModal payment={selected} onClose={() => setSelected(null)} />
+      <PaymentDetailModal payment={selected} onClose={() => setSelected(null)} onChanged={setSelected} />
     </div>
   )
 }
 
-type StatusAction = 'confirm' | 'cancel' | 'fail'
+type StatusAction = 'confirm' | 'cancel' | 'fail' | 'delete'
 
-function PaymentDetailModal({ payment, onClose }: { payment: Payment | null; onClose: () => void }) {
+function PaymentDetailModal({ payment, onClose, onChanged }: { payment: Payment | null; onClose: () => void; onChanged: (p: Payment) => void }) {
   const { t } = useTranslation()
   const { activeOrgId, detail, can } = useOrg()
   const queryClient = useQueryClient()
@@ -130,7 +131,8 @@ function PaymentDetailModal({ payment, onClose }: { payment: Payment | null; onC
   const [action, setAction] = useState<StatusAction | null>(null)
   const [reason, setReason] = useState('')
   const change = useMutation({
-    mutationFn: ({ id, act }: { id: string; act: StatusAction }) => paymentService.changeStatus(id, act, reason),
+    mutationFn: ({ id, act }: { id: string; act: StatusAction }) =>
+      act === 'delete' ? paymentService.adminDelete(id, reason) : paymentService.changeStatus(id, act, reason),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['org', activeOrgId] })
       notify(t('common.saved'))
@@ -140,9 +142,13 @@ function PaymentDetailModal({ payment, onClose }: { payment: Payment | null; onC
     },
     onError,
   })
+  const [editing, setEditing] = useState(false)
   if (!payment) return null
   const currency = detail?.organization.currency
   const pending = payment.status === 'pending'
+  const isAdmin = can('records.admin_edit')
+  const editable = isAdmin && (payment.status === 'successful' || pending)
+  if (editing) return <PaymentEditModal payment={payment} onClose={() => setEditing(false)} onSaved={(p) => (setEditing(false), onChanged(p))} />
 
   return (
     <Modal
@@ -161,6 +167,16 @@ function PaymentDetailModal({ payment, onClose }: { payment: Payment | null; onC
           </>
         ) : (
           <>
+            {editable && (
+              <>
+                <Button variant="ghost" icon={<Trash2 className="size-4" />} onClick={() => setAction('delete')}>
+                  {t('payments.delete')}
+                </Button>
+                <Button variant="secondary" icon={<Pencil className="size-4" />} onClick={() => setEditing(true)}>
+                  {t('common.edit')}
+                </Button>
+              </>
+            )}
             {pending && can('payments.cancel_pending') && (
               <>
                 <Button variant="ghost" onClick={() => setAction('cancel')}>
@@ -195,8 +211,12 @@ function PaymentDetailModal({ payment, onClose }: { payment: Payment | null; onC
           <dl className="grid grid-cols-[8rem_1fr] gap-y-1">
             <dt className="text-slate-500">{t('people.mobile')}</dt>
             <dd>{formatMobile(payment.payer_mobile) || '—'}</dd>
-            <dt className="text-slate-500">{t('collect.paidOn')}</dt>
-            <dd>{formatDateTime(payment.paid_at)}</dd>
+            <dt className="text-slate-500">{t('finance.event')}</dt>
+            <dd>{payment.event_name}</dd>
+            <dt className="text-slate-500">{t('finance.financialYear')}</dt>
+            <dd>{payment.financial_year_label}</dd>
+            <dt className="text-slate-500">{t('payments.dateTime')}</dt>
+            <dd data-testid="payment-stamp">{formatStamp(payment.paid_at)}</dd>
             <dt className="text-slate-500">{t('collect.mode')}</dt>
             <dd>
               {t(`mode.${payment.mode}`)}

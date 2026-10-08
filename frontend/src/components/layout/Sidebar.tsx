@@ -1,4 +1,4 @@
-import { BarChart3, HandHeart, CalendarDays, HandCoins, History, PiggyBank, Receipt, LayoutDashboard, ListChecks, ReceiptText, Settings, ShieldAlert, ShieldCheck, Users, UsersRound, Wallet, type LucideIcon } from 'lucide-react'
+import { BarChart3, HandHeart, Scale, CalendarDays, HandCoins, History, PiggyBank, Receipt, LayoutDashboard, ListChecks, ReceiptText, Settings, ShieldAlert, ShieldCheck, Users, UsersRound, Wallet, type LucideIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { NavLink } from 'react-router-dom'
 import { useOrg } from '../../context/OrgContext'
@@ -25,6 +25,7 @@ const NAV: NavItem[] = [
   { to: '/app/collectors', label: 'nav.collectors', icon: UsersRound, permission: 'collectors.manage' },
   { to: '/app/approvals', label: 'nav.approvals', icon: ShieldAlert, permission: 'receipts.void_approve' },
   { to: '/app/expenses', label: 'nav.expenses', icon: Receipt, permission: 'expenses.view' },
+  { to: '/app/finance', label: 'nav.finance', icon: Scale, permission: ['dashboard.view_financial', 'reports.view_financial'] },
   { to: '/app/income', label: 'nav.income', icon: PiggyBank, permission: 'other_income.manage' },
   { to: '/app/reports', label: 'nav.reports', icon: BarChart3, permission: REPORT_PERMISSIONS },
   { to: '/app/audit', label: 'nav.audit', icon: History, permission: 'audit.view' },

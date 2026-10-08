@@ -12,7 +12,7 @@ import { useOrg } from '../../context/OrgContext'
 import { dashboardService } from '../../services/dashboard'
 import { CollectorDashboard } from './CollectorDashboard'
 import type { FinancialSummary } from '../../types/api'
-import { formatDateTime, formatMoney, formatMonth } from '../../utils/format'
+import { formatMoney, formatMonth, formatStamp } from '../../utils/format'
 
 export function DashboardPage() {
   const { t } = useTranslation()
@@ -211,7 +211,7 @@ function FinancialSection({ financial, currency }: { financial: FinancialSummary
               <div className="min-w-0">
                 <p className="truncate font-medium">{p.payer_name}</p>
                 <p className="truncate text-slate-500">
-                  {formatDateTime(p.paid_at)} · {t(`mode.${p.mode}`)}
+                  {formatStamp(p.paid_at)} · {t(`mode.${p.mode}`)}
                   {p.receipt_number && ` · ${p.receipt_number}`}
                 </p>
               </div>

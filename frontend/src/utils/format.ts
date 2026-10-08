@@ -75,6 +75,16 @@ export function formatDateTime(value: string | null | undefined): string {
   return new Intl.DateTimeFormat(locale(), { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' }).format(date)
 }
 
+/** "08-Oct-2026, 10:35 PM": the date and exact time of a money record. */
+export function formatStamp(value: string | null | undefined): string {
+  if (!value) return '—'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  const part = (options: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat(locale(), options).format(date)
+  const time = new Intl.DateTimeFormat('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }).format(date).toUpperCase()
+  return `${String(date.getDate()).padStart(2, '0')}-${part({ month: 'short' })}-${date.getFullYear()}, ${time}`
+}
+
 /** Today's date in the browser's time zone, as YYYY-MM-DD (for date inputs). */
 export function todayIso(now = new Date()): string {
   const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000)

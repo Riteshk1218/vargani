@@ -20,7 +20,8 @@
     "income": "Other income",
     "reports": "Reports",
     "audit": "Audit log",
-    "my": "My contributions"
+    "my": "My contributions",
+    "finance": "Financial summary"
   },
   "topbar": {
     "switchOrganization": "Switch organization",
@@ -63,7 +64,8 @@
     "choose": "Choose…",
     "description": "Description",
     "download": "Download",
-    "remove": "Remove"
+    "remove": "Remove",
+    "delete": "Delete"
   },
   "validation": {
     "required": "This field is required.",
@@ -243,7 +245,9 @@
     "closeTitle": "Close this event?",
     "closeMessage": "A closed event stays visible but stops accepting new entries. You can reopen it later.",
     "reopenTitle": "Reopen this event?",
-    "reopenMessage": "The event will accept new entries again."
+    "reopenMessage": "The event will accept new entries again.",
+    "deleted": "Event deleted",
+    "deleteConfirm": "Delete {{name}}? It disappears from every list and summary."
   },
   "people": {
     "title": "People",
@@ -374,7 +378,8 @@
     "successful": "Received",
     "failed": "Bounced",
     "cancelled": "Cancelled",
-    "refunded": "Refunded"
+    "refunded": "Refunded",
+    "deleted": "Deleted"
   },
   "lineStatus": {
     "pending": "Pending",
@@ -455,7 +460,15 @@
     "pendingSaved": "Saved as pending. The receipt is issued when it clears.",
     "viewReceipt": "View receipt",
     "another": "Record another",
-    "correctionNote": "You are recording a correction. The new receipt will be linked to the voided one."
+    "correctionNote": "You are recording a correction. The new receipt will be linked to the voided one.",
+    "payerExisting": "Existing person",
+    "payerNew": "New person",
+    "payerAnonymous": "No name",
+    "anonymousName": "Anonymous",
+    "anonymousNote": "The collection is saved without a name. The receipt says “Anonymous”.",
+    "newPersonSaved": "This person is saved and can be chosen next time.",
+    "leaveEmptyAnonymous": "Leave empty to save without a name.",
+    "timeAuto": "The exact time is recorded automatically."
   },
   "payments": {
     "title": "Payments",
@@ -471,7 +484,13 @@
     "reason": "Reason",
     "confirmMessage": "{{amount}} from {{name}} has cleared. A receipt will be issued.",
     "cancelMessage": "Cancel {{amount}} from {{name}}? The record is kept and marked cancelled.",
-    "failMessage": "Mark {{amount}} from {{name}} as bounced? The record is kept."
+    "failMessage": "Mark {{amount}} from {{name}} as bounced? The record is kept.",
+    "dateTime": "Date and time",
+    "delete": "Delete",
+    "deleteMessage": "Delete {{amount}} from {{name}}? It is removed from every list and total, and its receipt is cancelled. The audit log keeps a copy.",
+    "editTitle": "Edit collection",
+    "editNote": "Admin edit: the receipt keeps its number and shows the new details. The old values are kept in the audit log.",
+    "saveChanges": "Save changes ({{amount}})"
   },
   "contributions": {
     "title": "Contributions",
@@ -620,7 +639,15 @@
       "approve": "Approve {{amount}} paid to {{payee}}? It will count in the balance and can then only be voided.",
       "reject": "Reject {{amount}} paid to {{payee}}? Say what needs to change.",
       "void": "Void {{amount}} paid to {{payee}}? It stays on record but no longer counts."
-    }
+    },
+    "purpose": "Description / purpose",
+    "time": "Time",
+    "billPhoto": "Bill or receipt photo",
+    "saveDraft": "Save as draft",
+    "saveAndSubmit": "Submit for approval",
+    "delete": "Delete expense",
+    "deleteMessage": "Delete this expense of {{amount}} and its bills? This cannot be undone. The audit log keeps a copy.",
+    "deleted": "Expense deleted"
   },
   "income": {
     "title": "Other income",
@@ -631,7 +658,9 @@
     "source": "Source",
     "receivedOn": "Received on",
     "voidTitle": "Void this income?",
-    "voidMessage": "{{amount}} from {{source}} stays on record but no longer counts in the balance."
+    "voidMessage": "{{amount}} from {{source}} stays on record but no longer counts in the balance.",
+    "edit": "Edit income",
+    "deleteConfirm": "Delete this income? This cannot be undone. The audit log keeps a copy."
   },
   "incomeSource": {
     "donation_box": "Donation box",
@@ -794,5 +823,20 @@
     "unlink": "Unlink",
     "linked": "Login linked",
     "unlinked": "Login unlinked"
+  },
+  "finance": {
+    "title": "Financial summary",
+    "subtitle": "Collection − approved expenses = balance, for each event.",
+    "financialYear": "Financial year",
+    "event": "Event",
+    "fy": "Financial year {{label}}",
+    "collection": "Collection",
+    "otherIncome": "Other income",
+    "approvedExpenses": "Approved expenses",
+    "balance": "Balance",
+    "notCounted": "Not counted: {{pending}} waiting for approval, {{rejected}} rejected.",
+    "openExpenses": "Open expenses",
+    "allEvents": "All events in {{label}}",
+    "empty": "No events in this financial year"
   }
 }

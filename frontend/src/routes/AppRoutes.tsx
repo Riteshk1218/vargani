@@ -3,6 +3,7 @@ import { AuditPage } from '../pages/audit/AuditPage'
 import { MemberLoginPage } from '../pages/auth/MemberLoginPage'
 import { MyContributionsPage } from '../pages/portal/MyContributionsPage'
 import { ExpensesPage } from '../pages/expenses/ExpensesPage'
+import { FinancialSummaryPage } from '../pages/finance/FinancialSummaryPage'
 import { OtherIncomePage } from '../pages/income/OtherIncomePage'
 import { ReportsPage } from '../pages/reports/ReportsPage'
 import { REPORT_PERMISSIONS } from '../utils/permissions'
@@ -64,6 +65,10 @@ export function AppRoutes() {
             <Route path="collectors" element={<RequirePermission permission="collectors.manage"><CollectorsPage /></RequirePermission>} />
             <Route path="approvals" element={<RequirePermission permission="receipts.void_approve"><ApprovalsPage /></RequirePermission>} />
             <Route path="expenses" element={<RequirePermission permission="expenses.view"><ExpensesPage /></RequirePermission>} />
+            <Route
+              path="finance"
+              element={<RequirePermission permission={['dashboard.view_financial', 'reports.view_financial']}><FinancialSummaryPage /></RequirePermission>}
+            />
             <Route path="income" element={<RequirePermission permission="other_income.manage"><OtherIncomePage /></RequirePermission>} />
             <Route path="reports" element={<RequirePermission permission={REPORT_PERMISSIONS}><ReportsPage /></RequirePermission>} />
             <Route path="reports/:type" element={<RequirePermission permission={REPORT_PERMISSIONS}><ReportsPage /></RequirePermission>} />
