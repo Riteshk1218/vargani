@@ -29,6 +29,7 @@ def new_expense(client, s, amount="2500.50", **extra):
         "payee": "Shree Decorators",
         **extra,
     }
+    payload = {key: value for key, value in payload.items() if value is not None}
     return client.post("/api/v1/expenses/", payload, format="json")
 
 
@@ -91,7 +92,7 @@ def test_without_approval_setting_submit_approves(setup):  # noqa: F811
 def test_validation(setup):  # noqa: F811
     s = setup
     assert new_expense(s.admin, s, amount="0").status_code == 400
-    assert new_expense(s.admin, s, payee="  ").status_code == 400
+    assert new_expense(s.admin, s, payee="  ").status_code == 201  # who was paid is optional
     assert new_expense(s.admin, s, expense_date="2099-01-01").status_code == 400
     assert new_expense(s.admin, s, mode="online").status_code == 400
     s.event.status = "closed"
@@ -101,11 +102,47 @@ def test_validation(setup):  # noqa: F811
 
 def test_roles(setup, add_member, client_for):  # noqa: F811
     s = setup
-    for role in ("secretary", "collector", "volunteer", "member"):
+    for role in ("secretary", "volunteer", "member"):
         client = client_for(add_member(s.org, role), s.org)
         assert client.get("/api/v1/expenses/").status_code == 403, role
         assert new_expense(client, s).status_code == 403, role
         assert client.get("/api/v1/other-income/").status_code == 403, role
+
+
+def test_collector_adds_and_submits_own_expenses(setup, add_member, client_for):  # noqa: F811
+    s = setup
+    collector = client_for(add_member(s.org, "collector"), s.org)
+    other = new_expense(s.admin, s).data["id"]
+    created = new_expense(collector, s, payee="", expense_date=None, description="Flowers for aarti")
+    assert created.status_code == 201, created.data
+    mine = created.data["id"]
+    # Date and time are filled in automatically.
+    assert created.data["expense_date"] == TODAY and created.data["expense_time"]
+    assert [e["id"] for e in collector.get("/api/v1/expenses/").data["results"]] == [mine]
+    assert collector.get(f"/api/v1/expenses/{other}/").status_code == 404
+    assert collector.post(f"/api/v1/expenses/{mine}/submit/").data["status"] == "submitted"
+    assert collector.post(f"/api/v1/expenses/{mine}/approve/").status_code == 403
+    assert collector.delete(f"/api/v1/expenses/{mine}/").status_code == 403
+    assert collector.get("/api/v1/other-income/").status_code == 403
+    rejected = s.admin.post(f"/api/v1/expenses/{mine}/reject/", {"reason": "No bill"})
+    assert rejected.data["status"] == "rejected" and rejected.data["rejection_reason"] == "No bill"
+
+
+def test_admin_edits_and_deletes_any_expense(setup, add_member, client_for):  # noqa: F811
+    s = setup
+    treasurer = client_for(add_member(s.org, "treasurer"), s.org)
+    expense_id = new_expense(treasurer, s).data["id"]
+    treasurer.post(f"/api/v1/expenses/{expense_id}/submit/")
+    s.admin.post(f"/api/v1/expenses/{expense_id}/approve/")
+    # Approved: the treasurer can no longer edit it, the admin can.
+    assert treasurer.patch(f"/api/v1/expenses/{expense_id}/", {"amount": "10"}, format="json").status_code == 409
+    edited = s.admin.patch(f"/api/v1/expenses/{expense_id}/", {"amount": "999.00"}, format="json")
+    assert edited.status_code == 200 and edited.data["amount"] == "999.00" and edited.data["status"] == "approved"
+    assert treasurer.delete(f"/api/v1/expenses/{expense_id}/").status_code == 403
+    assert s.admin.delete(f"/api/v1/expenses/{expense_id}/").status_code == 204
+    assert not Expense.objects.filter(pk=expense_id).exists()
+    actions = set(AuditLog.objects.filter(entity_id=expense_id).values_list("action", flat=True))
+    assert {"admin_edit", "admin_delete"} <= actions
 
 
 def test_expenses_and_income_can_never_be_deleted_or_rewritten(setup):  # noqa: F811
@@ -113,7 +150,6 @@ def test_expenses_and_income_can_never_be_deleted_or_rewritten(setup):  # noqa: 
     expense_id = new_expense(s.admin, s).data["id"]
     s.admin.post(f"/api/v1/expenses/{expense_id}/submit/")
     s.admin.post(f"/api/v1/expenses/{expense_id}/approve/")
-    assert s.admin.delete(f"/api/v1/expenses/{expense_id}/").status_code == 405
     expense = Expense.objects.get(pk=expense_id)
     with pytest.raises(DatabaseError), transaction.atomic():
         Expense.objects.filter(pk=expense.pk).delete()
@@ -136,8 +172,9 @@ def test_expenses_and_income_can_never_be_deleted_or_rewritten(setup):  # noqa: 
         OtherIncome.objects.filter(pk=income.pk).update(amount=Decimal("50"))
 
 
-def test_attachments(setup, settings):  # noqa: F811
+def test_attachments(setup, settings, add_member, client_for):  # noqa: F811
     s = setup
+    treasurer = client_for(add_member(s.org, "treasurer"), s.org)
     expense_id = new_expense(s.admin, s).data["id"]
     url = f"/api/v1/expenses/{expense_id}/attachments/"
     photo = SimpleUploadedFile("bill photo.jpg", png_bytes(fmt="JPEG"), content_type="image/jpeg")
@@ -159,14 +196,16 @@ def test_attachments(setup, settings):  # noqa: F811
     assert "attachment" in download["Content-Disposition"]
     assert b"".join(download.streaming_content)[:2] == b"\xff\xd8"
 
-    # Bills can be removed while the expense is a draft, but not after approval.
+    # Bills can be removed while the expense is a draft, but not after approval (except by the admin).
     second = detail["attachments"][1]["id"]
-    assert s.admin.delete(f"{url}{second}/").status_code == 204
+    assert treasurer.delete(f"{url}{second}/").status_code == 204
     s.admin.post(f"/api/v1/expenses/{expense_id}/submit/")
     s.admin.post(f"/api/v1/expenses/{expense_id}/approve/")
-    assert s.admin.delete(f"{url}{first}/").status_code == 409
+    assert treasurer.delete(f"{url}{first}/").status_code == 409
     photo = SimpleUploadedFile("late.png", png_bytes(), content_type="image/png")
-    assert s.admin.post(url, {"file": photo}, format="multipart").status_code == 409
+    assert treasurer.post(url, {"file": photo}, format="multipart").status_code == 409
+    photo = SimpleUploadedFile("late.png", png_bytes(), content_type="image/png")
+    assert s.admin.post(url, {"file": photo}, format="multipart").status_code == 201
 
 
 def test_at_most_ten_attachments(setup):  # noqa: F811
@@ -180,8 +219,9 @@ def test_at_most_ten_attachments(setup):  # noqa: F811
     assert s.admin.post(url, {"file": pdf}, format="multipart").status_code == 422
 
 
-def test_other_income_flow(setup):  # noqa: F811
+def test_other_income_flow(setup, add_member, client_for):  # noqa: F811
     s = setup
+    treasurer = client_for(add_member(s.org, "treasurer"), s.org)
     payload = {
         "event": str(s.event.pk),
         "fund": str(s.fund.pk),
@@ -194,13 +234,17 @@ def test_other_income_flow(setup):  # noqa: F811
     response = s.admin.post("/api/v1/other-income/", payload, format="json")
     assert response.status_code == 201, response.data
     income_id = response.data["id"]
-    # Only notes change; the amount is ignored on PATCH.
-    patched = s.admin.patch(
+    # Only notes change; the amount is ignored on PATCH (except for the admin).
+    patched = treasurer.patch(
         f"/api/v1/other-income/{income_id}/", {"amount": "1", "description": "Hundi"}, format="json"
     )
     assert patched.data["amount"] == "1234.75" and patched.data["description"] == "Hundi"
+    patched = s.admin.patch(f"/api/v1/other-income/{income_id}/", {"amount": "1200"}, format="json")
+    assert patched.data["amount"] == "1200.00"
     assert s.admin.post(f"/api/v1/other-income/{income_id}/void/", {"reason": "Counted twice"}).data["status"] == "void"
     assert s.admin.post(f"/api/v1/other-income/{income_id}/void/", {"reason": "again"}).status_code == 409
+    assert treasurer.delete(f"/api/v1/other-income/{income_id}/").status_code == 403
+    assert s.admin.delete(f"/api/v1/other-income/{income_id}/").status_code == 204
 
 
 def test_category_management(setup, add_member, client_for):  # noqa: F811

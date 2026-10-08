@@ -9,6 +9,7 @@ from apps.organizations.models import FinancialYear
 
 pytestmark = pytest.mark.django_db
 
+NO_ID = "00000000-0000-0000-0000-000000000000"
 ROLES = ["org_admin", "treasurer", "secretary", "collector", "volunteer", "member"]
 
 
@@ -55,6 +56,9 @@ def endpoint_cases(org):
         "send announcement": ("post", "/api/v1/announcements/", {}),
         "payment gateway keys": ("get", "/api/v1/gateway/config/", None),
         "my notifications": ("get", "/api/v1/notifications/", None),
+        "financial summary": ("get", "/api/v1/finance/summary/", None),
+        "admin edit collection": ("post", f"/api/v1/payments/{NO_ID}/edit/", {}),
+        "admin delete collection": ("delete", f"/api/v1/payments/{NO_ID}/", None),
     }
 
 
@@ -84,8 +88,9 @@ EXPECTED = {
     "view payments": (1, 1, 0, 1, 0, 0),
     "view contributions": (1, 1, 0, 1, 0, 0),
     "view receipts": (1, 1, 0, 1, 0, 0),
-    "view expenses": (1, 1, 0, 0, 0, 0),
-    "create expense": (1, 1, 0, 0, 0, 0),
+    # Collectors add expenses for approval and see only their own.
+    "view expenses": (1, 1, 0, 1, 0, 0),
+    "create expense": (1, 1, 0, 1, 0, 0),
     "manage expense categories": (1, 1, 0, 0, 0, 0),
     "other income": (1, 1, 0, 0, 0, 0),
     "list reports": (1, 1, 1, 0, 0, 0),
@@ -97,6 +102,9 @@ EXPECTED = {
     "send announcement": (1, 0, 1, 0, 0, 0),
     "payment gateway keys": (1, 0, 0, 0, 0, 0),
     "my notifications": (1, 1, 1, 1, 1, 1),
+    "financial summary": (1, 1, 1, 0, 0, 0),
+    "admin edit collection": (1, 0, 0, 0, 0, 0),
+    "admin delete collection": (1, 0, 0, 0, 0, 0),
 }
 
 

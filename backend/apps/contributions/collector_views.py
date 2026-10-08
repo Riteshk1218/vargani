@@ -174,7 +174,8 @@ class MyCollectorDashboardView(_EventView):
                     {
                         "id": str(r.pk),
                         "receipt_number": r.receipt_number,
-                        "payer_name": r.payment.payer.full_name,
+                        "payer_name": r.payment.payer_name,
+                        "paid_at": r.payment.paid_at.isoformat(),
                         "amount": _money(r.payment.amount),
                         "issued_at": r.issued_at.isoformat(),
                     }

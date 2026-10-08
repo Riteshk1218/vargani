@@ -43,9 +43,11 @@ footer { display: flex; justify-content: space-between; align-items: flex-end; m
   <span class="title">{% trans "Receipt" %}</span>
   <span><span class="muted">{% trans "Receipt no." %}</span> <span class="number">{{ receipt.receipt_number }}</span></span>
 </div>
-<div class="muted">{{ s.event.name }} · {% blocktrans with label=s.financial_year %}Financial year {{ label }}{% endblocktrans %} · {{ paid_at|date:"j F Y" }}</div>
 <dl>
-  <dt>{% trans "Received from" %}</dt><dd><strong>{{ s.person.name }}</strong></dd>
+  <dt>{% trans "Event" %}</dt><dd>{{ s.event.name }}</dd>
+  <dt>{% trans "Financial year" %}</dt><dd>{{ s.financial_year }}</dd>
+  <dt>{% trans "Date and time" %}</dt><dd>{{ paid_at|date:"d-M-Y, h:i A" }}</dd>
+  <dt>{% trans "Received from" %}</dt><dd><strong>{% if s.person.anonymous %}{% trans "Anonymous" %}{% else %}{{ s.person.name }}{% endif %}</strong></dd>
   {% if s.person.mobile %}<dt>{% trans "Mobile" %}</dt><dd>{{ s.person.mobile }}</dd>{% endif %}
   {% if s.person.address %}<dt>{% trans "Address" %}</dt><dd>{{ s.person.address }}</dd>{% endif %}
 </dl>

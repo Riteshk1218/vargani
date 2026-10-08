@@ -72,7 +72,9 @@ class Contribution(TenantModel):
     event = models.ForeignKey("events.Event", on_delete=models.PROTECT, related_name="contributions")
     fund = models.ForeignKey("funds.Fund", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     contribution_type = models.ForeignKey(ContributionType, on_delete=models.PROTECT, related_name="contributions")
-    person = models.ForeignKey("people.Person", on_delete=models.PROTECT, related_name="contributions")
+    person = models.ForeignKey(
+        "people.Person", null=True, blank=True, on_delete=models.PROTECT, related_name="contributions"
+    )  # empty for an anonymous collection
     payment = models.ForeignKey("payments.Payment", on_delete=models.PROTECT, related_name="lines")
     period_month = models.DateField(null=True, blank=True)
     amount = models.DecimalField(max_digits=12, decimal_places=2)

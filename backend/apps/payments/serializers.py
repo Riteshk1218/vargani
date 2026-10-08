@@ -1,7 +1,9 @@
 from decimal import Decimal
 
+from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
+from apps.accounts.serializers import MobileField
 from apps.contributions.models import Contribution, ContributionType
 from apps.core.fields import TenantPrimaryKeyRelatedField
 from apps.events.models import Event
@@ -20,9 +22,41 @@ class PaymentLineInputSerializer(serializers.Serializer):
     notes = serializers.CharField(max_length=300, required=False, allow_blank=True, default="")
 
 
-class PaymentCreateSerializer(serializers.Serializer):
+class NewPersonSerializer(serializers.ModelSerializer):
+    """A contributor added while collecting: name required, everything else optional."""
+
+    mobile = MobileField(required=False, allow_blank=True, allow_null=True)
+
+    class Meta:
+        model = Person
+        fields = ["full_name", "mobile", "email", "unit", "building", "area", "address_line", "city"]
+
+    def validate_full_name(self, value):
+        value = " ".join(value.split())
+        if not value:
+            raise serializers.ValidationError(_("Enter the person's name."))
+        return value
+
+    def validate(self, attrs):
+        return {key: ("" if value is None else value) for key, value in attrs.items()}
+
+
+class PayerChoiceMixin:
+    """Who paid: an existing person (`payer`), a new person (`new_person`) or nobody named (both empty)."""
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        if attrs.get("payer") and attrs.get("new_person"):
+            raise serializers.ValidationError({"payer": [_("Choose an existing person or add a new one, not both.")]})
+        return attrs
+
+
+class PaymentCreateSerializer(PayerChoiceMixin, serializers.Serializer):
     event = TenantPrimaryKeyRelatedField(queryset=Event.objects.filter(deleted_at__isnull=True))
-    payer = TenantPrimaryKeyRelatedField(queryset=Person.objects.filter(deleted_at__isnull=True))
+    payer = TenantPrimaryKeyRelatedField(
+        queryset=Person.objects.filter(deleted_at__isnull=True), required=False, allow_null=True, default=None
+    )
+    new_person = NewPersonSerializer(required=False, allow_null=True, default=None)
     mode = serializers.ChoiceField(choices=PaymentMode.choices)
     status = serializers.ChoiceField(
         choices=[Payment.Status.SUCCESSFUL, Payment.Status.PENDING], default=Payment.Status.SUCCESSFUL
@@ -70,8 +104,10 @@ class ReceiptRefSerializer(serializers.ModelSerializer):
 
 class PaymentSerializer(serializers.ModelSerializer):
     event_name = serializers.CharField(source="event.name", read_only=True)
-    payer_name = serializers.CharField(source="payer.full_name", read_only=True)
-    payer_mobile = serializers.CharField(source="payer.mobile", read_only=True)
+    payer_name = serializers.CharField(read_only=True)
+    payer_mobile = serializers.CharField(source="payer.mobile", read_only=True, default="")
+    is_anonymous = serializers.SerializerMethodField()
+    financial_year_label = serializers.CharField(source="financial_year.label", read_only=True)
     collector_name = serializers.SerializerMethodField()
     lines = PaymentLineSerializer(many=True, read_only=True)
     receipt = serializers.SerializerMethodField()
@@ -85,6 +121,9 @@ class PaymentSerializer(serializers.ModelSerializer):
             "payer",
             "payer_name",
             "payer_mobile",
+            "is_anonymous",
+            "financial_year",
+            "financial_year_label",
             "amount",
             "mode",
             "status",
@@ -101,12 +140,35 @@ class PaymentSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = [f for f in fields if f != "notes"]
 
+    def get_is_anonymous(self, obj) -> bool:
+        return obj.payer_id is None
+
     def get_collector_name(self, obj) -> str | None:
         return obj.collector.user.full_name if obj.collector else None
 
     def get_receipt(self, obj) -> dict | None:
         receipts = sorted(obj.receipts.all(), key=lambda r: (r.status != Receipt.Status.ISSUED, -r.sequence))
         return ReceiptRefSerializer(receipts[0]).data if receipts else None
+
+
+class PaymentAdminEditSerializer(PayerChoiceMixin, serializers.Serializer):
+    """Organization Admin edit. Send only what changes; `lines` replaces every line."""
+
+    payer = TenantPrimaryKeyRelatedField(
+        queryset=Person.objects.filter(deleted_at__isnull=True), required=False, allow_null=True
+    )
+    new_person = NewPersonSerializer(required=False, allow_null=True)
+    mode = serializers.ChoiceField(choices=PaymentMode.choices, required=False)
+    paid_at = serializers.DateTimeField(required=False)
+    reference_number = serializers.CharField(max_length=60, required=False, allow_blank=True)
+    cheque_bank = serializers.CharField(max_length=100, required=False, allow_blank=True)
+    cheque_date = serializers.DateField(required=False, allow_null=True)
+    notes = serializers.CharField(max_length=500, required=False, allow_blank=True)
+    lines = PaymentLineInputSerializer(many=True, allow_empty=False, max_length=36, required=False)
+
+
+class PaymentDeleteSerializer(serializers.Serializer):
+    reason = serializers.CharField(max_length=300, required=False, allow_blank=True, default="")
 
 
 class PaymentNotesSerializer(serializers.ModelSerializer):

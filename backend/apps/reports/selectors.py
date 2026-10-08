@@ -77,3 +77,42 @@ def income_by_source(org, events):
         .annotate(total=Sum("amount"), count=Count("id"))
         .order_by("-total")
     )
+
+
+def _by_event(qs, **filters):
+    return {row["event"]: row["total"] for row in qs.filter(**filters).values("event").annotate(total=Sum("amount"))}
+
+
+def event_summaries(org, events) -> list[dict]:
+    """One row per event: Collection − Approved expenses = Balance, plus pending and rejected expenses.
+
+    Each event belongs to one financial year of one organization (mandal), so the rows never mix years or
+    events. Collection = confirmed contribution lines; other income is shown separately and counts in the
+    balance, as everywhere else (finance_totals).
+    """
+    events = list(events.select_related("financial_year").order_by("-financial_year__start_date", "start_date", "name"))
+    ids = [e.pk for e in events]
+    collected = _by_event(Contribution.objects.for_org(org).filter(event__in=ids, status=Contribution.Status.CONFIRMED))
+    income = _by_event(OtherIncome.objects.for_org(org).filter(event__in=ids, status=OtherIncome.Status.RECORDED))
+    expenses = Expense.objects.for_org(org).filter(event__in=ids)
+    approved = _by_event(expenses, status=Expense.Status.APPROVED)
+    pending = _by_event(expenses, status=Expense.Status.SUBMITTED)
+    rejected = _by_event(expenses, status=Expense.Status.REJECTED)
+    rows = []
+    for event in events:
+        collection = collected.get(event.pk) or ZERO
+        other = income.get(event.pk) or ZERO
+        spent = approved.get(event.pk) or ZERO
+        rows.append(
+            {
+                "event": {"id": str(event.pk), "name": event.name, "status": event.status},
+                "financial_year": {"id": str(event.financial_year_id), "label": event.financial_year.label},
+                "collection": money(collection),
+                "other_income": money(other),
+                "approved_expenses": money(spent),
+                "pending_expenses": money(pending.get(event.pk)),
+                "rejected_expenses": money(rejected.get(event.pk)),
+                "balance": money(collection + other - spent),
+            }
+        )
+    return rows

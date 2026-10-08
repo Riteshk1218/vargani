@@ -69,6 +69,7 @@ class ExpenseSerializer(ImmutableFieldsMixin, serializers.ModelSerializer):
             "category_name",
             "amount",
             "expense_date",
+            "expense_time",
             "mode",
             "payee",
             "description",
@@ -94,8 +95,19 @@ class ExpenseSerializer(ImmutableFieldsMixin, serializers.ModelSerializer):
             f
             for f in fields
             if f
-            not in {"event", "category", "amount", "expense_date", "mode", "payee", "description", "reference_number"}
+            not in {
+                "event",
+                "category",
+                "amount",
+                "expense_date",
+                "expense_time",
+                "mode",
+                "payee",
+                "description",
+                "reference_number",
+            }
         ]
+        extra_kwargs = {"expense_date": {"required": False}, "payee": {"required": False}}
 
     def get_created_by_name(self, obj) -> str | None:
         return _user_name(obj.created_by)
@@ -115,10 +127,7 @@ class ExpenseSerializer(ImmutableFieldsMixin, serializers.ModelSerializer):
         return value
 
     def validate_payee(self, value):
-        value = _clean(value)
-        if not value:
-            raise serializers.ValidationError(_("Enter who was paid."))
-        return value
+        return _clean(value)
 
 
 class ExpenseReasonSerializer(serializers.Serializer):

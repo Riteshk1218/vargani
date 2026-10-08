@@ -6,7 +6,9 @@ draft ──submit──▶ submitted ──approve──▶ approved ──void
 """
 
 from datetime import timedelta
+from zoneinfo import ZoneInfo
 
+from django.core.files.storage import default_storage
 from django.db import transaction
 from django.forms.models import model_to_dict
 from django.utils import timezone
@@ -14,6 +16,7 @@ from django.utils.translation import gettext as _
 from rest_framework.exceptions import ValidationError
 
 from apps.audit import services as audit
+from apps.core.admin_override import ADMIN_DELETE_ACTION, ADMIN_EDIT_ACTION, allow_admin_changes
 from apps.core.exceptions import BusinessRuleViolation, InvalidStateTransition
 from apps.events.models import Event
 from apps.notifications import hooks as notify
@@ -62,9 +65,22 @@ def _lock(expense):
     return Expense.objects.select_for_update().select_related("organization").get(pk=expense.pk)
 
 
+def _now_in(org):
+    try:
+        return timezone.localtime(timezone.now(), ZoneInfo(org.timezone))
+    except Exception:  # noqa: BLE001
+        return timezone.localtime(timezone.now())
+
+
 def create_expense(*, org, data, request=None, actor=None) -> Expense:
     event = data["event"]
     check_event_open(event)
+    data = dict(data)
+    now = _now_in(org)
+    if not data.get("expense_date"):
+        data["expense_date"] = now.date()
+    if not data.get("expense_time") and data["expense_date"] == now.date():
+        data["expense_time"] = now.time().replace(second=0, microsecond=0)
     check_not_future(data["expense_date"], "expense_date")
     with transaction.atomic():
         expense = Expense.objects.create(
@@ -78,23 +94,49 @@ def create_expense(*, org, data, request=None, actor=None) -> Expense:
     return expense
 
 
-def update_expense(expense, *, data, request=None, actor=None) -> Expense:
+def update_expense(expense, *, data, admin=False, request=None, actor=None) -> Expense:
+    """Owners edit while draft, submitted or rejected. An Organization Admin may edit any expense."""
     with transaction.atomic():
+        if admin:
+            allow_admin_changes()
         expense = _lock(expense)
-        if expense.status not in EDITABLE:
-            raise InvalidStateTransition()
-        check_event_open(expense.event)
+        if not admin:
+            if expense.status not in EDITABLE:
+                raise InvalidStateTransition()
+            check_event_open(expense.event)
         if "expense_date" in data:
             check_not_future(data["expense_date"], "expense_date")
         before = _snapshot(expense)
         for field, value in data.items():
             setattr(expense, field, value)
-        if expense.status == Expense.Status.REJECTED:
+        if expense.status == Expense.Status.REJECTED and not admin:
             expense.status = Expense.Status.DRAFT  # edited after rejection: submit again
         expense.updated_by = actor
         expense.save()
-        _audit(expense, audit.UPDATE, request=request, actor=actor, before=before)
+        _audit(expense, ADMIN_EDIT_ACTION if admin else audit.UPDATE, request=request, actor=actor, before=before)
     return expense
+
+
+def delete_expense(expense, *, request=None, actor=None) -> None:
+    """Organization Admin: remove an expense and its bills. The audit log keeps a copy."""
+    with transaction.atomic():
+        allow_admin_changes()
+        expense = _lock(expense)
+        before = _snapshot(expense)
+        before["attachments"] = [a.original_name for a in expense.attachments.all()]
+        keys = [a.file for a in expense.attachments.all()]
+        audit.record(
+            request=request,
+            actor=actor,
+            organization=expense.organization,
+            action=ADMIN_DELETE_ACTION,
+            entity_type="expenses.expense",
+            entity_id=expense.pk,
+            before=before,
+        )
+        expense.attachments.all().delete()
+        expense.delete()
+        transaction.on_commit(lambda: [default_storage.delete(key) for key in keys])
 
 
 def _approve_now(expense, actor, now):
@@ -218,3 +260,36 @@ def void_income(income, *, reason, request=None, actor=None) -> OtherIncome:
         income.save()
         _audit(income, VOID, request=request, actor=actor, before=before)
     return income
+
+
+def update_income(income, *, data, request=None, actor=None) -> OtherIncome:
+    """Organization Admin: change any field of other income."""
+    with transaction.atomic():
+        allow_admin_changes()
+        income = OtherIncome.objects.select_for_update().get(pk=income.pk)
+        before = _snapshot(income)
+        fund = data.get("fund", income.fund)
+        if fund is not None and fund.event_id != income.event_id:
+            raise ValidationError({"fund": [_("This fund belongs to another event.")]})
+        for field, value in data.items():
+            setattr(income, field, value)
+        income.updated_by = actor
+        income.save()
+        _audit(income, ADMIN_EDIT_ACTION, request=request, actor=actor, before=before)
+    return income
+
+
+def delete_income(income, *, request=None, actor=None) -> None:
+    with transaction.atomic():
+        allow_admin_changes()
+        income = OtherIncome.objects.select_for_update().get(pk=income.pk)
+        audit.record(
+            request=request,
+            actor=actor,
+            organization=income.organization,
+            action=ADMIN_DELETE_ACTION,
+            entity_type="expenses.otherincome",
+            entity_id=income.pk,
+            before=_snapshot(income),
+        )
+        income.delete()

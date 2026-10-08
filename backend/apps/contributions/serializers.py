@@ -80,7 +80,7 @@ class ContributionTypeSerializer(ImmutableFieldsMixin, serializers.ModelSerializ
 
 
 class ContributionSerializer(serializers.ModelSerializer):
-    person_name = serializers.CharField(source="person.full_name", read_only=True)
+    person_name = serializers.CharField(source="payment.payer_name", read_only=True)
     contribution_type_name = serializers.CharField(source="contribution_type.name", read_only=True)
     fund_name = serializers.CharField(source="fund.name", read_only=True, default=None)
     mode = serializers.CharField(source="payment.mode", read_only=True)

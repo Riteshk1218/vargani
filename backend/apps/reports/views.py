@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.core.files.storage import default_storage
 from django.http import FileResponse
 from django.utils.translation import gettext as _
@@ -122,7 +124,7 @@ class DashboardSummaryView(APIView):
         data["recent_payments"] = [
             {
                 "id": str(p.pk),
-                "payer_name": p.payer.full_name,
+                "payer_name": p.payer_name,
                 "amount": f"{p.amount:.2f}",
                 "mode": p.mode,
                 "paid_at": p.paid_at.isoformat(),
@@ -134,6 +136,44 @@ class DashboardSummaryView(APIView):
             .order_by("-paid_at")[:5]
         ]
         return data
+
+
+class FinancialSummaryView(APIView):
+    """Financial summary for the active organization: one row per event, never mixing events or years.
+
+    Collection − Approved expenses (+ other income) = Balance. Filter with `financial_year` and/or `event`;
+    without a filter every event of every financial year is listed, newest year first.
+    """
+
+    permission_classes = [IsAuthenticated, HasOrgPermission]
+
+    def get_organization_id(self):
+        return None
+
+    def get_required_permissions(self):
+        return ("dashboard.view_financial", "reports.view_financial")
+
+    @extend_schema(responses=OpenApiTypes.OBJECT)
+    def get(self, request):
+        org = request._org_context.organization
+        events = Event.objects.for_org(org).alive()
+        if request.query_params.get("financial_year"):
+            events = events.filter(financial_year_id=request.query_params["financial_year"])
+        if request.query_params.get("event"):
+            events = events.filter(pk=request.query_params["event"])
+        rows = sel.event_summaries(org, events)
+        total = {
+            key: sel.money(sum((Decimal(r[key]) for r in rows), Decimal(0)))
+            for key in (
+                "collection",
+                "other_income",
+                "approved_expenses",
+                "pending_expenses",
+                "rejected_expenses",
+                "balance",
+            )
+        }
+        return Response({"organization": {"id": str(org.pk), "name": org.name}, "events": rows, "total": total})
 
 
 class ReportViewMixin:

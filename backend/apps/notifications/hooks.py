@@ -71,7 +71,7 @@ def receipt_issued(receipt, actor):
     """Tell the contributor, when they have a portal login and the organization has the portal switched on."""
     org = receipt.organization
     payer = receipt.payment.payer
-    if not org.settings.get("member_portal_enabled") or payer.user_id is None:
+    if not org.settings.get("member_portal_enabled") or payer is None or payer.user_id is None:
         return
     if actor is not None and payer.user_id == actor.pk:
         return

@@ -11,10 +11,12 @@ from apps.core.scoping import scope_money
 from apps.core.tenancy import SCOPE_ALL
 from apps.core.viewsets import TenantModelViewSet
 
-from . import services
+from . import admin_edit, services
 from .models import Payment
 from .serializers import (
+    PaymentAdminEditSerializer,
     PaymentCreateSerializer,
+    PaymentDeleteSerializer,
     PaymentNotesSerializer,
     PaymentSerializer,
     PaymentStatusChangeSerializer,
@@ -34,8 +36,11 @@ class PaymentViewSet(TenantModelViewSet):
     """Payments with their contribution lines and receipt.
 
     POST records a payment (also exposed as POST /collections/). Send an `Idempotency-Key` header so a retry
-    after a network error returns the first payment instead of recording it twice. Only `notes` can be
-    edited; amounts never change.
+    after a network error returns the first payment instead of recording it twice. `payer` is optional: leave
+    it empty for an anonymous collection, or send `new_person` to add the contributor while collecting.
+
+    PATCH edits only `notes`. An Organization Admin can edit everything with POST /payments/{id}/edit/ and
+    delete with DELETE /payments/{id}/ (the receipt is voided; the record stays in the audit log).
     """
 
     queryset = Payment.objects.all()
@@ -43,6 +48,7 @@ class PaymentViewSet(TenantModelViewSet):
     filterset_class = PaymentFilter
     search_fields = ["payer__full_name", "payer__mobile", "reference_number", "receipts__receipt_number"]
     ordering_fields = ["paid_at", "amount", "created_at"]
+    http_method_names = ["get", "post", "patch", "delete", "head", "options"]
     required_permissions = {
         "list": "payments.view",
         "retrieve": "payments.view",
@@ -51,6 +57,8 @@ class PaymentViewSet(TenantModelViewSet):
         "confirm": "payments.create",
         "cancel": "payments.cancel_pending",
         "fail": "payments.cancel_pending",
+        "admin_edit": "records.admin_edit",
+        "destroy": "records.admin_edit",
     }
 
     def get_serializer_class(self):
@@ -71,17 +79,23 @@ class PaymentViewSet(TenantModelViewSet):
         )
 
     def scope_queryset(self, queryset):
+        if self.action == "list" and not self.request.query_params.get("status"):
+            queryset = queryset.exclude(status=Payment.Status.DELETED)
         if self.action in ("confirm", "partial_update") and self.org_context.scope("payments.create") != SCOPE_ALL:
             queryset = queryset.filter(collector=self.membership)
         return scope_money(queryset, self.org_context, "payments.view", self.request.user, person="payer")
 
-    def _check_can_collect(self, payer=None, event=None):
+    def _check_can_collect(self, payer=None, event=None, new_person=False):
+        if new_person and not (self.org_context.has("people.create") or self.org_context.has("people.manage")):
+            raise PermissionDenied(_("You cannot add new people."))
         if self.org_context.scope("payments.create") == SCOPE_ALL:
             return
+        if payer is None:
+            return  # anonymous collection, or a new person who is assigned to this collector on the spot
         if (self.organization.settings or {}).get("allow_unassigned_collection"):
             return
         # Collectors collect only from people assigned to them in this event.
-        if payer is None or not assignments.is_assigned(membership=self.membership, person=payer, event=event):
+        if not assignments.is_assigned(membership=self.membership, person=payer, event=event):
             raise PermissionDenied(_("This person is not assigned to you for this event."))
 
     def _detail(self, payment, status_code=status.HTTP_200_OK):
@@ -93,7 +107,7 @@ class PaymentViewSet(TenantModelViewSet):
         serializer = PaymentCreateSerializer(data=request.data, context=self.get_serializer_context())
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
-        self._check_can_collect(data["payer"], data["event"])
+        self._check_can_collect(data["payer"], data["event"], new_person=bool(data["new_person"]))
         replaces = data.get("replaces_receipt")
         if replaces is not None and not self.org_context.has("receipts.void_approve"):
             raise PermissionDenied()
@@ -102,6 +116,8 @@ class PaymentViewSet(TenantModelViewSet):
             org=self.organization,
             event=data["event"],
             payer=data["payer"],
+            new_person=data["new_person"],
+            assign_new_person=self.org_context.scope("people.view") != SCOPE_ALL,
             mode=data["mode"],
             status=data["status"],
             paid_at=data.get("paid_at"),
@@ -150,3 +166,28 @@ class PaymentViewSet(TenantModelViewSet):
     def fail(self, request, pk=None):
         """Pending → failed (e.g. a bounced cheque)."""
         return self._status_action(request, services.fail_payment)
+
+    @extend_schema(request=PaymentAdminEditSerializer, responses=PaymentSerializer)
+    @action(detail=True, methods=["post"], url_path="edit")
+    def admin_edit(self, request, pk=None):
+        """Organization Admin: change the person, amount and lines, mode, date and time or notes.
+
+        The receipt keeps its number and shows the new details. Old and new values go to the audit log.
+        """
+        payment = self.get_object()
+        serializer = PaymentAdminEditSerializer(data=request.data, context=self.get_serializer_context())
+        serializer.is_valid(raise_exception=True)
+        data = dict(serializer.validated_data)
+        if "lines" in data:
+            data["lines"] = [services.LineInput(**line) for line in data["lines"]]
+        return self._detail(admin_edit.edit_payment(payment, data=data, request=request, actor=request.user))
+
+    @extend_schema(request=PaymentDeleteSerializer, responses=PaymentSerializer)
+    def destroy(self, request, *args, **kwargs):
+        """Organization Admin: delete a collection. It leaves every list and total; its receipt is voided."""
+        serializer = PaymentDeleteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        payment = admin_edit.delete_payment(
+            self.get_object(), reason=serializer.validated_data["reason"], request=request, actor=request.user
+        )
+        return self._detail(payment)

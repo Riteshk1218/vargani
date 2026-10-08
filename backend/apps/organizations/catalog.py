@@ -47,6 +47,7 @@ PERMISSIONS = {
     "audit.view": ("audit", "See the audit log"),
     "notifications.send": ("notifications", "Send announcements and reminders"),
     "portal.self": ("portal", "Member portal: own data only"),
+    "records.admin_edit": ("records", "Edit and delete any collection, expense or income (admin)"),
 }
 
 _ADMIN = {code: ALL for code in PERMISSIONS}
@@ -134,6 +135,8 @@ SYSTEM_ROLES = {
             "receipts.view": OWN,
             "receipts.share": OWN,
             "receipts.void_request": OWN,
+            "expenses.view": OWN,
+            "expenses.create": OWN,
             "portal.self": SELF,
         },
     ),

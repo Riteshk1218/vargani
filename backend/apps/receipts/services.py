@@ -50,9 +50,13 @@ def build_snapshot(payment) -> dict:
     address = ", ".join(
         part for part in [org.address_line1, org.address_line2, org.city, org.district, org.state, org.pincode] if part
     )
-    person_address = ", ".join(
-        part for part in [person.unit, person.building, person.area, person.address_line, person.city] if part
-    )
+    if person is not None:
+        person_address = ", ".join(
+            part for part in [person.unit, person.building, person.area, person.address_line, person.city] if part
+        )
+        payer = {"name": person.full_name, "mobile": person.mobile, "address": person_address}
+    else:
+        payer = {"name": payment.payer_name, "mobile": "", "address": "", "anonymous": True}
     return {
         "organization": {
             "name": org.name,
@@ -63,7 +67,7 @@ def build_snapshot(payment) -> dict:
             "registration_number": org.registration_number,
             "logo": org.logo or None,
         },
-        "person": {"name": person.full_name, "mobile": person.mobile, "address": person_address},
+        "person": payer,
         "event": {"name": event.name, "code": event.code},
         "financial_year": payment.financial_year.label,
         "lines": lines,
@@ -74,6 +78,7 @@ def build_snapshot(payment) -> dict:
         "cheque_bank": payment.cheque_bank,
         "cheque_date": payment.cheque_date.isoformat() if payment.cheque_date else None,
         "paid_at": payment.paid_at.isoformat(),
+        "timezone": org.timezone,
         "collector": collector.user.full_name if collector else None,
         "thank_you_message": event.thank_you_message,
     }

@@ -180,7 +180,7 @@ def handle_webhook(*, org, body: bytes, signature: str, event_id: str, payload: 
             _change_status(
                 payment, Payment.Status.FAILED, allowed_from={Payment.Status.PENDING}, reason=_("Online payment failed")
             )
-            if payment.payer.user_id:
+            if payment.payer_id and payment.payer.user_id:
                 notify(
                     [payment.payer.user],
                     "online_payment_failed",

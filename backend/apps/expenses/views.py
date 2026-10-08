@@ -9,6 +9,8 @@ from rest_framework.decorators import action
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.response import Response
 
+from apps.core.admin_override import ADMIN_EDIT
+from apps.core.tenancy import SCOPE_ALL
 from apps.core.viewsets import TenantModelViewSet
 
 from . import attachments, services
@@ -53,6 +55,8 @@ class ExpenseViewSet(TenantModelViewSet):
     """Expenses with bills and an approval flow. Only approved expenses count in the balance.
 
     Editable while draft, submitted or rejected. Approved expenses can only be voided (with a reason).
+    Collectors see and change only the expenses they entered. An Organization Admin can edit any expense and
+    delete it with DELETE.
     """
 
     queryset = Expense.objects.all()
@@ -61,7 +65,7 @@ class ExpenseViewSet(TenantModelViewSet):
     search_fields = ["payee", "description", "reference_number", "category__name"]
     ordering_fields = ["expense_date", "amount", "created_at"]
     parser_classes = [JSONParser, MultiPartParser, FormParser]
-    http_method_names = ["get", "post", "patch", "delete", "head", "options"]  # DELETE: bills only
+    http_method_names = ["get", "post", "patch", "delete", "head", "options"]
     required_permissions = {
         "list": "expenses.view",
         "retrieve": "expenses.view",
@@ -73,12 +77,22 @@ class ExpenseViewSet(TenantModelViewSet):
         "void": "expenses.create",
         "attachments": "expenses.create",
         "attachment": ("expenses.view", "expenses.create"),
+        "destroy": ADMIN_EDIT,
     }
 
     def get_required_permissions(self):
         if self.action is None:
-            return ()  # a method this route does not offer (e.g. DELETE /expenses/{id}/): answer 405
+            return ()  # a method this route does not offer: answer 405
         return super().get_required_permissions()
+
+    @property
+    def is_admin(self):
+        return self.org_context.has(ADMIN_EDIT)
+
+    def scope_queryset(self, queryset):
+        if self.org_context.scope("expenses.view") == SCOPE_ALL or self.org_context.has("expenses.approve"):
+            return queryset
+        return queryset.filter(created_by=self.request.user)
 
     def get_base_queryset(self):
         return (
@@ -106,8 +120,15 @@ class ExpenseViewSet(TenantModelViewSet):
         expense = self.get_object()
         serializer = self.get_serializer(expense, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
-        services.update_expense(expense, data=serializer.validated_data, request=request, actor=request.user)
+        services.update_expense(
+            expense, data=serializer.validated_data, admin=self.is_admin, request=request, actor=request.user
+        )
         return self._detail(expense)
+
+    def destroy(self, request, *args, **kwargs):
+        """Organization Admin: delete an expense and its bills (a copy stays in the audit log)."""
+        services.delete_expense(self.get_object(), request=request, actor=request.user)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     @extend_schema(request=None, responses=ExpenseSerializer)
     @action(detail=True, methods=["post"])
@@ -150,7 +171,9 @@ class ExpenseViewSet(TenantModelViewSet):
     @action(detail=True, methods=["post"], parser_classes=[MultiPartParser])
     def attachments(self, request, pk=None):
         """Upload a bill (JPG, PNG, WEBP or PDF, at most 10 MB; 10 per expense)."""
-        attachment = attachments.add(self.get_object(), request.FILES.get("file"), request=request, actor=request.user)
+        attachment = attachments.add(
+            self.get_object(), request.FILES.get("file"), admin=self.is_admin, request=request, actor=request.user
+        )
         return Response(ExpenseAttachmentSerializer(attachment).data, status=status.HTTP_201_CREATED)
 
     @extend_schema(responses={(200, "application/octet-stream"): OpenApiTypes.BINARY})
@@ -164,7 +187,7 @@ class ExpenseViewSet(TenantModelViewSet):
                 from rest_framework.exceptions import PermissionDenied
 
                 raise PermissionDenied()
-            attachments.remove(item, request=request, actor=request.user)
+            attachments.remove(item, admin=self.is_admin, request=request, actor=request.user)
             return Response(status=status.HTTP_204_NO_CONTENT)
         response = FileResponse(
             default_storage.open(item.file, "rb"),
@@ -187,7 +210,10 @@ class OtherIncomeFilter(django_filters.FilterSet):
 
 
 class OtherIncomeViewSet(TenantModelViewSet):
-    """Income not from a person (donation box, sponsorship, interest, sales). Amounts never change; void instead."""
+    """Income not from a person (donation box, sponsorship, interest, sales). Amounts never change; void instead.
+
+    An Organization Admin can change every field with PATCH and delete with DELETE.
+    """
 
     queryset = OtherIncome.objects.all()
     serializer_class = OtherIncomeSerializer
@@ -200,13 +226,17 @@ class OtherIncomeViewSet(TenantModelViewSet):
         "create": "other_income.manage",
         "partial_update": "other_income.manage",
         "void": "other_income.manage",
+        "destroy": ADMIN_EDIT,
     }
+    http_method_names = ["get", "post", "patch", "delete", "head", "options"]
 
     def get_base_queryset(self):
         return super().get_base_queryset().select_related("fund", "created_by", "voided_by")
 
     def get_serializer_class(self):
-        return OtherIncomeNotesSerializer if self.action == "partial_update" else OtherIncomeSerializer
+        if self.action == "partial_update" and not self.org_context.has(ADMIN_EDIT):
+            return OtherIncomeNotesSerializer
+        return OtherIncomeSerializer
 
     def _detail(self, income, code=status.HTTP_200_OK):
         data = OtherIncomeSerializer(self.get_queryset().get(pk=income.pk), context=self.get_serializer_context()).data
@@ -222,8 +252,20 @@ class OtherIncomeViewSet(TenantModelViewSet):
 
     @extend_schema(request=OtherIncomeNotesSerializer, responses=OtherIncomeSerializer)
     def partial_update(self, request, *args, **kwargs):
+        if self.org_context.has(ADMIN_EDIT):
+            income = self.get_object()
+            serializer = OtherIncomeSerializer(
+                income, data=request.data, partial=True, context=self.get_serializer_context()
+            )
+            serializer.is_valid(raise_exception=True)
+            services.update_income(income, data=serializer.validated_data, request=request, actor=request.user)
+            return self._detail(income)
         super().partial_update(request, *args, **kwargs)
         return self._detail(self.get_object())
+
+    def destroy(self, request, *args, **kwargs):
+        services.delete_income(self.get_object(), request=request, actor=request.user)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     @extend_schema(request=ExpenseReasonSerializer, responses=OtherIncomeSerializer)
     @action(detail=True, methods=["post"])

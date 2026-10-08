@@ -1112,6 +1112,24 @@ msgstr ""
 msgid "English"
 msgstr "English"
 
+msgid "Anonymous"
+msgstr "अनामिक"
+
+msgid "Date and time"
+msgstr "दिनांक व वेळ"
+
+msgid "Financial year"
+msgstr "आर्थिक वर्ष"
+
+msgid "Deleted by admin"
+msgstr "प्रशासकाने हटवले"
+
+msgid "Choose an existing person or add a new one, not both."
+msgstr "आधीची व्यक्ती निवडा किंवा नवीन जोडा, दोन्ही नाही."
+
+msgid "You cannot add new people."
+msgstr "तुम्ही नवीन व्यक्ती जोडू शकत नाही."
+
 #~ msgid "Your organization has not allowed collecting from unassigned people."
 #~ msgstr ""
 #~ "तुमच्या संस्थेने न सोपवलेल्या व्यक्तींकडून वसुलीची परवानगी दिलेली नाही."

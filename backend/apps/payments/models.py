@@ -14,10 +14,11 @@ class PaymentMode(models.TextChoices):
 
 
 class Payment(TenantModel):
-    """Money received from one person at one time. It settles one or more contribution lines.
+    """Money received at one time, from a person or anonymously (no payer). It settles one or more lines.
 
-    Never deleted. A pending payment can be cancelled or marked failed; a successful one is corrected only
-    through its receipt (void + new receipt, Phase 3).
+    Never removed from the database. A pending payment can be cancelled or marked failed; a successful one is
+    corrected through its receipt (void + new receipt), or edited / deleted by an Organization Admin
+    (payments/admin_edit.py), which keeps the receipt number and records every change in the audit log.
     """
 
     class Status(models.TextChoices):
@@ -26,10 +27,18 @@ class Payment(TenantModel):
         FAILED = "failed"
         CANCELLED = "cancelled"
         REFUNDED = "refunded"
+        DELETED = "deleted"
 
     financial_year = models.ForeignKey("organizations.FinancialYear", on_delete=models.PROTECT, related_name="+")
     event = models.ForeignKey("events.Event", on_delete=models.PROTECT, related_name="payments")
-    payer = models.ForeignKey("people.Person", on_delete=models.PROTECT, related_name="payments")
+    payer = models.ForeignKey(
+        "people.Person",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="payments",
+        help_text="Empty for an anonymous (no name) collection",
+    )
     amount = models.DecimalField(max_digits=12, decimal_places=2)
     mode = models.CharField(max_length=20, choices=PaymentMode.choices)
     status = models.CharField(max_length=12, choices=Status.choices, default=Status.SUCCESSFUL)
@@ -74,3 +83,9 @@ class Payment(TenantModel):
 
     def __str__(self):
         return f"{self.amount} {self.mode}"
+
+    @property
+    def payer_name(self) -> str:
+        from django.utils.translation import gettext
+
+        return self.payer.full_name if self.payer_id else gettext("Anonymous")

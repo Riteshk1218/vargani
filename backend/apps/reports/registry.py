@@ -182,8 +182,8 @@ def contributions(ctx: ReportContext) -> Report:
         rows.append(
             {
                 "date": c.contributed_on,
-                "person": c.person.full_name,
-                "mobile": c.person.mobile,
+                "person": c.person.full_name if c.person else _("Anonymous"),
+                "mobile": c.person.mobile if c.person else "",
                 "type": c.contribution_type.name,
                 "month": _month(c.period_month),
                 "fund": c.fund.name if c.fund else "",
@@ -341,7 +341,7 @@ def receipts(ctx: ReportContext) -> Report:
         {
             "number": r.receipt_number,
             "date": timezone.localtime(r.issued_at).date(),
-            "person": r.payment.payer.full_name,
+            "person": r.payment.payer_name,
             "mode": mode_label(r.payment.mode),
             "collector": r.payment.collector.user.full_name if r.payment.collector else "",
             "status": status_label(r.status),

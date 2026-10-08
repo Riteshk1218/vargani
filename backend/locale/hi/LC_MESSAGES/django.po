@@ -1111,5 +1111,23 @@ msgstr ""
 msgid "English"
 msgstr "English"
 
+msgid "Anonymous"
+msgstr "गुमनाम"
+
+msgid "Date and time"
+msgstr "दिनांक और समय"
+
+msgid "Financial year"
+msgstr "वित्तीय वर्ष"
+
+msgid "Deleted by admin"
+msgstr "एडमिन द्वारा हटाया गया"
+
+msgid "Choose an existing person or add a new one, not both."
+msgstr "मौजूदा व्यक्ति चुनें या नया जोड़ें, दोनों नहीं।"
+
+msgid "You cannot add new people."
+msgstr "आप नए व्यक्ति नहीं जोड़ सकते।"
+
 #~ msgid "Your organization has not allowed collecting from unassigned people."
 #~ msgstr "आपकी संस्था ने बिना सौंपे गए लोगों से संग्रह की अनुमति नहीं दी है।"

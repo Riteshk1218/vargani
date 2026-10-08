@@ -4,6 +4,7 @@ from .views import (
     DashboardSummaryView,
     ExportDownloadView,
     ExportJobView,
+    FinancialSummaryView,
     ReportExportView,
     ReportListView,
     ReportView,
@@ -11,6 +12,7 @@ from .views import (
 
 urlpatterns = [
     path("dashboard/summary/", DashboardSummaryView.as_view(), name="dashboard-summary"),
+    path("finance/summary/", FinancialSummaryView.as_view(), name="financial-summary"),
     path("reports/", ReportListView.as_view(), name="reports"),
     path("reports/<slug:report_type>/", ReportView.as_view(), name="report"),
     path("reports/<slug:report_type>/exports/", ReportExportView.as_view(), name="report-export"),

@@ -7,6 +7,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.audit import services as audit
+from apps.core.admin_override import ADMIN_EDIT
 from apps.core.exceptions import EventRequired, InvalidStateTransition
 from apps.core.tenancy import SCOPE_ALL
 from apps.core.viewsets import TenantModelViewSet
@@ -38,10 +39,28 @@ class EventViewSet(TenantModelViewSet):
         "reopen": "events.manage",
         "activate": "events.manage",
         "archive": "events.manage",
+        "destroy": ADMIN_EDIT,
     }
+    http_method_names = ["get", "post", "patch", "delete", "head", "options"]
 
     def get_base_queryset(self):
         return Event.objects.for_org(self.organization).alive().select_related("financial_year")
+
+    def destroy(self, request, *args, **kwargs):
+        """Organization Admin: delete an event. It disappears from every list and summary; its records stay."""
+        event = self.get_object()
+        before = model_to_dict(event)
+        event.soft_delete(user=request.user)
+        audit.record(
+            request=request,
+            organization=self.organization,
+            action=audit.SOFT_DELETE,
+            entity_type="events.event",
+            entity_id=event.pk,
+            before=before,
+            after=model_to_dict(event),
+        )
+        return Response(status=204)
 
     def scope_queryset(self, queryset):
         if self.org_context.scope("events.view") == SCOPE_ALL:

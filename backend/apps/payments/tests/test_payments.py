@@ -220,8 +220,8 @@ def test_only_notes_are_editable(setup):
 def test_money_rows_cannot_be_deleted_or_rewritten(setup):
     s = setup
     payment_id = collect(s.admin, s, [month_line(s, "2027-04-01", "500")]).data["id"]
-    for url in (f"/api/v1/payments/{payment_id}/", f"/api/v1/receipts/{Receipt.objects.get().pk}/"):
-        assert s.admin.delete(url).status_code == 405
+    assert s.admin.delete(f"/api/v1/receipts/{Receipt.objects.get().pk}/").status_code == 405
+    # (DELETE /payments/{id}/ is the admin delete: it voids, never removes; see test_admin_edit.py)
 
     checks = [
         lambda: Payment.objects.filter(pk=payment_id).delete(),

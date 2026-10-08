@@ -6,7 +6,7 @@ from .models import Receipt, ReceiptVoidRequest
 
 class ReceiptSerializer(serializers.ModelSerializer):
     payer = serializers.UUIDField(source="payment.payer_id", read_only=True)
-    payer_name = serializers.CharField(source="payment.payer.full_name", read_only=True)
+    payer_name = serializers.CharField(source="payment.payer_name", read_only=True)
     amount = serializers.DecimalField(source="payment.amount", max_digits=12, decimal_places=2, read_only=True)
     mode = serializers.CharField(source="payment.mode", read_only=True)
     logo_url = serializers.SerializerMethodField()
@@ -62,7 +62,7 @@ class ReceiptSerializer(serializers.ModelSerializer):
 
 class ReceiptVoidRequestSerializer(serializers.ModelSerializer):
     receipt_number = serializers.CharField(source="receipt.receipt_number", read_only=True)
-    payer_name = serializers.CharField(source="receipt.payment.payer.full_name", read_only=True)
+    payer_name = serializers.CharField(source="receipt.payment.payer_name", read_only=True)
     amount = serializers.DecimalField(source="receipt.payment.amount", max_digits=12, decimal_places=2, read_only=True)
     requested_by_name = serializers.CharField(source="requested_by.full_name", read_only=True)
     decided_by_name = serializers.CharField(source="decided_by.full_name", read_only=True, default=None)

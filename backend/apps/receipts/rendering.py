@@ -4,6 +4,7 @@ import hashlib
 import secrets
 from datetime import date, datetime, timedelta
 from urllib.parse import quote
+from zoneinfo import ZoneInfo
 
 from django.conf import settings
 from django.utils import timezone, translation
@@ -30,6 +31,14 @@ MODE_LABELS = {
 }
 
 
+def local_time(moment: datetime, tz_name: str | None) -> datetime:
+    """The moment in the organization's time zone (the server runs in UTC)."""
+    try:
+        return timezone.localtime(moment, ZoneInfo(tz_name or "Asia/Kolkata"))
+    except Exception:  # noqa: BLE001
+        return timezone.localtime(moment)
+
+
 def _money(value: str) -> str:
     return indian_format(value)
 
@@ -53,7 +62,9 @@ def receipt_pdf(receipt: Receipt, language: str | None = None) -> bytes:
             "lines": lines,
             "language": language,
             "logo": storage_data_uri(s["organization"].get("logo")),
-            "paid_at": timezone.localtime(datetime.fromisoformat(s["paid_at"])),
+            "paid_at": local_time(
+                datetime.fromisoformat(s["paid_at"]), s.get("timezone") or receipt.organization.timezone
+            ),
             "mode": _(MODE_LABELS.get(s["mode"], s["mode"])),
             "words": rupees_in_words(s["total"]) if language == "en" else "",
         }
@@ -90,7 +101,7 @@ def create_share(receipt: Receipt, *, request=None, actor=None) -> dict:
             "Namaskar %(name)s, thank you for your contribution of Rs %(amount)s to %(organization)s "
             "(%(event)s). Receipt no. %(number)s: %(url)s"
         ) % {
-            "name": s["person"]["name"],
+            "name": _("Anonymous") if s["person"].get("anonymous") else s["person"]["name"],
             "amount": _money(s["total"]),
             "organization": s["organization"]["name"],
             "event": s["event"]["name"],

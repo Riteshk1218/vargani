@@ -68,8 +68,8 @@ def _process(upload) -> tuple[bytes, str, str]:
     return buffer.getvalue(), content_type, ext
 
 
-def add(expense, upload, *, request=None, actor=None) -> ExpenseAttachment:
-    if expense.status not in CHANGEABLE:
+def add(expense, upload, *, admin=False, request=None, actor=None) -> ExpenseAttachment:
+    if expense.status not in CHANGEABLE and not admin:
         raise InvalidStateTransition()
     if upload is None:
         raise ValidationError({"file": [_("Choose a file.")]})
@@ -114,11 +114,11 @@ def _create(expense, upload, key, content, content_type, ext, request, actor) ->
     return attachment
 
 
-def remove(attachment, *, request=None, actor=None):
-    """Only while the expense can still change; an approved expense keeps its bills."""
+def remove(attachment, *, admin=False, request=None, actor=None):
+    """Only while the expense can still change (an approved expense keeps its bills), unless an admin."""
     with transaction.atomic():
         expense = Expense.objects.select_for_update().get(pk=attachment.expense_id)
-        if expense.status not in CHANGEABLE:
+        if expense.status not in CHANGEABLE and not admin:
             raise InvalidStateTransition()
         key = attachment.file
         audit.record(

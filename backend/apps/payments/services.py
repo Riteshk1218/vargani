@@ -50,7 +50,7 @@ def _validate(*, org, event, payer, mode, status, paid_at, reference_number, amo
         raise BusinessRuleViolation(_("This event is not active. New collections are not allowed."))
     if event.financial_year.status == FinancialYear.Status.CLOSED:
         raise BusinessRuleViolation(_("This financial year is closed."))
-    if payer.deleted_at is not None or not payer.is_active:
+    if payer is not None and (payer.deleted_at is not None or not payer.is_active):
         raise ValidationError({"payer": [_("This person is archived.")]})
     if (
         mode not in PaymentMode.values
@@ -108,6 +108,38 @@ def _validate_correction(old_receipt, event, status):
         raise ValidationError({"status": [_("A correction must be a received payment.")]})
 
 
+def create_person(*, org, event, data, collector=None, request=None, actor=None):
+    """A new contributor typed in while collecting. Must run inside the payment's transaction.
+
+    A collector who only sees assigned people gets the new person assigned to them in this event, so they find
+    the person again for the next collection.
+    """
+    from apps.contributions.models import CollectorAssignment
+    from apps.people.models import Person
+
+    person = Person.objects.create(organization=org, created_by=actor, updated_by=actor, **data)
+    audit.record(
+        request=request,
+        actor=actor,
+        organization=org,
+        action=audit.CREATE,
+        entity_type="people.person",
+        entity_id=person.pk,
+        after=model_to_dict(person),
+    )
+    if collector is not None:
+        CollectorAssignment.objects.create(
+            organization=org,
+            event=event,
+            collector=collector,
+            person=person,
+            assigned_by=actor,
+            created_by=actor,
+            updated_by=actor,
+        )
+    return person
+
+
 def record_payment(
     *,
     org,
@@ -127,10 +159,15 @@ def record_payment(
     replaces_receipt=None,
     online=False,
     gateway="",
+    new_person=None,
+    assign_new_person=False,
     request=None,
     actor=None,
 ) -> tuple[Payment, bool]:
     """Record a payment with its contribution lines and, when successful, its receipt.
+
+    `payer` may be None for an anonymous (no name) collection. `new_person` (a dict of Person fields) creates
+    that person in the same transaction and records the payment against them.
 
     Returns (payment, created). A repeated idempotency key returns the original payment unchanged, so a
     collector on a flaky mobile network can safely retry.
@@ -160,6 +197,15 @@ def record_payment(
 
     try:
         with transaction.atomic():
+            if new_person:
+                payer = create_person(
+                    org=org,
+                    event=event,
+                    data=new_person,
+                    collector=collector if assign_new_person else None,
+                    request=request,
+                    actor=actor,
+                )
             payment = Payment.objects.create(
                 organization=org,
                 financial_year_id=event.financial_year_id,

@@ -45,9 +45,23 @@ def test_every_tenant_viewset_is_tenant_scoped():
     assert not offenders
 
 
+# DELETE exists only where an Organization Admin may delete (records.admin_edit); everything else archives or voids.
+ADMIN_DELETE_VIEWSETS = {"PaymentViewSet", "ExpenseViewSet", "OtherIncomeViewSet", "EventViewSet"}
+
+
 def test_no_viewset_exposes_destroy():
-    offenders = [route for route, callback in api_viewsets() if "destroy" in callback.actions.values()]
+    offenders = [
+        route
+        for route, callback in api_viewsets()
+        if "destroy" in callback.actions.values() and callback.cls.__name__ not in ADMIN_DELETE_VIEWSETS
+    ]
     assert not offenders
+
+
+def test_admin_delete_needs_the_admin_permission():
+    for route, callback in api_viewsets():
+        if "destroy" in callback.actions.values():
+            assert callback.cls.required_permissions["destroy"] == "records.admin_edit", route
 
 
 @pytest.mark.django_db
