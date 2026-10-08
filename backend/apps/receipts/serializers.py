@@ -9,6 +9,7 @@ class ReceiptSerializer(serializers.ModelSerializer):
     payer_name = serializers.CharField(source="payment.payer_name", read_only=True)
     amount = serializers.DecimalField(source="payment.amount", max_digits=12, decimal_places=2, read_only=True)
     mode = serializers.CharField(source="payment.mode", read_only=True)
+    paid_at = serializers.DateTimeField(source="payment.paid_at", read_only=True)
     logo_url = serializers.SerializerMethodField()
     replaces_receipt_number = serializers.CharField(
         source="replaces_receipt.receipt_number", default=None, read_only=True
@@ -38,6 +39,7 @@ class ReceiptSerializer(serializers.ModelSerializer):
             "payer_name",
             "amount",
             "mode",
+            "paid_at",
             "void_reason",
             "voided_at",
             "replaces_receipt",

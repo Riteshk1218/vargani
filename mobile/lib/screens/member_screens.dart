@@ -204,7 +204,7 @@ class MemberPayments extends StatelessWidget {
                 final receipt = p['receipt'] as Map?;
                 return ListTile(
                   title: Text(lines.map((l) => l['contribution_type_name']).join(', ')),
-                  subtitle: Text('${formatDate('${p['paid_at']}')} · ${modeLabel(app, '${p['mode']}')}'
+                  subtitle: Text('${formatStamp('${p['paid_at']}')} · ${modeLabel(app, '${p['mode']}')}'
                       '${receipt != null ? ' · ${receipt['receipt_number']}' : ''}'),
                   trailing: Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.end, children: [
                     Text(formatInr('${p['amount']}'), style: Theme.of(context).textTheme.titleSmall),

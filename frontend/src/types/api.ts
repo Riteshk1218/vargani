@@ -401,6 +401,7 @@ export interface Receipt {
   payer_name: string
   amount: string
   mode: PaymentMode
+  paid_at?: string
   void_reason: string
   voided_at: string | null
   replaces_receipt: string | null

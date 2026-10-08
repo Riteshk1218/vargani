@@ -17,8 +17,11 @@ class ReceiptsScreen extends StatelessWidget {
       load: () async => resultsOf(await app.api.get('/receipts/', query: {'event': app.eventId})),
       builder: (context, items, reload) => items.isEmpty
           ? EmptyState(icon: Icons.receipt_long, text: app.t('no_receipts'))
-          : ReceiptList(items: items, onTap: (r) => Navigator.push(
-                context, MaterialPageRoute(builder: (_) => ReceiptScreen(receiptId: '${r['id']}')))),
+          : ReceiptList(
+              items: items,
+              onTap: (r) =>
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => ReceiptScreen(receiptId: '${r['id']}'))),
+            ),
     );
   }
 }
@@ -38,11 +41,15 @@ class ReceiptList extends StatelessWidget {
         final r = items[i];
         return ListTile(
           title: Text('${r['payer_name'] ?? ''}'),
-          subtitle: Text('${r['receipt_number']} · ${formatDate('${r['issued_at']}')}'),
-          trailing: Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.end, children: [
-            Text(formatInr('${r['amount']}'), style: Theme.of(context).textTheme.titleSmall),
-            if (r['status'] != 'issued') StatusChip('${r['status']}'),
-          ]),
+          subtitle: Text('${r['receipt_number']} · ${formatStamp('${r['paid_at'] ?? r['issued_at']}')}'),
+          trailing: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(formatInr('${r['amount']}'), style: Theme.of(context).textTheme.titleSmall),
+              if (r['status'] != 'issued') StatusChip('${r['status']}'),
+            ],
+          ),
           onTap: () => onTap(r),
         );
       },

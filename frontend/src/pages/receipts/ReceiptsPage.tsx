@@ -11,7 +11,7 @@ import { useEvents } from '../../context/EventContext'
 import { useOrg } from '../../context/OrgContext'
 import { useDebounced } from '../../hooks/useDebounced'
 import { receiptService } from '../../services/finance'
-import { formatDate, formatMoney } from '../../utils/format'
+import { formatMoney, formatStamp } from '../../utils/format'
 
 export function ReceiptsPage() {
   const { t } = useTranslation()
@@ -55,7 +55,7 @@ export function ReceiptsPage() {
                         <div className="min-w-0">
                           <p className="font-mono font-medium">{r.receipt_number}</p>
                           <p className="truncate text-slate-600">
-                            {r.payer_name} · {formatDate(r.issued_at)}
+                            {r.payer_name} · {formatStamp(r.paid_at ?? r.issued_at)}
                           </p>
                         </div>
                         <div className="text-right">

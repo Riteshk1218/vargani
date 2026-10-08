@@ -38,8 +38,18 @@ Your phone must be on the same Wi-Fi as the laptop.
 ## Things to try
 
 - **Collector:** People → Ritesh Patil → enter any amount → Save → Share on WhatsApp / Open PDF.
-- **Website:** see that payment appear on the Dashboard, Receipts and Reports; add an event, a person
-  or an expense; change the language at the top to मराठी or हिन्दी.
+- **Collect without a name:** Collect → Contributor → **No name** (or **New person** to add someone on
+  the spot). The receipt shows the event, financial year, date and exact time.
+- **Expenses (collector):** Expenses tab → Add expense → category, purpose, amount, bill photo →
+  Submit for approval.
+- **Expenses (committee):** website → Expenses → open one → Approve or Reject (with a reason). Only
+  approved expenses count.
+- **Financial summary:** website menu → Financial summary: Collection − Approved expenses = Balance,
+  per event and financial year. The admin also sees it on the mobile Home screen.
+- **Admin edit and delete:** website → Payments → open a payment → Edit or Delete. Edits keep the
+  receipt number; a deleted payment leaves the lists and totals but stays in the audit log.
+- **Website:** see payments on the Dashboard, Receipts and Reports; add an event, a person or an
+  expense; change the language at the top to मराठी or हिन्दी.
 - **Member:** log in as Ritesh with `9822001122`: he sees only his own payments, dues and receipts.
 
 ## Stop or start again

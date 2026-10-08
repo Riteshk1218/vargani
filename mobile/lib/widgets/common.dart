@@ -8,11 +8,9 @@ import '../util/money.dart';
 class AppScope extends InheritedNotifier<AppState> {
   const AppScope({super.key, required AppState state, required super.child}) : super(notifier: state);
 
-  static AppState of(BuildContext context) =>
-      context.dependOnInheritedWidgetOfExactType<AppScope>()!.notifier!;
+  static AppState of(BuildContext context) => context.dependOnInheritedWidgetOfExactType<AppScope>()!.notifier!;
 
-  static AppState read(BuildContext context) =>
-      context.getInheritedWidgetOfExactType<AppScope>()!.notifier!;
+  static AppState read(BuildContext context) => context.getInheritedWidgetOfExactType<AppScope>()!.notifier!;
 }
 
 String errorText(BuildContext context, Object error) {
@@ -23,10 +21,7 @@ String errorText(BuildContext context, Object error) {
 void showMessage(BuildContext context, String text, {bool error = false}) {
   ScaffoldMessenger.of(context)
     ..hideCurrentSnackBar()
-    ..showSnackBar(SnackBar(
-      content: Text(text),
-      backgroundColor: error ? Theme.of(context).colorScheme.error : null,
-    ));
+    ..showSnackBar(SnackBar(content: Text(text), backgroundColor: error ? Theme.of(context).colorScheme.error : null));
 }
 
 /// Loads data with [load], with loading, error-with-retry and pull-to-refresh states.
@@ -76,13 +71,16 @@ class _AsyncViewState<T> extends State<AsyncView<T>> {
           return Center(
             child: Padding(
               padding: const EdgeInsets.all(24),
-              child: Column(mainAxisSize: MainAxisSize.min, children: [
-                Icon(Icons.cloud_off, size: 40, color: Theme.of(context).colorScheme.error),
-                const SizedBox(height: 12),
-                Text(errorText(context, snap.error!), textAlign: TextAlign.center),
-                const SizedBox(height: 12),
-                FilledButton.tonal(onPressed: _reload, child: Text(AppScope.read(context).t('retry'))),
-              ]),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.cloud_off, size: 40, color: Theme.of(context).colorScheme.error),
+                  const SizedBox(height: 12),
+                  Text(errorText(context, snap.error!), textAlign: TextAlign.center),
+                  const SizedBox(height: 12),
+                  FilledButton.tonal(onPressed: _reload, child: Text(AppScope.read(context).t('retry'))),
+                ],
+              ),
             ),
           );
         }
@@ -99,12 +97,15 @@ class EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListView(physics: const AlwaysScrollableScrollPhysics(), children: [
-      const SizedBox(height: 80),
-      Icon(icon, size: 48, color: Theme.of(context).colorScheme.outline),
-      const SizedBox(height: 12),
-      Text(text, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyLarge),
-    ]);
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      children: [
+        const SizedBox(height: 80),
+        Icon(icon, size: 48, color: Theme.of(context).colorScheme.outline),
+        const SizedBox(height: 12),
+        Text(text, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyLarge),
+      ],
+    );
   }
 }
 
@@ -121,15 +122,20 @@ class StatCard extends StatelessWidget {
       color: highlight ? scheme.primaryContainer : null,
       child: Padding(
         padding: const EdgeInsets.all(14),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(label, style: Theme.of(context).textTheme.labelMedium),
-          const SizedBox(height: 6),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(formatInr(amount),
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600)),
-          ),
-        ]),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label, style: Theme.of(context).textTheme.labelMedium),
+            const SizedBox(height: 6),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                formatInr(amount),
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -143,34 +149,37 @@ class StatusChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final app = AppScope.of(context);
     final scheme = Theme.of(context).colorScheme;
-    final ok = status == 'issued' || status == 'successful';
+    final ok = const {'issued', 'successful', 'approved'}.contains(status);
+    final waiting = const {'submitted', 'draft', 'pending'}.contains(status);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: ok ? scheme.secondaryContainer : scheme.errorContainer,
+        color: ok ? scheme.secondaryContainer : (waiting ? scheme.tertiaryContainer : scheme.errorContainer),
         borderRadius: BorderRadius.circular(10),
       ),
-      child: Text(
-        switch (status) {
-          'issued' => app.t('status_issued'),
-          'void' || 'voided' => app.t('status_void'),
-          'cancelled' => app.t('status_cancelled'),
-          _ => status,
-        },
-        style: Theme.of(context).textTheme.labelSmall,
-      ),
+      child: Text(switch (status) {
+        'issued' => app.t('status_issued'),
+        'void' || 'voided' => app.t('status_void'),
+        'cancelled' => app.t('status_cancelled'),
+        'draft' => app.t('status_draft'),
+        'submitted' => app.t('status_submitted'),
+        'approved' => app.t('status_approved'),
+        'rejected' => app.t('status_rejected'),
+        'deleted' => app.t('status_deleted'),
+        _ => status,
+      }, style: Theme.of(context).textTheme.labelSmall),
     );
   }
 }
 
 String modeLabel(AppState app, String? mode) => switch (mode) {
-      'cash' => app.t('cash'),
-      'upi' => app.t('upi'),
-      'bank_transfer' => app.t('bank_transfer'),
-      'cheque' => app.t('cheque'),
-      'online' || 'gateway' => app.t('online'),
-      _ => app.t('other'),
-    };
+  'cash' => app.t('cash'),
+  'upi' => app.t('upi'),
+  'bank_transfer' => app.t('bank_transfer'),
+  'cheque' => app.t('cheque'),
+  'online' || 'gateway' => app.t('online'),
+  _ => app.t('other'),
+};
 
 /// Event switcher shown in the app bar.
 class EventSwitcher extends StatelessWidget {
@@ -189,14 +198,20 @@ class EventSwitcher extends StatelessWidget {
       ],
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8),
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 150),
-            child: Text('${app.event?['name'] ?? ''}', overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.labelLarge),
-          ),
-          const Icon(Icons.arrow_drop_down),
-        ]),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 150),
+              child: Text(
+                '${app.event?['name'] ?? ''}',
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.labelLarge,
+              ),
+            ),
+            const Icon(Icons.arrow_drop_down),
+          ],
+        ),
       ),
     );
   }

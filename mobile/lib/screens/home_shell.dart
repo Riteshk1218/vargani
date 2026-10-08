@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../widgets/common.dart';
 import 'collect_screen.dart';
 import 'collector_dashboard.dart';
+import 'expenses_screen.dart';
 import 'member_screens.dart';
 import 'notifications_screen.dart';
 import 'org_picker_screen.dart';
@@ -52,6 +53,8 @@ class _HomeShellState extends State<HomeShell> {
         _Tab(Icons.dashboard_outlined, app.t('home'), const CollectorDashboard()),
         _Tab(Icons.people_outline, app.t('people'), const PeopleScreen()),
         if (app.can('receipts.view')) _Tab(Icons.receipt_long_outlined, app.t('receipts'), const ReceiptsScreen()),
+        if (app.can('expenses.create') || app.can('expenses.view'))
+          _Tab(Icons.request_quote_outlined, app.t('expenses'), const ExpensesScreen()),
       ] else if (app.isMember) ...[
         _Tab(Icons.home_outlined, app.t('home'), const MemberHome()),
         _Tab(Icons.payments_outlined, app.t('my_payments'), const MemberPayments()),
@@ -68,12 +71,14 @@ class _HomeShellState extends State<HomeShell> {
         titleSpacing: 12,
         title: InkWell(
           onTap: app.organizations.length > 1 ? () => _switchOrg(context) : null,
-          child: Row(children: [
-            OrgAvatar(name: app.orgName, logoUrl: app.logoUrl, radius: 16),
-            const SizedBox(width: 10),
-            Flexible(child: Text(app.orgName, overflow: TextOverflow.ellipsis)),
-            if (app.organizations.length > 1) const Icon(Icons.arrow_drop_down),
-          ]),
+          child: Row(
+            children: [
+              OrgAvatar(name: app.orgName, logoUrl: app.logoUrl, radius: 16),
+              const SizedBox(width: 10),
+              Flexible(child: Text(app.orgName, overflow: TextOverflow.ellipsis)),
+              if (app.organizations.length > 1) const Icon(Icons.arrow_drop_down),
+            ],
+          ),
         ),
         actions: [
           const EventSwitcher(),
@@ -99,9 +104,7 @@ class _HomeShellState extends State<HomeShell> {
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,
         onDestinationSelected: (i) => setState(() => _index = i),
-        destinations: [
-          for (final t in tabs) NavigationDestination(icon: Icon(t.icon), label: t.label),
-        ],
+        destinations: [for (final t in tabs) NavigationDestination(icon: Icon(t.icon), label: t.label)],
       ),
     );
   }
@@ -111,17 +114,20 @@ class _HomeShellState extends State<HomeShell> {
     final id = await showModalBottomSheet<String>(
       context: context,
       builder: (ctx) => SafeArea(
-        child: ListView(shrinkWrap: true, children: [
-          ListTile(title: Text(app.t('choose_org'), style: Theme.of(ctx).textTheme.titleMedium)),
-          for (final o in app.organizations)
-            ListTile(
-              leading: OrgAvatar(name: '${o['name']}', logoUrl: o['logo_url'] as String?),
-              title: Text('${o['name']}'),
-              subtitle: Text('${(o['role'] as Map?)?['name'] ?? ''}'),
-              selected: o['id'] == app.orgId,
-              onTap: () => Navigator.pop(ctx, o['id'] as String),
-            ),
-        ]),
+        child: ListView(
+          shrinkWrap: true,
+          children: [
+            ListTile(title: Text(app.t('choose_org'), style: Theme.of(ctx).textTheme.titleMedium)),
+            for (final o in app.organizations)
+              ListTile(
+                leading: OrgAvatar(name: '${o['name']}', logoUrl: o['logo_url'] as String?),
+                title: Text('${o['name']}'),
+                subtitle: Text('${(o['role'] as Map?)?['name'] ?? ''}'),
+                selected: o['id'] == app.orgId,
+                onTap: () => Navigator.pop(ctx, o['id'] as String),
+              ),
+          ],
+        ),
       ),
     );
     if (id == null || id == app.orgId) return;

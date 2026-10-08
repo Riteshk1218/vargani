@@ -38,6 +38,17 @@ String? normaliseAmount(String input) {
   return '$whole.$frac';
 }
 
+/// "2026-10-08T17:05:00Z" -> "08-Oct-2026, 10:35 PM" in the phone's time: when money changed hands.
+String formatStamp(String? iso) {
+  if (iso == null || iso.isEmpty) return '';
+  final d = DateTime.tryParse(iso)?.toLocal();
+  if (d == null) return iso;
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  final hour = d.hour % 12 == 0 ? 12 : d.hour % 12;
+  return '${d.day.toString().padLeft(2, '0')}-${months[d.month - 1]}-${d.year}, '
+      '${hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')} ${d.hour < 12 ? 'AM' : 'PM'}';
+}
+
 /// "2026-10-07T15:55:35Z" -> "07 Oct 2026" in local time.
 String formatDate(String? iso, {bool withTime = false}) {
   if (iso == null || iso.isEmpty) return '';

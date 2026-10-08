@@ -12,7 +12,7 @@ One platform for any organization that collects contributions (Ganeshotsav manda
 
 **Phase 1:** sign up / sign in (email or mobile + OTP), create organization, logo, financial years, invite users with roles, events, people, language switch (English, मराठी, हिंदी), audit log.
 
-**Phase 2:** funds and contribution types per event, recording collections (flexible amounts, several months or types in one payment, cash / UPI / bank / cheque, pending cheques), automatic gapless receipt numbers (`GC-2026-00001`), printable receipts in the organization's receipt language, payments, contributions and dues lists, and dashboard totals. Money rows can never be deleted or rewritten (database triggers).
+**Phase 2:** funds and contribution types per event, recording collections (flexible amounts, several months or types in one payment, cash / UPI / bank / cheque, pending cheques), automatic gapless receipt numbers (`GC-2026-00001`), printable receipts in the organization's receipt language, payments, contributions and dues lists, and dashboard totals. Money rows can't be deleted or rewritten (database triggers), except through the admin edit and delete below, which are audited.
 
 **Phase 3:** receipt PDFs, WhatsApp sharing, void and correction requests with approval, collector assignments.
 
@@ -23,6 +23,8 @@ One platform for any organization that collects contributions (Ganeshotsav manda
 **Phase 6:** push notifications (Firebase), device registration, OpenAPI file and Postman collection, FlutterFlow guide.
 
 **Phase 7:** database row-level security per organization, production settings, JSON logs, security headers, MSG91/Twilio SMS, Docker production stack with automatic HTTPS, backup and restore scripts, privacy policy and Play Store data-safety drafts.
+
+**Phase 8:** the contributor is optional (pick an existing person, add a new person on the spot, or record it as Anonymous); every collection and expense records the event, financial year, date and exact time, shown on receipts and lists; collectors add expenses with a bill photo and submit them for approval; a financial summary per event and financial year (collection − approved expenses = balance); the organization admin can edit or delete collections (the receipt keeps its number; a deleted one is voided and kept in the audit log), expenses, other income and events.
 
 ## Documents
 
