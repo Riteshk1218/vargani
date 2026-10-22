@@ -33,6 +33,7 @@ echo     Mobile app:  http://localhost:8081
 echo.
 echo   Committee login:  admin@demo.test      password DemoPass#2026
 echo   Collector login:  collector@demo.test  password DemoPass#2026
+echo   Super admin:      http://localhost:8080/django-admin/  superadmin@demo.test  password DemoPass#2026
 echo   Member login:     Member tab, mobile 9822001122 (code fills in by itself)
 echo  ============================================================
 echo.

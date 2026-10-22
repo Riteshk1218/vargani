@@ -21,6 +21,8 @@ x-api-env: &api-env
   PUSH_BACKEND: console
   CELERY_TASK_ALWAYS_EAGER: "true"
   FIELD_ENCRYPTION_KEY: ZGVtby1vbmx5LW5vdC1zZWNyZXQta2V5LTMyYnl0ZXM=
+  DJANGO_SUPERUSER_EMAIL: superadmin@demo.test   # Platform Admin, http://localhost:8080/django-admin/
+  DJANGO_SUPERUSER_PASSWORD: "DemoPass#2026"
 
 services:
   db:
@@ -40,7 +42,10 @@ services:
 
   api:
     build: ../backend
-    command: sh -c "python manage.py migrate --noinput && python manage.py runserver 0.0.0.0:8000"
+    command: >-
+      sh -c "python manage.py migrate --noinput
+      && (python manage.py createsuperuser --noinput --full_name 'Platform Admin' 2>/dev/null || true)
+      && python manage.py runserver 0.0.0.0:8000"
     environment: *api-env
     volumes: [demo-media:/srv/media]
     depends_on:
