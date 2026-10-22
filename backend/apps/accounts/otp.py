@@ -10,6 +10,7 @@ from django.utils.translation import gettext as _
 from rest_framework.exceptions import Throttled, ValidationError
 
 from .models import OTPChallenge
+from .sms import sms_enabled
 from .tasks import deliver_otp
 
 
@@ -24,6 +25,9 @@ def channel_for(destination: str) -> str:
 
 def issue_otp(destination: str, purpose: str, ip: str | None = None) -> str:
     """Create and send a one-time code. Returns the code (callers only expose it in debug mode)."""
+    if channel_for(destination) == OTPChallenge.Channel.SMS and not sms_enabled():
+        message = _("Login codes by SMS are not switched on yet. Use your email address.")
+        raise ValidationError({"detail": message}, code="sms_disabled")
     now = timezone.now()
     recent = OTPChallenge.objects.filter(destination=destination, purpose=purpose)
     last = recent.order_by("-created_at").first()

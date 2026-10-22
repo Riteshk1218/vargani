@@ -1129,5 +1129,10 @@ msgstr "मौजूदा व्यक्ति चुनें या नय�
 msgid "You cannot add new people."
 msgstr "आप नए व्यक्ति नहीं जोड़ सकते।"
 
+#: apps/accounts/otp.py:29
+msgid "Login codes by SMS are not switched on yet. Use your email address."
+msgstr ""
+"SMS से लॉगिन कोड अभी चालू नहीं किए गए हैं। अपना ईमेल पता इस्तेमाल करें।"
+
 #~ msgid "Your organization has not allowed collecting from unassigned people."
 #~ msgstr "आपकी संस्था ने बिना सौंपे गए लोगों से संग्रह की अनुमति नहीं दी है।"

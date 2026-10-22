@@ -51,3 +51,15 @@ def test_twilio_sends_text(settings, captured):
     sms.TwilioSMSBackend().send("+919822001122", "Your code is 482913")
     assert captured[0].full_url.endswith("/Accounts/AC1/Messages.json")
     assert b"Body=Your+code+is+482913" in captured[0].data
+
+
+@pytest.mark.django_db
+def test_sms_off_refuses_mobile_codes_but_email_still_works(settings):
+    from rest_framework.exceptions import ValidationError
+
+    from apps.accounts.otp import issue_otp
+
+    settings.SMS_BACKEND = "apps.accounts.sms.DisabledSMSBackend"
+    with pytest.raises(ValidationError):
+        issue_otp("+919822001122", "login")
+    assert issue_otp("someone@example.com", "register")

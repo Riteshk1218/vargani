@@ -5,6 +5,8 @@ The only SMS Vargani sends is the one-time login/verification code. Pick a backe
 - apps.accounts.sms.ConsoleSMSBackend: logs the message (development).
 - apps.accounts.sms.MSG91SMSBackend: MSG91 Flow API, for India. Indian operators only deliver SMS that match a
   DLT-registered template, so the text comes from your MSG91 template, filled with the code.
+- apps.accounts.sms.DisabledSMSBackend: no SMS at all (free setup). Codes go by email only; asking for a code
+  on a mobile number gets a clear error instead of a code that never arrives.
 - apps.accounts.sms.TwilioSMSBackend: Twilio Messaging, sends the text as written (outside India, or with a
   Twilio sender registered for India).
 """
@@ -24,6 +26,8 @@ logger = logging.getLogger(__name__)
 
 
 class BaseSMSBackend:
+    enabled = True
+
     def send(self, to: str, message: str) -> None:
         raise NotImplementedError
 
@@ -33,6 +37,15 @@ class ConsoleSMSBackend(BaseSMSBackend):
 
     def send(self, to, message):
         logger.warning("SMS to %s: %s", to, message)
+
+
+class DisabledSMSBackend(BaseSMSBackend):
+    """No SMS provider. issue_otp refuses mobile numbers before anything reaches here."""
+
+    enabled = False
+
+    def send(self, to, message):
+        logger.error("SMS is switched off; dropped message to %s", to)
 
 
 class MemorySMSBackend(BaseSMSBackend):
@@ -101,3 +114,7 @@ class TwilioSMSBackend(BaseSMSBackend):
 
 def get_sms_backend() -> BaseSMSBackend:
     return import_string(settings.SMS_BACKEND)()
+
+
+def sms_enabled() -> bool:
+    return import_string(settings.SMS_BACKEND).enabled

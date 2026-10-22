@@ -73,8 +73,8 @@ def main():
         },
         tok,
     )
-    O = org["id"]
-    fy = call("GET", f"/me/organizations/{O}/", None, tok, O)["current_financial_year"]["id"]
+    org_id = org["id"]
+    fy = call("GET", f"/me/organizations/{org_id}/", None, tok, org_id)["current_financial_year"]["id"]
     ev = call(
         "POST",
         "/events/",
@@ -88,10 +88,10 @@ def main():
             "thank_you_message": "Ganpati Bappa Morya! Thank you for your support.",
         },
         tok,
-        O,
+        org_id,
     )
     E = ev["id"]
-    fund = call("POST", "/funds/", {"event": E, "name": "Utsav Fund"}, tok, O)
+    fund = call("POST", "/funds/", {"event": E, "name": "Utsav Fund"}, tok, org_id)
     vargani = call(
         "POST",
         "/contribution-types/",
@@ -106,12 +106,16 @@ def main():
             "target_amount": "600.00",
         },
         tok,
-        O,
+        org_id,
     )
     donation = call(
-        "POST", "/contribution-types/", {"event": E, "fund": fund["id"], "name": "Donation", "kind": "one_time"}, tok, O
+        "POST",
+        "/contribution-types/",
+        {"event": E, "fund": fund["id"], "name": "Donation", "kind": "one_time"},
+        tok,
+        org_id,
     )
-    call("PATCH", f"/organizations/{O}/settings/", {"member_portal_enabled": True}, tok, O)
+    call("PATCH", f"/organizations/{org_id}/settings/", {"member_portal_enabled": True}, tok, org_id)
 
     people = []
     for name, mobile in [
@@ -125,28 +129,28 @@ def main():
             "/people/",
             {"full_name": name, "mobile": mobile, "area": "Shivaji Nagar", "person_types": ["member"]},
             tok,
-            O,
+            org_id,
         )
-        call("POST", "/event-participants/", {"event": E, "person": p["id"]}, tok, O)
+        call("POST", "/event-participants/", {"event": E, "person": p["id"]}, tok, org_id)
         people.append(p)
 
-    roles = {r["code"]: r["id"] for r in rows(call("GET", "/roles/", None, tok, O))}
+    roles = {r["code"]: r["id"] for r in rows(call("GET", "/roles/", None, tok, org_id))}
     inv = call(
         "POST",
         "/invitations/",
         {"full_name": "Kiran Collector", "email": "collector@demo.test", "role_id": roles["collector"]},
         tok,
-        O,
+        org_id,
     )
     ctok = account("Kiran Collector", "collector@demo.test")
     call("POST", "/invitations/accept/", {"token": inv["invite_url"].rsplit("/", 1)[1]}, ctok)
-    collector = [m for m in rows(call("GET", "/members/", None, tok, O)) if m["role"]["code"] == "collector"][0]
+    collector = [m for m in rows(call("GET", "/members/", None, tok, org_id)) if m["role"]["code"] == "collector"][0]
     call(
         "POST",
         "/collector-assignments/bulk/",
         {"event": E, "collector": collector["id"], "people": [p["id"] for p in people[:3]]},
         tok,
-        O,
+        org_id,
     )
 
     def collect(t, person, lines, mode="cash", ref=""):
@@ -155,7 +159,7 @@ def main():
             "/collections/",
             {"event": E, "payer": person and person["id"], "mode": mode, "reference_number": ref, "lines": lines},
             t,
-            O,
+            org_id,
             headers={"Idempotency-Key": str(uuid.uuid4())},
         )
 
@@ -175,7 +179,7 @@ def main():
     collect(ctok, None, [{"contribution_type": donation["id"], "amount": "151.00"}])  # anonymous (no name)
 
     # Expenses: one approved by the admin, one sent by the collector and waiting for approval.
-    cats = {c["name"]: c["id"] for c in rows(call("GET", "/expense-categories/", None, tok, O))}
+    cats = {c["name"]: c["id"] for c in rows(call("GET", "/expense-categories/", None, tok, org_id))}
     decoration = call(
         "POST",
         "/expenses/",
@@ -188,10 +192,10 @@ def main():
             "mode": "cash",
         },
         tok,
-        O,
+        org_id,
     )
-    call("POST", f"/expenses/{decoration['id']}/submit/", None, tok, O)
-    call("POST", f"/expenses/{decoration['id']}/approve/", None, tok, O)
+    call("POST", f"/expenses/{decoration['id']}/submit/", None, tok, org_id)
+    call("POST", f"/expenses/{decoration['id']}/approve/", None, tok, org_id)
     flowers = call(
         "POST",
         "/expenses/",
@@ -203,9 +207,9 @@ def main():
             "mode": "upi",
         },
         ctok,
-        O,
+        org_id,
     )
-    call("POST", f"/expenses/{flowers['id']}/submit/", None, ctok, O)
+    call("POST", f"/expenses/{flowers['id']}/submit/", None, ctok, org_id)
     print("Demo data created.")
 
 

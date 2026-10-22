@@ -63,7 +63,9 @@ docker compose -f docker-compose.prod.yml --env-file deploy/.env exec api python
 | `SENTRY_DSN` | optional error tracking (add `sentry-sdk` to `backend/requirements.txt` first) |
 
 The API refuses to start in production if `FIELD_ENCRYPTION_KEY` is missing or if SMS is still the console
-backend (members would never receive their login codes).
+backend (members would never receive their login codes). Without an SMS provider, set
+`SMS_BACKEND=apps.accounts.sms.DisabledSMSBackend`: codes go by email only. For a ₹0 setup see
+`FREE-HOSTING.md`.
 
 ---
 
