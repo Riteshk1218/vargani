@@ -4,7 +4,7 @@ name: Mobile app
 # Download them from the run's "Artifacts" section.
 #
 # Repository settings used (Settings -> Secrets and variables -> Actions):
-#   Variable API_BASE            e.g. https://api.your-domain.in  (no /api/v1)
+#   Variable API_BASE            e.g. https://api.your-domain.in  (no /api/v1); default: the live Render site
 #   Secret   ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD
 #            (optional; without them the build is signed with a debug key: fine for testing,
 #             not accepted by Google Play)
@@ -54,8 +54,8 @@ jobs:
       - name: Build APK and App Bundle
         run: |
           API="${{ vars.API_BASE }}"
-          flutter build apk --release --dart-define=API_BASE="${API:-http://10.0.2.2:8000}"
-          flutter build appbundle --release --dart-define=API_BASE="${API:-http://10.0.2.2:8000}"
+          flutter build apk --release --dart-define=API_BASE="${API:-https://vargani-cqoq.onrender.com}"
+          flutter build appbundle --release --dart-define=API_BASE="${API:-https://vargani-cqoq.onrender.com}"
       - uses: actions/upload-artifact@v4
         with:
           name: vargani-android
