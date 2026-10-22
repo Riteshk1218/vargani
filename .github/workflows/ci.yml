@@ -12,11 +12,9 @@ jobs:
       postgres:
         image: postgres:16
         env:
-          POSTGRES_DB: vargani
-          POSTGRES_USER: vargani
-          POSTGRES_PASSWORD: vargani
+          POSTGRES_PASSWORD: postgres
         ports: ["5432:5432"]
-        options: --health-cmd "pg_isready -U vargani" --health-interval 5s --health-retries 10
+        options: --health-cmd "pg_isready -U postgres" --health-interval 5s --health-retries 10
     defaults:
       run:
         working-directory: backend
@@ -25,6 +23,13 @@ jobs:
       DATABASE_URL: postgres://vargani:vargani@localhost:5432/vargani
     steps:
       - uses: actions/checkout@v4
+      # The app connects as an ordinary role (like production), so row-level security is enforced in tests.
+      - name: Application database role
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h localhost -U postgres -c "CREATE ROLE vargani LOGIN PASSWORD 'vargani' NOSUPERUSER CREATEDB"
+          psql -h localhost -U postgres -c "CREATE DATABASE vargani OWNER vargani"
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
