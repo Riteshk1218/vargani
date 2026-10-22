@@ -1134,5 +1134,28 @@ msgid "Login codes by SMS are not switched on yet. Use your email address."
 msgstr ""
 "SMS से लॉगिन कोड अभी चालू नहीं किए गए हैं। अपना ईमेल पता इस्तेमाल करें।"
 
+#: apps/accounts/otp.py:25
+msgid ""
+"We could not send the code just now. Please try again in a few minutes."
+msgstr "कोड अभी नहीं भेजा जा सका। कृपया कुछ मिनट बाद फिर से प्रयास करें।"
+
+msgid "Ask the Organization Admin to allow you to download lists."
+msgstr "सूचियाँ डाउनलोड करने की अनुमति संस्था एडमिन से माँगें।"
+
+msgid "Choose csv or xlsx."
+msgstr "csv या xlsx चुनें।"
+
+msgid "No"
+msgstr "नहीं"
+
+msgid "Yes"
+msgstr "हाँ"
+
+msgid "Too many rows. Narrow the list with the filters first."
+msgstr "बहुत ज़्यादा पंक्तियाँ हैं। पहले फ़िल्टर से सूची छोटी करें।"
+
+msgid "Users"
+msgstr "उपयोगकर्ता"
+
 #~ msgid "Your organization has not allowed collecting from unassigned people."
 #~ msgstr "आपकी संस्था ने बिना सौंपे गए लोगों से संग्रह की अनुमति नहीं दी है।"

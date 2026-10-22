@@ -15,6 +15,7 @@ import { useApiErrors } from '../../hooks/useApiErrors'
 import { memberService } from '../../services/organizations'
 import type { Invitation, Member, Role } from '../../types/api'
 import { formatDate, formatMobile } from '../../utils/format'
+import { DownloadMenu } from '../../components/DownloadMenu'
 
 export function UsersPage() {
   const { t } = useTranslation()
@@ -33,7 +34,7 @@ export function UsersPage() {
     enabled: canManage,
   })
   const update = useMutation({
-    mutationFn: ({ id, ...input }: { id: string; role_id?: string; status?: Member['status'] }) => memberService.update(id, input),
+    mutationFn: ({ id, ...input }: { id: string; role_id?: string; status?: Member['status']; can_download?: boolean | null }) => memberService.update(id, input),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['org', activeOrgId, 'members'] })
       notify(t('common.saved'))
@@ -55,11 +56,14 @@ export function UsersPage() {
         title={t('users.title')}
         description={t('users.subtitle')}
         actions={
-          canManage && (
-            <Button icon={<MailPlus className="size-4" />} onClick={() => setInviting(true)}>
-              {t('users.invite')}
-            </Button>
-          )
+          <>
+            <DownloadMenu path="/members/" params={{}} />
+            {canManage && (
+              <Button icon={<MailPlus className="size-4" />} onClick={() => setInviting(true)}>
+                {t('users.invite')}
+              </Button>
+            )}
+          </>
         }
       />
       <Card>
@@ -93,6 +97,21 @@ export function UsersPage() {
                             {t(`roles.${role.code}`, role.name)}
                           </option>
                         ))}
+                      </select>
+                      <select
+                        aria-label={t('download.access')}
+                        title={t('download.access')}
+                        value={member.can_download === null ? 'role' : member.can_download ? 'yes' : 'no'}
+                        onChange={(e) => update.mutate({ id: member.id, can_download: { role: null, yes: true, no: false }[e.target.value as 'role' | 'yes' | 'no'] })}
+                        className="h-9 rounded-lg border-0 py-0 text-sm ring-1 ring-slate-300"
+                      >
+                        <option value="role">
+                          {t('download.roleDefault', {
+                            value: (roles.data ?? []).find((role) => role.id === member.role.id)?.permissions['reports.export'] ? t('download.yes') : t('download.no'),
+                          })}
+                        </option>
+                        <option value="yes">{t('download.allowed')}</option>
+                        <option value="no">{t('download.notAllowed')}</option>
                       </select>
                       <Button
                         variant="secondary"
@@ -187,6 +206,7 @@ function InviteModal({ open, roles, onClose }: { open: boolean; roles: Role[]; o
       {created ? (
         <div className="space-y-4">
           <p className="text-sm text-slate-600">{t('users.inviteCreated')}</p>
+          {created.email && created.email_sent === false && <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-800">{t('users.inviteEmailFailed')}</p>}
           <p className="break-all rounded-lg bg-slate-50 p-3 text-xs text-slate-700">{created.invite_url}</p>
           <div className="flex flex-wrap gap-2">
             <Button

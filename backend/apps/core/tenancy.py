@@ -37,6 +37,19 @@ def load_permissions(role) -> dict[str, str]:
     return dict(RolePermission.objects.filter(role=role).values_list("permission__code", "scope"))
 
 
+DOWNLOAD_PERMISSION = "reports.export"
+
+
+def membership_permissions(membership) -> dict[str, str]:
+    """The role's permissions, with the admin's per-person choice about downloading lists applied."""
+    permissions = load_permissions(membership.role)
+    if membership.can_download is True:
+        permissions[DOWNLOAD_PERMISSION] = SCOPE_ALL
+    elif membership.can_download is False:
+        permissions.pop(DOWNLOAD_PERMISSION, None)
+    return permissions
+
+
 def get_org_context(request, org_id=None) -> OrgContext:
     cached = getattr(request, "_org_context", None)
     if cached is not None:
@@ -65,7 +78,7 @@ def get_org_context(request, org_id=None) -> OrgContext:
     if membership is None:
         raise NotAMember()
 
-    context = OrgContext(membership.organization, membership, load_permissions(membership.role))
+    context = OrgContext(membership.organization, membership, membership_permissions(membership))
     request._org_context = context
     # From here on the database itself only shows this organization's rows (see core/rls.py).
     from .rls import activate

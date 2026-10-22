@@ -9,7 +9,7 @@ from rest_framework import serializers
 from rest_framework.exceptions import NotFound, PermissionDenied
 
 from apps.audit import services as audit
-from apps.core.tenancy import OrgContext, load_permissions
+from apps.core.tenancy import OrgContext, membership_permissions
 from apps.events.models import Event
 from apps.organizations.models import FinancialYear, Organization, OrganizationMembership
 
@@ -130,7 +130,7 @@ def _context_for(job) -> OrgContext:
     )
     if membership is None:
         raise PermissionDenied()
-    return OrgContext(membership.organization, membership, load_permissions(membership.role))
+    return OrgContext(membership.organization, membership, membership_permissions(membership))
 
 
 def run(job: ExportJob):

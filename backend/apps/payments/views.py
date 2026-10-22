@@ -1,5 +1,6 @@
 import django_filters
 from django.utils.translation import gettext as _
+from django.utils.translation import gettext_noop
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.decorators import action
@@ -7,6 +8,7 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 
 from apps.contributions import assignments
+from apps.core.downloads import Col, ListDownloadMixin
 from apps.core.scoping import scope_money
 from apps.core.tenancy import SCOPE_ALL
 from apps.core.viewsets import TenantModelViewSet
@@ -32,7 +34,7 @@ class PaymentFilter(django_filters.FilterSet):
         fields = ["event", "status", "mode", "payer", "collector"]
 
 
-class PaymentViewSet(TenantModelViewSet):
+class PaymentViewSet(ListDownloadMixin, TenantModelViewSet):
     """Payments with their contribution lines and receipt.
 
     POST records a payment (also exposed as POST /collections/). Send an `Idempotency-Key` header so a retry
@@ -44,6 +46,18 @@ class PaymentViewSet(TenantModelViewSet):
     """
 
     queryset = Payment.objects.all()
+    download_title = gettext_noop("Payments")
+    download_columns = [
+        Col("paid_at", gettext_noop("Date"), "datetime"),
+        Col("payer_name", gettext_noop("Name")),
+        Col("payer_mobile", gettext_noop("Mobile")),
+        Col("event_name", gettext_noop("Event")),
+        Col("mode", gettext_noop("Payment mode"), "mode"),
+        Col("reference_number", gettext_noop("Reference")),
+        Col("collector_name", gettext_noop("Collected by")),
+        Col("status", gettext_noop("Status"), "status"),
+        Col("amount", gettext_noop("Amount"), "money"),
+    ]
     serializer_class = PaymentSerializer
     filterset_class = PaymentFilter
     search_fields = ["payer__full_name", "payer__mobile", "reference_number", "receipts__receipt_number"]

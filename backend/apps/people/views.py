@@ -2,6 +2,7 @@ import django_filters
 from django.db.models import Q
 from django.forms.models import model_to_dict
 from django.utils.translation import gettext as _
+from django.utils.translation import gettext_noop
 from drf_spectacular.utils import extend_schema
 from rest_framework import serializers
 from rest_framework.decorators import action
@@ -9,6 +10,7 @@ from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.response import Response
 
 from apps.audit import services as audit
+from apps.core.downloads import Col, ListDownloadMixin
 from apps.core.phone import normalize_mobile
 from apps.core.tenancy import SCOPE_ALL, SCOPE_SELF
 from apps.core.viewsets import TenantModelViewSet
@@ -35,8 +37,19 @@ class LinkUserSerializer(serializers.Serializer):
     user = serializers.UUIDField()
 
 
-class PersonViewSet(TenantModelViewSet):
+class PersonViewSet(ListDownloadMixin, TenantModelViewSet):
     queryset = Person.objects.all()
+    download_title = gettext_noop("People")
+    download_columns = [
+        Col("full_name", gettext_noop("Name")),
+        Col("mobile", gettext_noop("Mobile")),
+        Col("email", gettext_noop("Email")),
+        Col("unit", gettext_noop("Flat / house")),
+        Col("building", gettext_noop("Building")),
+        Col("area", gettext_noop("Area")),
+        Col("city", gettext_noop("City")),
+        Col("is_active", gettext_noop("Active"), "bool"),
+    ]
     serializer_class = PersonSerializer
     filterset_class = PersonFilter
     search_fields = ["full_name", "mobile", "alt_mobile", "email", "unit", "building", "area"]

@@ -1,5 +1,6 @@
 import hashlib
 import hmac
+import logging
 import secrets
 from datetime import timedelta
 
@@ -14,6 +15,14 @@ from rest_framework.exceptions import APIException, Throttled, ValidationError
 from .models import OTPChallenge
 from .sms import sms_enabled
 from .tasks import deliver_otp
+
+logger = logging.getLogger(__name__)
+
+
+class CodeNotSent(APIException):
+    status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+    default_detail = gettext_lazy("We could not send the code just now. Please try again in a few minutes.")
+    default_code = "code_not_sent"
 
 
 class SMSDisabled(APIException):
@@ -59,8 +68,18 @@ def issue_otp(destination: str, purpose: str, ip: str | None = None) -> str:
         "code": code,
         "minutes": minutes,
     }
-    transaction.on_commit(lambda: deliver_otp.delay(channel, destination, _("Your verification code"), message))
+    subject = _("Your verification code")
+    transaction.on_commit(lambda: _deliver(channel, destination, subject, message))
     return code
+
+
+def _deliver(channel: str, destination: str, subject: str, message: str) -> None:
+    try:
+        deliver_otp.delay(channel, destination, subject, message)
+    except Exception as exc:
+        # The mail or SMS provider refused or could not be reached; the reason is in the log.
+        logger.exception("Could not send a %s code", channel)
+        raise CodeNotSent() from exc
 
 
 def verify_otp(destination: str, purpose: str, code: str) -> None:

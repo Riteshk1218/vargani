@@ -12,6 +12,7 @@ import { useOrg } from '../../context/OrgContext'
 import { useDebounced } from '../../hooks/useDebounced'
 import { receiptService } from '../../services/finance'
 import { formatMoney, formatStamp } from '../../utils/format'
+import { DownloadMenu } from '../../components/DownloadMenu'
 
 export function ReceiptsPage() {
   const { t } = useTranslation()
@@ -30,7 +31,7 @@ export function ReceiptsPage() {
 
   return (
     <div>
-      <PageHeader title={t('receipts.title')} description={activeEvent ? `${activeEvent.name} · ${t('receipts.subtitle')}` : t('receipts.subtitle')} />
+      <PageHeader title={t('receipts.title')} description={activeEvent ? `${activeEvent.name} · ${t('receipts.subtitle')}` : t('receipts.subtitle')} actions={<DownloadMenu path="/receipts/" params={{ event: eventId, search: debounced }} />} />
       <Card>
         {!eventId ? (
           <EmptyState title={t('common.selectEvent')} message={t('common.selectEventMessage')} />

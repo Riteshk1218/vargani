@@ -301,7 +301,8 @@
     "copyLink": "लिंक कॉपी करें",
     "shareWhatsApp": "WhatsApp पर भेजें",
     "inviteOnce": "सुरक्षा के लिए यह लिंक सिर्फ़ एक बार दिखाया जाता है।",
-    "inviteMessage": "आपको वर्गणी ऐप पर {{organization}} में {{role}} के रूप में जुड़ने का निमंत्रण है। यहाँ स्वीकार करें: {{link}}"
+    "inviteMessage": "आपको वर्गणी ऐप पर {{organization}} में {{role}} के रूप में जुड़ने का निमंत्रण है। यहाँ स्वीकार करें: {{link}}",
+    "inviteEmailFailed": "निमंत्रण ईमेल नहीं भेजा जा सका। नीचे दी गई लिंक कॉपी करें या WhatsApp पर भेजें।"
   },
   "invite": {
     "title": "{{organization}} से जुड़ें",
@@ -838,5 +839,15 @@
     "openExpenses": "खर्च देखें",
     "allEvents": "{{label}} के सभी कार्यक्रम",
     "empty": "इस वित्तीय वर्ष में कोई कार्यक्रम नहीं"
+  },
+  "download": {
+    "excel": "Excel (.xlsx)",
+    "csv": "CSV",
+    "access": "सूचियाँ डाउनलोड कर सकते हैं",
+    "roleDefault": "डाउनलोड: भूमिका के अनुसार ({{value}})",
+    "yes": "हाँ",
+    "no": "नहीं",
+    "allowed": "डाउनलोड: अनुमति है",
+    "notAllowed": "डाउनलोड: अनुमति नहीं"
   }
 }

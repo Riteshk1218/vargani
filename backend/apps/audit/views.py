@@ -1,5 +1,7 @@
 import django_filters
+from django.utils.translation import gettext_noop
 
+from apps.core.downloads import Col, ListDownloadMixin
 from apps.core.tenancy import SCOPE_ALL
 from apps.core.viewsets import TenantReadOnlyViewSet
 
@@ -19,8 +21,18 @@ class AuditLogFilter(django_filters.FilterSet):
         fields = ["entity_type", "entity_id", "actor_user", "action"]
 
 
-class AuditLogViewSet(TenantReadOnlyViewSet):
+class AuditLogViewSet(ListDownloadMixin, TenantReadOnlyViewSet):
     queryset = AuditLog.objects.all()
+    download_title = gettext_noop("Audit log")
+    download_columns = [
+        Col("created_at", gettext_noop("Date"), "datetime"),
+        Col("actor_name", gettext_noop("User")),
+        Col("action", gettext_noop("Action")),
+        Col("entity_type", gettext_noop("Record type")),
+        Col("entity_id", gettext_noop("Record id")),
+        Col("changed_fields", gettext_noop("Changed fields")),
+        Col("ip", gettext_noop("IP address")),
+    ]
     serializer_class = AuditLogSerializer
     filterset_class = AuditLogFilter
     ordering_fields = ["created_at"]

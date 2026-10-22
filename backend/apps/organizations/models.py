@@ -150,6 +150,8 @@ class OrganizationMembership(UUIDModel, TimeStampedModel):
     invited_by = models.ForeignKey(
         django_settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
     )
+    # Downloading lists as CSV / Excel: None follows the role, True or False is the admin's choice for this person.
+    can_download = models.BooleanField(null=True, blank=True)
 
     class Meta:
         ordering = ["joined_at"]

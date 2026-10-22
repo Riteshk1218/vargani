@@ -61,3 +61,17 @@ def test_sms_off_refuses_mobile_codes_but_email_still_works(settings):
     with pytest.raises(SMSDisabled):
         issue_otp("+919822001122", "login")
     assert issue_otp("someone@example.com", "register")
+
+
+@pytest.mark.django_db
+def test_clear_message_when_the_email_provider_refuses(api, monkeypatch):
+    import smtplib
+
+    def refuse(*args, **kwargs):
+        raise smtplib.SMTPSenderRefused(550, b"sender not valid", "x@example.com")
+
+    monkeypatch.setattr("apps.accounts.tasks.send_mail", refuse)
+    payload = {"full_name": "Tanaji", "email": "tanaji@example.com", "password": "Long-enough-pass-42"}
+    response = api.post("/api/v1/auth/register/", payload, format="json")
+    assert response.status_code == 503
+    assert response.json()["error"]["code"] == "code_not_sent"

@@ -19,6 +19,7 @@ import type { Payment, PaymentStatus } from '../../types/api'
 import { formatMobile, formatMoney, formatMonth, formatStamp } from '../../utils/format'
 import { MANUAL_MODES, PAYMENT_TONE } from '../../utils/payments'
 import { PaymentEditModal } from './PaymentEditModal'
+import { DownloadMenu } from '../../components/DownloadMenu'
 
 
 const STATUSES: PaymentStatus[] = ['successful', 'pending', 'failed', 'cancelled', 'deleted']
@@ -48,11 +49,14 @@ export function PaymentsPage() {
         title={t('payments.title')}
         description={activeEvent ? `${activeEvent.name} · ${t('payments.subtitle')}` : t('payments.subtitle')}
         actions={
-          can('payments.create') && (
-            <Link to="/app/collect">
-              <Button icon={<HandCoins className="size-4" />}>{t('collect.title')}</Button>
-            </Link>
-          )
+          <>
+            <DownloadMenu path="/payments/" params={{ event: eventId, search: debounced, status, mode }} />
+            {can('payments.create') && (
+              <Link to="/app/collect">
+                <Button icon={<HandCoins className="size-4" />}>{t('collect.title')}</Button>
+              </Link>
+            )}
+          </>
         }
       />
       <Card>

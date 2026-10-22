@@ -13,6 +13,7 @@ import { eventService } from '../../services/events'
 import { formatDate, formatMoney } from '../../utils/format'
 import type { EventItem, EventStatus } from '../../types/api'
 import { EventFormModal } from './EventFormModal'
+import { DownloadMenu } from '../../components/DownloadMenu'
 
 export const STATUS_TONE: Record<EventStatus, 'green' | 'gray' | 'amber' | 'red'> = { active: 'green', draft: 'amber', closed: 'gray', archived: 'gray' }
 
@@ -40,11 +41,14 @@ export function EventsPage() {
         title={t('events.title')}
         description={t('events.subtitle')}
         actions={
-          canManage && (
-            <Button icon={<CalendarPlus className="size-4" />} onClick={() => setParams({ new: '1' })}>
-              {t('events.create')}
-            </Button>
-          )
+          <>
+            <DownloadMenu path="/events/" params={{ status }} />
+            {canManage && (
+              <Button icon={<CalendarPlus className="size-4" />} onClick={() => setParams({ new: '1' })}>
+                {t('events.create')}
+              </Button>
+            )}
+          </>
         }
       />
       <Card>

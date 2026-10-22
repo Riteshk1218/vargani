@@ -179,6 +179,7 @@ export interface Member {
   user: { id: string; full_name: string; email: string | null; mobile: string | null }
   role: RoleSummary
   status: 'active' | 'suspended' | 'removed'
+  can_download: boolean | null
   joined_at: string
 }
 
@@ -192,6 +193,7 @@ export interface Invitation {
   expires_at: string
   created_at: string
   invite_url?: string
+  email_sent?: boolean
 }
 
 export interface InvitationPreview {

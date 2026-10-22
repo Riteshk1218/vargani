@@ -13,6 +13,7 @@ import { useDebounced } from '../../hooks/useDebounced'
 import { contributionService, contributionTypeService } from '../../services/finance'
 import { formatDate, formatMobile, formatMoney, formatMonth } from '../../utils/format'
 import { cn } from '../../utils/cn'
+import { DownloadMenu } from '../../components/DownloadMenu'
 import { RemindButton } from './RemindButton'
 
 type Tab = 'list' | 'dues'
@@ -102,7 +103,7 @@ function ContributionList({ eventId }: { eventId: string }) {
   const currency = detail?.organization.currency
   return (
     <Card>
-      <div className="grid gap-3 border-b border-slate-200 p-4 sm:grid-cols-[1fr_14rem]">
+      <div className="grid gap-3 border-b border-slate-200 p-4 sm:grid-cols-[1fr_14rem_auto] sm:items-end">
         <div className="relative">
           <TextInput label={t('common.search')} placeholder={t('people.searchPlaceholder')} value={search} onChange={(e) => (setSearch(e.target.value), setPage(1))} />
           <Search className="pointer-events-none absolute right-3 top-9 size-4 text-slate-400" aria-hidden />
@@ -115,6 +116,7 @@ function ContributionList({ eventId }: { eventId: string }) {
             </option>
           ))}
         </SelectInput>
+        <DownloadMenu path="/contributions/" params={{ event: eventId, search: debounced, contribution_type: type }} />
       </div>
       {rows.isLoading ? (
         <SkeletonRows />

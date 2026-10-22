@@ -2,6 +2,7 @@ import django_filters
 from django.core.files.storage import default_storage
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404
+from django.utils.translation import gettext_noop
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
@@ -10,6 +11,7 @@ from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.response import Response
 
 from apps.core.admin_override import ADMIN_EDIT
+from apps.core.downloads import Col, ListDownloadMixin
 from apps.core.tenancy import SCOPE_ALL
 from apps.core.viewsets import TenantModelViewSet
 
@@ -51,7 +53,7 @@ class ExpenseFilter(django_filters.FilterSet):
         fields = ["event", "category", "status", "mode"]
 
 
-class ExpenseViewSet(TenantModelViewSet):
+class ExpenseViewSet(ListDownloadMixin, TenantModelViewSet):
     """Expenses with bills and an approval flow. Only approved expenses count in the balance.
 
     Editable while draft, submitted or rejected. Approved expenses can only be voided (with a reason).
@@ -60,6 +62,19 @@ class ExpenseViewSet(TenantModelViewSet):
     """
 
     queryset = Expense.objects.all()
+    download_title = gettext_noop("Expenses")
+    download_columns = [
+        Col("expense_date", gettext_noop("Date"), "date"),
+        Col("event_name", gettext_noop("Event")),
+        Col("category_name", gettext_noop("Category")),
+        Col("payee", gettext_noop("Paid to")),
+        Col("description", gettext_noop("Description")),
+        Col("mode", gettext_noop("Payment mode"), "mode"),
+        Col("reference_number", gettext_noop("Reference")),
+        Col("status", gettext_noop("Status"), "status"),
+        Col("decided_by_name", gettext_noop("Approved by")),
+        Col("amount", gettext_noop("Amount"), "money"),
+    ]
     serializer_class = ExpenseSerializer
     filterset_class = ExpenseFilter
     search_fields = ["payee", "description", "reference_number", "category__name"]
@@ -209,13 +224,24 @@ class OtherIncomeFilter(django_filters.FilterSet):
         fields = ["event", "fund", "source", "status", "mode"]
 
 
-class OtherIncomeViewSet(TenantModelViewSet):
+class OtherIncomeViewSet(ListDownloadMixin, TenantModelViewSet):
     """Income not from a person (donation box, sponsorship, interest, sales). Amounts never change; void instead.
 
     An Organization Admin can change every field with PATCH and delete with DELETE.
     """
 
     queryset = OtherIncome.objects.all()
+    download_title = gettext_noop("Other income")
+    download_columns = [
+        Col("received_on", gettext_noop("Date"), "date"),
+        Col("source", gettext_noop("Source"), "source"),
+        Col("fund_name", gettext_noop("Fund")),
+        Col("description", gettext_noop("Description")),
+        Col("mode", gettext_noop("Payment mode"), "mode"),
+        Col("reference_number", gettext_noop("Reference")),
+        Col("status", gettext_noop("Status"), "status"),
+        Col("amount", gettext_noop("Amount"), "money"),
+    ]
     serializer_class = OtherIncomeSerializer
     filterset_class = OtherIncomeFilter
     search_fields = ["description", "reference_number"]

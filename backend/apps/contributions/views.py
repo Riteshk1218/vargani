@@ -1,12 +1,14 @@
 import django_filters
 from django.utils import timezone
 from django.utils.translation import gettext as _
+from django.utils.translation import gettext_noop
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework.response import Response
 
+from apps.core.downloads import Col, ListDownloadMixin
 from apps.core.exceptions import BusinessRuleViolation, EventRequired
 from apps.core.scoping import scope_money
 from apps.core.tenancy import SCOPE_ALL
@@ -73,10 +75,22 @@ class ContributionFilter(django_filters.FilterSet):
         fields = ["event", "person", "fund", "contribution_type", "period_month", "status", "collector", "payment"]
 
 
-class ContributionViewSet(TenantReadOnlyViewSet):
+class ContributionViewSet(ListDownloadMixin, TenantReadOnlyViewSet):
     """Contribution lines. Read-only: lines are created by recording a payment and never edited or deleted."""
 
     queryset = Contribution.objects.all()
+    download_title = gettext_noop("Contributions")
+    download_columns = [
+        Col("person_name", gettext_noop("Name")),
+        Col("contribution_type_name", gettext_noop("Contribution type")),
+        Col("period_month", gettext_noop("For month"), "date"),
+        Col("contributed_on", gettext_noop("Date"), "date"),
+        Col("fund_name", gettext_noop("Fund")),
+        Col("mode", gettext_noop("Payment mode"), "mode"),
+        Col("collector_name", gettext_noop("Collected by")),
+        Col("status", gettext_noop("Status"), "status"),
+        Col("amount", gettext_noop("Amount"), "money"),
+    ]
     serializer_class = ContributionSerializer
     filterset_class = ContributionFilter
     search_fields = ["person__full_name", "person__mobile"]

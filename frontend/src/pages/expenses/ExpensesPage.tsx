@@ -18,6 +18,7 @@ import { toApiError } from '../../services/apiClient'
 import type { Expense, ExpenseInput, PaymentMode } from '../../types/api'
 import { formatBytes, formatDate, formatDateTime, formatMoney, formatStamp, todayIso } from '../../utils/format'
 import { EXPENSE_STATUSES, EXPENSE_TONE, MANUAL_MODES } from '../../utils/payments'
+import { DownloadMenu } from '../../components/DownloadMenu'
 
 export function ExpensesPage() {
   const { t } = useTranslation()
@@ -45,6 +46,7 @@ export function ExpensesPage() {
         description={activeEvent ? `${activeEvent.name} · ${t('expenses.subtitle')}` : t('expenses.subtitle')}
         actions={
           <>
+            <DownloadMenu path="/expenses/" params={{ event: eventId, status, category }} />
             {can('expenses.approve') && (
               <Button variant="secondary" icon={<Tags className="size-4" />} onClick={() => setManagingCategories(true)}>
                 {t('expenses.categories')}

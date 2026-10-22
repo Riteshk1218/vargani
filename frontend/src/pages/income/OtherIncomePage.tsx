@@ -18,6 +18,7 @@ import { fundService } from '../../services/finance'
 import type { IncomeSource, OtherIncome, OtherIncomeInput, PaymentMode } from '../../types/api'
 import { formatDate, formatMoney, todayIso } from '../../utils/format'
 import { INCOME_SOURCES, MANUAL_MODES } from '../../utils/payments'
+import { DownloadMenu } from '../../components/DownloadMenu'
 
 /** Income that does not come from a person: donation box (hundi), sponsorship, bank interest, sales. */
 export function OtherIncomePage() {
@@ -50,11 +51,14 @@ export function OtherIncomePage() {
         title={t('income.title')}
         description={activeEvent ? `${activeEvent.name} · ${t('income.subtitle')}` : t('income.subtitle')}
         actions={
-          eventId && (
-            <Button icon={<Plus className="size-4" />} onClick={() => setAdding(true)}>
-              {t('income.add')}
-            </Button>
-          )
+          <>
+            <DownloadMenu path="/other-income/" params={{ event: eventId, source }} />
+            {eventId && (
+              <Button icon={<Plus className="size-4" />} onClick={() => setAdding(true)}>
+                {t('income.add')}
+              </Button>
+            )}
+          </>
         }
       />
       <Card>

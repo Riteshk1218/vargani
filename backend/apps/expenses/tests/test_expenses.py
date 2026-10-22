@@ -1,9 +1,9 @@
-from datetime import date
 from decimal import Decimal
 
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import DatabaseError, transaction
+from django.utils import timezone
 
 from apps.audit.models import AuditLog
 from apps.expenses.models import Expense, ExpenseCategory, OtherIncome
@@ -12,7 +12,7 @@ from apps.payments.tests.test_payments import setup  # noqa: F401 - fixture
 from conftest import png_bytes
 
 pytestmark = pytest.mark.django_db
-TODAY = date.today().isoformat()
+TODAY = timezone.localdate().isoformat()
 
 
 def category(s, name="Decoration"):
@@ -116,8 +116,10 @@ def test_collector_adds_and_submits_own_expenses(setup, add_member, client_for):
     created = new_expense(collector, s, payee="", expense_date=None, description="Flowers for aarti")
     assert created.status_code == 201, created.data
     mine = created.data["id"]
-    # Date and time are filled in automatically.
-    assert created.data["expense_date"] == TODAY and created.data["expense_time"]
+    # Date and time are filled in automatically, in the organization's time zone.
+    from apps.expenses.services import _now_in
+
+    assert created.data["expense_date"] == _now_in(s.org).date().isoformat() and created.data["expense_time"]
     assert [e["id"] for e in collector.get("/api/v1/expenses/").data["results"]] == [mine]
     assert collector.get(f"/api/v1/expenses/{other}/").status_code == 404
     assert collector.post(f"/api/v1/expenses/{mine}/submit/").data["status"] == "submitted"
@@ -164,7 +166,7 @@ def test_expenses_and_income_can_never_be_deleted_or_rewritten(setup):  # noqa: 
         event=s.event,
         source="donation_box",
         amount=Decimal("5"),
-        received_on=date.today(),
+        received_on=timezone.localdate(),
     )
     with pytest.raises(DatabaseError), transaction.atomic():
         OtherIncome.objects.filter(pk=income.pk).delete()

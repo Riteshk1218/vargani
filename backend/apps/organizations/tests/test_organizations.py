@@ -157,7 +157,7 @@ def test_invitation_flow(client_for, make_org, make_user, api):
     assert response.status_code == 201, response.data
     token = response.data["invite_url"].rsplit("/", 1)[1]
     assert Invitation.objects.get().token_hash != token
-    assert mail.outbox and token in mail.outbox[-1].body
+    assert mail.outbox and token in mail.outbox[-1].body and response.data["email_sent"]
 
     preview = api.get(f"/api/v1/invitations/preview/{token}/")
     assert preview.data["valid"] and preview.data["role"]["code"] == "treasurer"
@@ -219,3 +219,21 @@ def test_suspended_member_loses_access_immediately(client_for, make_org, add_mem
     membership = OrganizationMembership.objects.get(organization=org, user=secretary)
     client_for(org.admin_user, org).patch(f"/api/v1/members/{membership.pk}/", {"status": "suspended"})
     assert client.get("/api/v1/people/").status_code == 403
+
+
+def test_invitation_is_created_when_email_cannot_be_sent(client_for, make_org, monkeypatch):
+    import smtplib
+
+    def refuse(*args, **kwargs):
+        raise smtplib.SMTPSenderRefused(550, b"sender not valid", "x@example.com")
+
+    monkeypatch.setattr("apps.accounts.tasks.send_mail", refuse)
+    org = make_org()
+    admin = client_for(org.admin_user, org)
+    response = admin.post(
+        "/api/v1/invitations/",
+        {"email": "tanaji@example.com", "mobile": "8655343549", "role_id": _role_id(admin, "collector")},
+    )
+    assert response.status_code == 201, response.data
+    assert response.data["invite_url"] and response.data["email_sent"] is False
+    assert Invitation.objects.filter(email="tanaji@example.com", status="pending").exists()

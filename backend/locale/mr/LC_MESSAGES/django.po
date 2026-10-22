@@ -1134,6 +1134,29 @@ msgstr "तुम्ही नवीन व्यक्ती जोडू श�
 msgid "Login codes by SMS are not switched on yet. Use your email address."
 msgstr "SMS द्वारे लॉगिन कोड अजून सुरू केलेले नाहीत. तुमचा ईमेल पत्ता वापरा."
 
+#: apps/accounts/otp.py:25
+msgid ""
+"We could not send the code just now. Please try again in a few minutes."
+msgstr "कोड आत्ता पाठवता आला नाही. कृपया काही मिनिटांनी पुन्हा प्रयत्न करा."
+
+msgid "Ask the Organization Admin to allow you to download lists."
+msgstr "याद्या डाउनलोड करण्याची परवानगी संस्था प्रशासकाकडे मागा."
+
+msgid "Choose csv or xlsx."
+msgstr "csv किंवा xlsx निवडा."
+
+msgid "No"
+msgstr "नाही"
+
+msgid "Yes"
+msgstr "हो"
+
+msgid "Too many rows. Narrow the list with the filters first."
+msgstr "खूप जास्त ओळी आहेत. आधी फिल्टर वापरून यादी लहान करा."
+
+msgid "Users"
+msgstr "वापरकर्ते"
+
 #~ msgid "Your organization has not allowed collecting from unassigned people."
 #~ msgstr ""
 #~ "तुमच्या संस्थेने न सोपवलेल्या व्यक्तींकडून वसुलीची परवानगी दिलेली नाही."

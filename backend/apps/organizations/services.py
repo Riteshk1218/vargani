@@ -1,5 +1,6 @@
 import hashlib
 import io
+import logging
 import secrets
 import uuid
 from datetime import timedelta
@@ -22,6 +23,8 @@ from apps.expenses.defaults import seed_categories
 
 from .catalog import ADMIN_ROLE
 from .models import FinancialYear, Invitation, Organization, OrganizationMembership, Role
+
+logger = logging.getLogger(__name__)
 
 DEFAULT_SETTINGS = {
     "allow_unassigned_collection": False,
@@ -303,17 +306,26 @@ def create_invitation(*, org, role, email, mobile, full_name, request) -> tuple[
         entity_id=invitation.pk,
         after={"email": email, "mobile": mobile, "role": role.code},
     )
-    link = invitation_link(token)
-    if email:
-        from apps.accounts.tasks import send_email
-
-        message = _("You have been invited to join %(org)s as %(role)s. Open this link to accept: %(link)s") % {
-            "org": org.name,
-            "role": role.name,
-            "link": link,
-        }
-        transaction.on_commit(lambda: send_email.delay(_("Invitation to %(org)s") % {"org": org.name}, message, email))
     return invitation, token
+
+
+def send_invitation_email(invitation: Invitation, token: str) -> bool:
+    """Email the invitation link. Returns False if the mail provider refused it, so the admin can share the
+    link another way (it is shown once after creating the invitation)."""
+    from apps.accounts.tasks import send_email
+
+    org = invitation.organization
+    message = _("You have been invited to join %(org)s as %(role)s. Open this link to accept: %(link)s") % {
+        "org": org.name,
+        "role": invitation.role.name,
+        "link": invitation_link(token),
+    }
+    try:
+        send_email.delay(_("Invitation to %(org)s") % {"org": org.name}, message, invitation.email)
+    except Exception:
+        logger.exception("Could not send invitation %s by email", invitation.pk)
+        return False
+    return True
 
 
 def invitation_link(token: str) -> str:
@@ -389,11 +401,16 @@ def revoke_invitation(invitation: Invitation, request) -> Invitation:
     return invitation
 
 
+UNCHANGED = object()
+
+
 @transaction.atomic
-def update_membership(membership: OrganizationMembership, *, role=None, status_value=None, request):
+def update_membership(
+    membership: OrganizationMembership, *, role=None, status_value=None, can_download=UNCHANGED, request
+):
     membership = OrganizationMembership.objects.select_for_update().select_related("role").get(pk=membership.pk)
     org = membership.organization
-    before = {"role": membership.role.code, "status": membership.status}
+    before = {"role": membership.role.code, "status": membership.status, "can_download": membership.can_download}
     losing_admin = (
         membership.role.code == ADMIN_ROLE
         and membership.status == OrganizationMembership.Status.ACTIVE
@@ -408,8 +425,10 @@ def update_membership(membership: OrganizationMembership, *, role=None, status_v
         membership.role = role
     if status_value is not None:
         membership.status = status_value
-    membership.save(update_fields=["role", "status", "updated_at"])
-    after = {"role": membership.role.code, "status": membership.status}
+    if can_download is not UNCHANGED:
+        membership.can_download = can_download
+    membership.save(update_fields=["role", "status", "can_download", "updated_at"])
+    after = {"role": membership.role.code, "status": membership.status, "can_download": membership.can_download}
     if before != after:
         audit.record(
             request=request,

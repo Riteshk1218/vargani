@@ -143,7 +143,7 @@ class MemberSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = OrganizationMembership
-        fields = ["id", "user", "role", "role_id", "status", "joined_at"]
+        fields = ["id", "user", "role", "role_id", "status", "can_download", "joined_at"]
         read_only_fields = ["id", "user", "role", "joined_at"]
 
     def get_fields(self):

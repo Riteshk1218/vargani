@@ -18,6 +18,7 @@ import type { Person, PersonType } from '../../types/api'
 import { formatMobile } from '../../utils/format'
 import { LinkLoginModal } from './LinkLoginModal'
 import { PERSON_TYPES, PersonFormModal } from './PersonFormModal'
+import { DownloadMenu } from '../../components/DownloadMenu'
 
 export function PeoplePage() {
   const { t } = useTranslation()
@@ -58,11 +59,14 @@ export function PeoplePage() {
         title={t('people.title')}
         description={t('people.subtitle')}
         actions={
-          canManage && (
-            <Button icon={<UserPlus className="size-4" />} onClick={() => setParams({ new: '1' })}>
-              {t('people.add')}
-            </Button>
-          )
+          <>
+            <DownloadMenu path="/people/" params={{ search: debouncedSearch, person_type: type }} />
+            {canManage && (
+              <Button icon={<UserPlus className="size-4" />} onClick={() => setParams({ new: '1' })}>
+                {t('people.add')}
+              </Button>
+            )}
+          </>
         }
       />
       <Card>

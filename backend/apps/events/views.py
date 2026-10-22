@@ -1,4 +1,5 @@
 from django.forms.models import model_to_dict
+from django.utils.translation import gettext_noop
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import action
@@ -8,6 +9,7 @@ from rest_framework.views import APIView
 
 from apps.audit import services as audit
 from apps.core.admin_override import ADMIN_EDIT
+from apps.core.downloads import Col, ListDownloadMixin
 from apps.core.exceptions import EventRequired, InvalidStateTransition
 from apps.core.tenancy import SCOPE_ALL
 from apps.core.viewsets import TenantModelViewSet
@@ -24,8 +26,17 @@ TRANSITIONS = {
 }
 
 
-class EventViewSet(TenantModelViewSet):
+class EventViewSet(ListDownloadMixin, TenantModelViewSet):
     queryset = Event.objects.all()
+    download_title = gettext_noop("Events")
+    download_columns = [
+        Col("name", gettext_noop("Event")),
+        Col("financial_year_label", gettext_noop("Financial year")),
+        Col("start_date", gettext_noop("Starts"), "date"),
+        Col("end_date", gettext_noop("Ends"), "date"),
+        Col("status", gettext_noop("Status"), "status"),
+        Col("target_amount", gettext_noop("Target"), "money"),
+    ]
     serializer_class = EventSerializer
     filterset_fields = ["financial_year", "status", "template"]
     search_fields = ["name", "code"]

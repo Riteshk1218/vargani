@@ -11,6 +11,7 @@ import { auditService } from '../../services/accounts'
 import type { AuditEntry } from '../../types/api'
 import { cn } from '../../utils/cn'
 import { formatDateTime } from '../../utils/format'
+import { DownloadMenu } from '../../components/DownloadMenu'
 
 const ACTIONS = [
   'create', 'update', 'status_change', 'soft_delete', 'approve', 'reject', 'void', 'expense_submit', 'receipt_issue',
@@ -36,7 +37,7 @@ export function AuditPage() {
 
   return (
     <div>
-      <PageHeader title={t('audit.title')} description={t('audit.subtitle')} />
+      <PageHeader title={t('audit.title')} description={t('audit.subtitle')} actions={<DownloadMenu path="/audit-logs/" params={params} />} />
       <Card>
         <div className="grid gap-3 border-b border-slate-200 p-4 sm:grid-cols-3">
           <SelectInput label={t('audit.action')} value={action} onChange={(e) => (setAction(e.target.value), setPage(1))}>

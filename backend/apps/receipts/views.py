@@ -1,5 +1,6 @@
 import django_filters
 from django.http import HttpResponse
+from django.utils.translation import gettext_noop
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
 from rest_framework import serializers
@@ -10,6 +11,7 @@ from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
+from apps.core.downloads import Col, ListDownloadMixin
 from apps.core.scoping import scope_money
 from apps.core.tenancy import SCOPE_ALL
 from apps.core.viewsets import TenantReadOnlyViewSet
@@ -48,7 +50,7 @@ def pdf_response(receipt, inline=False):
     return response
 
 
-class ReceiptViewSet(TenantReadOnlyViewSet):
+class ReceiptViewSet(ListDownloadMixin, TenantReadOnlyViewSet):
     """Issued receipts. Receipts are created only by recording a successful payment and never edited.
 
     A receipt is corrected by requesting a void (approved by someone with receipts.void_approve) and then
@@ -56,6 +58,16 @@ class ReceiptViewSet(TenantReadOnlyViewSet):
     """
 
     queryset = Receipt.objects.all()
+    download_title = gettext_noop("Receipt register")
+    download_columns = [
+        Col("receipt_number", gettext_noop("Receipt no.")),
+        Col("issued_at", gettext_noop("Date"), "datetime"),
+        Col("payer_name", gettext_noop("Name")),
+        Col("mode", gettext_noop("Payment mode"), "mode"),
+        Col("status", gettext_noop("Status"), "status"),
+        Col("void_reason", gettext_noop("Void reason")),
+        Col("amount", gettext_noop("Amount"), "money"),
+    ]
     serializer_class = ReceiptSerializer
     filterset_class = ReceiptFilter
     search_fields = ["receipt_number", "payment__payer__full_name", "payment__payer__mobile"]

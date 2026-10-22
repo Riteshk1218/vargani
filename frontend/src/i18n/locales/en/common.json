@@ -301,7 +301,8 @@
     "copyLink": "Copy link",
     "shareWhatsApp": "Share on WhatsApp",
     "inviteOnce": "For security this link is shown only once.",
-    "inviteMessage": "You are invited to join {{organization}} on Vargani as {{role}}. Accept here: {{link}}"
+    "inviteMessage": "You are invited to join {{organization}} on Vargani as {{role}}. Accept here: {{link}}",
+    "inviteEmailFailed": "The invitation email could not be sent. Copy the link below or share it on WhatsApp instead."
   },
   "invite": {
     "title": "Join {{organization}}",
@@ -838,5 +839,15 @@
     "openExpenses": "Open expenses",
     "allEvents": "All events in {{label}}",
     "empty": "No events in this financial year"
+  },
+  "download": {
+    "excel": "Excel (.xlsx)",
+    "csv": "CSV",
+    "access": "Can download lists",
+    "roleDefault": "Download: as per role ({{value}})",
+    "yes": "yes",
+    "no": "no",
+    "allowed": "Download: allowed",
+    "notAllowed": "Download: not allowed"
   }
 }

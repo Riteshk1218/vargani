@@ -1,5 +1,6 @@
 from django.forms.models import model_to_dict
 from django.shortcuts import get_object_or_404
+from django.utils.translation import gettext_noop
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
 from rest_framework import mixins, status, viewsets
@@ -10,6 +11,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.audit import services as audit
+from apps.core.downloads import Col, ListDownloadMixin
 from apps.core.tenancy import get_org_context
 from apps.core.viewsets import TenantModelViewSet, TenantReadOnlyViewSet, TenantScopedMixin
 
@@ -177,6 +179,7 @@ class FinancialYearViewSet(TenantModelViewSet):
 
 
 class MemberViewSet(
+    ListDownloadMixin,
     TenantScopedMixin,
     mixins.ListModelMixin,
     mixins.RetrieveModelMixin,
@@ -184,6 +187,14 @@ class MemberViewSet(
     viewsets.GenericViewSet,
 ):
     queryset = OrganizationMembership.objects.all()
+    download_title = gettext_noop("Users")
+    download_columns = [
+        Col("user.full_name", gettext_noop("Name")),
+        Col("user.email", gettext_noop("Email")),
+        Col("user.mobile", gettext_noop("Mobile")),
+        Col("role.name", gettext_noop("Role")),
+        Col("status", gettext_noop("Status"), "status"),
+    ]
     serializer_class = MemberSerializer
     http_method_names = ["get", "patch", "head", "options"]
     filterset_fields = ["status"]
@@ -202,6 +213,7 @@ class MemberViewSet(
             membership,
             role=serializer.validated_data.get("role"),
             status_value=serializer.validated_data.get("status"),
+            can_download=serializer.validated_data.get("can_download", services.UNCHANGED),
             request=request,
         )
         return Response(self.get_serializer(membership).data)
@@ -241,6 +253,7 @@ class InvitationViewSet(
         data = self.get_serializer(invitation).data
         # Shown once so the admin can share it (e.g. on WhatsApp). Only a hash is stored.
         data["invite_url"] = services.invitation_link(token)
+        data["email_sent"] = bool(invitation.email) and services.send_invitation_email(invitation, token)
         return Response(data, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=["post"])
