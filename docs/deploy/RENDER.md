@@ -44,7 +44,7 @@ bills). Move to a paid server with `DEPLOYMENT.md` whenever you outgrow it: the 
 1. Go to https://render.com and click **Get Started**. Choose **GitHub** and allow access.
 2. Click **New +** → **Blueprint**.
 3. Pick the **vargani** repository. Render reads `render.yaml` and shows one service called **vargani**.
-4. It asks for four values:
+4. It asks for six values:
 
    | Name | What to paste |
    |---|---|
@@ -52,6 +52,8 @@ bills). Move to a paid server with `DEPLOYMENT.md` whenever you outgrow it: the 
    | `EMAIL_HOST_USER` | the Brevo SMTP **Login** |
    | `EMAIL_HOST_PASSWORD` | the Brevo **SMTP key** |
    | `DEFAULT_FROM_EMAIL` | `Vargani <the sender email you added in Brevo>` |
+   | `DJANGO_SUPERUSER_EMAIL` | your email, for the **Platform Admin** login at `/django-admin/` |
+   | `DJANGO_SUPERUSER_PASSWORD` | a strong password for that login (at least 10 characters, not used elsewhere) |
 
 5. Click **Apply** (or **Deploy Blueprint**). The first build takes 10–20 minutes. When the service shows
    **Live**, its address is at the top, for example `https://vargani.onrender.com`. If the name was taken,
@@ -60,6 +62,16 @@ bills). Move to a paid server with `DEPLOYMENT.md` whenever you outgrow it: the 
    Organization Admin. The sign-up code arrives by email.
 
 Every push to the `main` branch on GitHub redeploys automatically.
+
+### Two kinds of admin
+
+- **Organization Admin** (runs one mandal): whoever registers on the website and creates the organization.
+  Everything for that mandal is on the website: people, collections, receipts, expenses, reports, users and
+  roles, settings.
+- **Platform Admin** (you, running the whole platform): log in at `https://<your address>/django-admin/`
+  with `DJANGO_SUPERUSER_EMAIL` and its password. There you can see the list of organizations and users,
+  suspend an organization or block a user. It deliberately shows no money records of any mandal. To see a
+  mandal's data, the platform admin must be added to that organization like anyone else.
 
 ### Keeping it awake (optional)
 

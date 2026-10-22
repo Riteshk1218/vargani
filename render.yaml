@@ -25,6 +25,10 @@ services:
         sync: false   # Brevo SMTP key
       - key: DEFAULT_FROM_EMAIL
         sync: false   # e.g. Vargani <yourmandal@gmail.com> (a sender verified in Brevo)
+      - key: DJANGO_SUPERUSER_EMAIL
+        sync: false   # your email: the Platform Admin login for /django-admin/
+      - key: DJANGO_SUPERUSER_PASSWORD
+        sync: false   # a strong password for that login
       - key: EMAIL_BACKEND
         value: django.core.mail.backends.smtp.EmailBackend
       - key: EMAIL_HOST
