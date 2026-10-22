@@ -1,11 +1,14 @@
 """Base settings shared by every environment. All secrets come from the environment."""
 
+import os
 from datetime import timedelta
 from pathlib import Path
 
 import environ
 from celery.schedules import crontab
 from django.utils.translation import gettext_lazy as _
+
+from config import dburl
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -81,6 +84,11 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
+# DATABASE_URL, or only DATABASE_ADMIN_URL on hosted Postgres (see config/dburl.py).
+DATABASE_ADMIN_URL = env("DATABASE_ADMIN_URL", default="")
+APP_DB_ROLE = env("APP_DB_ROLE", default=dburl.APP_ROLE_DEFAULT)
+if not env("DATABASE_URL", default="") and DATABASE_ADMIN_URL:
+    os.environ["DATABASE_URL"] = dburl.app_url(DATABASE_ADMIN_URL, APP_DB_ROLE, SECRET_KEY)
 DATABASES = {"default": env.db("DATABASE_URL")}
 DATABASES["default"]["ATOMIC_REQUESTS"] = False
 DATABASES["default"]["CONN_MAX_AGE"] = env.int("DB_CONN_MAX_AGE", default=60)
@@ -113,7 +121,8 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_URL = env("MEDIA_URL", default="/media/")
 MEDIA_ROOT = Path(env("MEDIA_ROOT", default=str(BASE_DIR / "media")))
 
-# Local filesystem in development; S3-compatible object storage (S3 / R2 / Supabase) in production.
+# Local filesystem in development; S3-compatible object storage (S3 / R2 / Supabase) in production;
+# "database" keeps files in PostgreSQL (free hosting without a persistent disk, see docs/deploy/RENDER.md).
 STORAGE_BACKEND = env("STORAGE_BACKEND", default="local")
 if STORAGE_BACKEND == "s3":
     STORAGES = {
@@ -131,6 +140,11 @@ if STORAGE_BACKEND == "s3":
                 "file_overwrite": False,
             },
         },
+        "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+    }
+elif STORAGE_BACKEND == "database":
+    STORAGES = {
+        "default": {"BACKEND": "apps.core.storage.DatabaseStorage"},
         "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
     }
 else:
@@ -211,6 +225,8 @@ CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
 # --- Cache / Celery ---------------------------------------------------------
 REDIS_URL = env("REDIS_URL", default="redis://localhost:6379/0")
 CACHES = {"default": {"BACKEND": "django.core.cache.backends.redis.RedisCache", "LOCATION": REDIS_URL}}
+if env("CACHE_BACKEND", default="redis") == "locmem":  # one small server without Redis
+    CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
 CELERY_BROKER_URL = env("CELERY_BROKER_URL", default=REDIS_URL)
 CELERY_TASK_ALWAYS_EAGER = env.bool("CELERY_TASK_ALWAYS_EAGER", default=False)
 CELERY_TASK_EAGER_PROPAGATES = True
@@ -253,6 +269,23 @@ OTP_DEBUG_ECHO = env.bool("OTP_DEBUG_ECHO", default=False)
 INVITATION_TTL_DAYS = 7
 FRONTEND_URL = env("FRONTEND_URL", default="http://localhost:5173")
 API_PUBLIC_URL = env("API_PUBLIC_URL", default="http://localhost:8000")
+
+# Render sets RENDER_EXTERNAL_HOSTNAME (e.g. vargani.onrender.com): website and API share that address.
+RENDER_EXTERNAL_HOSTNAME = env("RENDER_EXTERNAL_HOSTNAME", default="")
+if RENDER_EXTERNAL_HOSTNAME:
+    _origin = f"https://{RENDER_EXTERNAL_HOSTNAME}"
+    ALLOWED_HOSTS = [*ALLOWED_HOSTS, RENDER_EXTERNAL_HOSTNAME]
+    CSRF_TRUSTED_ORIGINS = [*CSRF_TRUSTED_ORIGINS, _origin]
+    CORS_ALLOWED_ORIGINS = [*CORS_ALLOWED_ORIGINS, _origin]
+    FRONTEND_URL = env("FRONTEND_URL", default=_origin)
+    API_PUBLIC_URL = env("API_PUBLIC_URL", default=_origin)
+
+# The built React website, when Django serves it itself (one service, no nginx). Empty: nginx serves it.
+WEBSITE_DIR = env("WEBSITE_DIR", default="")
+if WEBSITE_DIR:
+    MIDDLEWARE.insert(1, "whitenoise.middleware.WhiteNoiseMiddleware")
+    WHITENOISE_ROOT = WEBSITE_DIR
+    WHITENOISE_IMMUTABLE_FILE_TEST = r"^/assets/"  # Vite puts a content hash in every file name there
 # Encrypts payment gateway secrets at rest. Empty means a key derived from SECRET_KEY (development only).
 FIELD_ENCRYPTION_KEY = env("FIELD_ENCRYPTION_KEY", default="")
 

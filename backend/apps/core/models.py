@@ -65,3 +65,16 @@ class SoftDeleteModel(models.Model):
             self.updated_by = user
             update_fields.append("updated_by")
         self.save(update_fields=update_fields)
+
+
+class StoredFile(models.Model):
+    """An uploaded file kept in PostgreSQL (STORAGE_BACKEND=database). Not tenant-scoped itself: files are only
+    reachable through the records that point at them, and the API checks those."""
+
+    name = models.CharField(max_length=500, unique=True)
+    content = models.BinaryField()
+    size = models.PositiveIntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name

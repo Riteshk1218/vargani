@@ -25,6 +25,10 @@ Prices below are approximate (October 2026) and can change; check each provider'
 | Push notifications | **Free** (Firebase) | — |
 | Backups | **Free**: nightly backup to the server's disk; Oracle also gives free object storage | — |
 
+**No card?** Oracle needs a card for its identity check. Without one, use **Render + Neon + Brevo** instead:
+also ₹0 and no card, but the site sleeps when nobody uses it (about a minute to wake up). Steps in
+[`RENDER.md`](RENDER.md).
+
 So the **₹0 setup** is: Oracle server + DuckDNS name + Gmail for emails + SMS switched off + APK shared
 directly. The **cheapest "proper" setup** adds a `.in` domain (about ₹700 a year) and the Play Store
 (₹2,100 once).

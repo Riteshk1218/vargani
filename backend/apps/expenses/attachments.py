@@ -1,8 +1,8 @@
 """Expense bills: JPEG, PNG, WebP or PDF, at most 10 MB each and 10 per expense.
 
 The type is detected from the content. Images are decoded and re-encoded (drops metadata and anything that
-is not pixels); PDFs are checked for the PDF header and stored as uploaded. Files are only served through
-the authenticated API with `Content-Disposition: attachment`.
+is not pixels) and scaled down to at most 2400 pixels a side; PDFs are checked for the PDF header and stored
+as uploaded. Files are only served through the authenticated API with `Content-Disposition: attachment`.
 """
 
 import io
@@ -25,6 +25,7 @@ from .models import Expense, ExpenseAttachment
 
 MAX_BYTES = 10 * 1024 * 1024
 MAX_PER_EXPENSE = 10
+MAX_SIDE = 2400  # pixels; still sharp enough to read a printed bill
 IMAGE_FORMATS = {"JPEG": ("image/jpeg", "jpg"), "PNG": ("image/png", "png"), "WEBP": ("image/webp", "webp")}
 
 
@@ -61,6 +62,7 @@ def _process(upload) -> tuple[bytes, str, str]:
         raise UnsupportedBill()
     content_type, ext = IMAGE_FORMATS[fmt]
     image = ImageOps.exif_transpose(image)
+    image.thumbnail((MAX_SIDE, MAX_SIDE))  # phone photos are far bigger than a bill needs
     if fmt == "JPEG":
         image = image.convert("RGB")
     buffer = io.BytesIO()

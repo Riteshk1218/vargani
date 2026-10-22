@@ -1,0 +1,28 @@
+# One container for free single-service hosting (Render): the React website and the Django API together,
+# files kept in PostgreSQL, background jobs run inline. See docs/deploy/RENDER.md.
+# The two-server setup (docker-compose.prod.yml) does not use this file.
+
+FROM node:22-alpine AS website
+WORKDIR /web
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci
+COPY frontend/ ./
+RUN npm run build
+
+FROM python:3.12-slim
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 DJANGO_SETTINGS_MODULE=config.settings.prod \
+    WEBSITE_DIR=/app/website STORAGE_BACKEND=database CACHE_BACKEND=locmem CELERY_TASK_ALWAYS_EAGER=true
+RUN apt-get update && apt-get install -y --no-install-recommends gettext libpango-1.0-0 libpangoft2-1.0-0 libharfbuzz0b libharfbuzz-subset0 fonts-dejavu-core && rm -rf /var/lib/apt/lists/*
+RUN useradd --create-home app
+WORKDIR /app
+COPY backend/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY backend/ .
+COPY --from=website /web/dist /app/website
+ARG BUILD_ENV="DJANGO_SECRET_KEY=build FIELD_ENCRYPTION_KEY=build ALLOW_CONSOLE_SMS=true DATABASE_URL=sqlite:////tmp/build.db"
+RUN env $BUILD_ENV python manage.py compilemessages \
+    && env $BUILD_ENV python manage.py collectstatic --noinput
+RUN chown -R app /app/staticfiles
+USER app
+EXPOSE 10000
+CMD ["sh", "deploy-render-start.sh"]

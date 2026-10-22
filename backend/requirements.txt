@@ -16,4 +16,5 @@ psycopg-binary==3.3.6
 psycopg==3.3.6
 redis==8.1.0
 weasyprint==66.0
+whitenoise==6.9.0
 cryptography==50.0.2

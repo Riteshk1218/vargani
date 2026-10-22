@@ -1,0 +1,41 @@
+# Render Blueprint: free hosting for Vargani (website + API in one service). See docs/deploy/RENDER.md.
+# Render asks for the values marked "sync: false" when you create the Blueprint.
+services:
+  - type: web
+    name: vargani
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./Dockerfile.render
+    dockerContext: .
+    healthCheckPath: /api/v1/health/
+    autoDeploy: true
+    envVars:
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: JWT_SIGNING_KEY
+        generateValue: true
+      - key: FIELD_ENCRYPTION_KEY
+        generateValue: true
+      - key: DATABASE_ADMIN_URL
+        sync: false   # Neon connection string
+      - key: EMAIL_HOST_USER
+        sync: false   # Brevo SMTP login
+      - key: EMAIL_HOST_PASSWORD
+        sync: false   # Brevo SMTP key
+      - key: DEFAULT_FROM_EMAIL
+        sync: false   # e.g. Vargani <yourmandal@gmail.com> (a sender verified in Brevo)
+      - key: EMAIL_BACKEND
+        value: django.core.mail.backends.smtp.EmailBackend
+      - key: EMAIL_HOST
+        value: smtp-relay.brevo.com
+      - key: EMAIL_PORT
+        value: "2525"   # Render's free plan blocks the usual mail ports 465 and 587
+      - key: EMAIL_USE_TLS
+        value: "true"
+      - key: SMS_BACKEND
+        value: apps.accounts.sms.DisabledSMSBackend
+      - key: PUSH_BACKEND
+        value: console
+      - key: LOG_FORMAT
+        value: json

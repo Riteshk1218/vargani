@@ -55,11 +55,9 @@ def test_twilio_sends_text(settings, captured):
 
 @pytest.mark.django_db
 def test_sms_off_refuses_mobile_codes_but_email_still_works(settings):
-    from rest_framework.exceptions import ValidationError
-
-    from apps.accounts.otp import issue_otp
+    from apps.accounts.otp import SMSDisabled, issue_otp
 
     settings.SMS_BACKEND = "apps.accounts.sms.DisabledSMSBackend"
-    with pytest.raises(ValidationError):
+    with pytest.raises(SMSDisabled):
         issue_otp("+919822001122", "login")
     assert issue_otp("someone@example.com", "register")

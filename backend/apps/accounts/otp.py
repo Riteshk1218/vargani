@@ -7,11 +7,19 @@ from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 from django.utils.translation import gettext as _
-from rest_framework.exceptions import Throttled, ValidationError
+from django.utils.translation import gettext_lazy
+from rest_framework import status
+from rest_framework.exceptions import APIException, Throttled, ValidationError
 
 from .models import OTPChallenge
 from .sms import sms_enabled
 from .tasks import deliver_otp
+
+
+class SMSDisabled(APIException):
+    status_code = status.HTTP_400_BAD_REQUEST
+    default_detail = gettext_lazy("Login codes by SMS are not switched on yet. Use your email address.")
+    default_code = "sms_disabled"
 
 
 def _hash(destination: str, purpose: str, code: str) -> str:
@@ -26,8 +34,7 @@ def channel_for(destination: str) -> str:
 def issue_otp(destination: str, purpose: str, ip: str | None = None) -> str:
     """Create and send a one-time code. Returns the code (callers only expose it in debug mode)."""
     if channel_for(destination) == OTPChallenge.Channel.SMS and not sms_enabled():
-        message = _("Login codes by SMS are not switched on yet. Use your email address.")
-        raise ValidationError({"detail": message}, code="sms_disabled")
+        raise SMSDisabled()
     now = timezone.now()
     recent = OTPChallenge.objects.filter(destination=destination, purpose=purpose)
     last = recent.order_by("-created_at").first()

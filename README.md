@@ -32,6 +32,7 @@ One platform for any organization that collects contributions (Ganeshotsav manda
 |---|---|
 | Deploying to a server | `docs/deploy/DEPLOYMENT.md` |
 | Running it for free (Oracle Always Free, DuckDNS, Gmail, APK) and what each paid extra costs | `docs/deploy/FREE-HOSTING.md` |
+| Free hosting with no card (Render + Neon + Brevo, one service) | `docs/deploy/RENDER.md` |
 | Building the mobile app in FlutterFlow | `docs/mobile/FLUTTERFLOW_GUIDE.md` |
 | API contract (OpenAPI, Postman) | `docs/api/` |
 | Privacy policy and Play Store data-safety drafts | `docs/legal/` (have them reviewed before publishing) |
