@@ -1,4 +1,4 @@
-package `in`.vargani.app
+package app.vargani.mobile
 
 import io.flutter.embedding.android.FlutterActivity
 

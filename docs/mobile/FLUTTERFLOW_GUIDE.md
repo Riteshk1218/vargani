@@ -24,7 +24,7 @@ The API checks every permission again on its side, so hiding is only for a clean
 
 ## 2. Project setup
 
-1. **Create the FlutterFlow project** (blank app). Package name, for example `in.vargani.app`.
+1. **Create the FlutterFlow project** (blank app). Package name, for example `app.vargani.mobile`.
 2. **App State variables** (Settings → App State), all *persisted* except where noted:
    | Name | Type | Notes |
    |---|---|---|
