@@ -16,7 +16,7 @@ from django.utils.translation import gettext as _
 from rest_framework.exceptions import ValidationError
 
 from apps.audit import services as audit
-from apps.contributions.models import Contribution, ContributionType
+from apps.contributions.models import Contribution, ContributionType, Due
 from apps.core.exceptions import BusinessRuleViolation, InvalidStateTransition
 from apps.events.models import Event
 from apps.organizations.models import FinancialYear
@@ -35,6 +35,7 @@ class LineInput:
     amount: Decimal
     period_month: date | None = None
     notes: str = ""
+    due: Due | None = None  # this line pays (part of) an earlier balance
 
 
 def _org_today(org, moment: datetime) -> date:
@@ -70,6 +71,14 @@ def _validate(*, org, event, payer, mode, status, paid_at, reference_number, amo
     errors = {}
     for index, line in enumerate(lines):
         line_errors = {}
+        if line.due is not None:
+            # Paying a balance: it is for the same type and month as the balance itself.
+            line.contribution_type = line.due.contribution_type
+            line.period_month = line.due.period_month
+            if line.due.event_id != event.pk or payer is None or line.due.person_id != payer.pk:
+                line_errors["due"] = [_("This balance belongs to another person or event.")]
+            elif line.due.status != Due.Status.OPEN:
+                line_errors["due"] = [_("This balance is already closed.")]
         ctype = line.contribution_type
         if ctype.event_id != event.pk:
             line_errors["contribution_type"] = [_("This contribution type belongs to another event.")]
@@ -93,6 +102,42 @@ def _validate(*, org, event, payer, mode, status, paid_at, reference_number, amo
     if amount is not None and Decimal(amount) != total:
         raise ValidationError({"amount": [_("Amount must equal the total of the contribution lines.")]})
     return total
+
+
+def _split_received(lines, received):
+    """Spread the money received now over the lines in order. Returns (paid lines, unpaid parts).
+
+    An unpaid part of a new line becomes a balance; an unpaid part of a line that pays an old balance simply
+    leaves that balance open."""
+    paid, unpaid = [], []
+    left = received
+    for line in lines:
+        now = min(line.amount, left)
+        left -= now
+        if now > 0:
+            paid.append(LineInput(line.contribution_type, now, line.period_month, line.notes, line.due))
+        if line.amount - now > 0 and line.due is None:
+            unpaid.append(LineInput(line.contribution_type, line.amount - now, line.period_month, line.notes))
+    return paid, unpaid
+
+
+def _check_due_amounts(lines):
+    """A line paying a balance may not pay more than is still owed. Locks the balances while checking."""
+    from apps.contributions.selectors import due_remaining
+
+    wanted = {}
+    for line in lines:
+        if line.due is not None:
+            wanted[line.due.pk] = wanted.get(line.due.pk, Decimal("0")) + line.amount
+    if not wanted:
+        return
+    locked = {due.pk: due for due in Due.objects.select_for_update().filter(pk__in=wanted)}
+    for due_id, amount in wanted.items():
+        due = locked[due_id]
+        if due.status != Due.Status.OPEN:
+            raise ValidationError({"lines": [_("This balance is already closed.")]})
+        if amount > due_remaining(due):
+            raise ValidationError({"lines": [_("This is more than the balance still owed.")]})
 
 
 def _validate_correction(old_receipt, event, status):
@@ -161,6 +206,7 @@ def record_payment(
     gateway="",
     new_person=None,
     assign_new_person=False,
+    received=None,
     request=None,
     actor=None,
 ) -> tuple[Payment, bool]:
@@ -168,6 +214,10 @@ def record_payment(
 
     `payer` may be None for an anonymous (no name) collection. `new_person` (a dict of Person fields) creates
     that person in the same transaction and records the payment against them.
+
+    `received` is the money that came now when it is less than the total: the rest is saved as a balance
+    (`Due`) for the named person and shown on the receipt, and it is paid off later by lines with `due` set.
+    It may be zero, when the receipt is given and all the money comes later.
 
     Returns (payment, created). A repeated idempotency key returns the original payment unchanged, so a
     collector on a flaky mobile network can safely retry.
@@ -192,6 +242,17 @@ def record_payment(
         lines=lines,
         online=online,
     )
+    received = total if received is None else Decimal(received)
+    if received < 0 or received > total:
+        raise ValidationError({"received": [_("The amount received must be between zero and the total.")]})
+    if received < total:
+        if payer is None and not new_person:
+            raise ValidationError({"received": [_("Choose the person to keep a balance for them.")]})
+        if status != Payment.Status.SUCCESSFUL or online or replaces_receipt is not None:
+            raise ValidationError({"received": [_("A balance can be kept only on a received collection.")]})
+    paid_lines, unpaid_lines = _split_received(lines, received)
+    if not paid_lines and not unpaid_lines:
+        raise ValidationError({"received": [_("Nothing would be recorded.")]})
     line_status = Contribution.Status.CONFIRMED if status == Payment.Status.SUCCESSFUL else Contribution.Status.PENDING
     contributed_on = _org_today(org, paid_at)
 
@@ -206,12 +267,13 @@ def record_payment(
                     request=request,
                     actor=actor,
                 )
+            _check_due_amounts(paid_lines)
             payment = Payment.objects.create(
                 organization=org,
                 financial_year_id=event.financial_year_id,
                 event=event,
                 payer=payer,
-                amount=total,
+                amount=received,
                 mode=mode,
                 status=status,
                 paid_at=paid_at,
@@ -241,10 +303,29 @@ def record_payment(
                         status=line_status,
                         collector=collector,
                         notes=line.notes,
+                        due=line.due,
                         created_by=actor,
                         updated_by=actor,
                     )
-                    for line in lines
+                    for line in paid_lines
+                ]
+            )
+            Due.objects.bulk_create(
+                [
+                    Due(
+                        organization=org,
+                        financial_year_id=event.financial_year_id,
+                        event=event,
+                        contribution_type=line.contribution_type,
+                        person=payer,
+                        payment=payment,
+                        period_month=line.period_month,
+                        amount=line.amount,
+                        collector=collector,
+                        created_by=actor,
+                        updated_by=actor,
+                    )
+                    for line in unpaid_lines
                 ]
             )
             audit.record(
@@ -261,8 +342,13 @@ def record_payment(
                             "contribution_type": str(line.contribution_type.pk),
                             "amount": str(line.amount),
                             "period_month": line.period_month.isoformat() if line.period_month else None,
+                            "due": str(line.due.pk) if line.due else None,
                         }
-                        for line in lines
+                        for line in paid_lines
+                    ],
+                    "balance": [
+                        {"contribution_type": str(line.contribution_type.pk), "amount": str(line.amount)}
+                        for line in unpaid_lines
                     ],
                 },
             )

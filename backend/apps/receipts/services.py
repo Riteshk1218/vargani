@@ -5,6 +5,8 @@ transaction that confirms the payment, so concurrent collectors queue on the loc
 back the counter. The unique constraints on receipts are the final safety net.
 """
 
+from decimal import Decimal
+
 from django.db import transaction
 from django.utils import timezone
 
@@ -45,8 +47,27 @@ def build_snapshot(payment) -> dict:
                 "fund": line.fund.name if line.fund else None,
                 "period_month": line.period_month.isoformat() if line.period_month else None,
                 "amount": _money(line.amount),
+                "towards_balance": line.due_id is not None,
             }
         )
+    # What this person still owes after this receipt: balances kept now, and older ones still open.
+    from apps.contributions.models import Due
+    from apps.contributions.selectors import with_balance
+
+    balance = []
+    if person is not None:
+        open_dues = with_balance(
+            Due.objects.filter(person=person, event=event, status=Due.Status.OPEN).select_related("contribution_type")
+        ).order_by("period_month", "created_at")
+        for due in open_dues:
+            if due.remaining > 0:
+                balance.append(
+                    {
+                        "contribution_type": due.contribution_type.name,
+                        "period_month": due.period_month.isoformat() if due.period_month else None,
+                        "amount": _money(due.remaining),
+                    }
+                )
     address = ", ".join(
         part for part in [org.address_line1, org.address_line2, org.city, org.district, org.state, org.pincode] if part
     )
@@ -72,6 +93,8 @@ def build_snapshot(payment) -> dict:
         "financial_year": payment.financial_year.label,
         "lines": lines,
         "total": _money(payment.amount),
+        "balance_lines": balance,
+        "balance_total": _money(sum((Decimal(b["amount"]) for b in balance), Decimal("0"))),
         "currency": org.currency,
         "mode": payment.mode,
         "reference_number": payment.reference_number,

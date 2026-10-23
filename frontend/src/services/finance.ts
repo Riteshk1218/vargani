@@ -1,4 +1,5 @@
 import type {
+  Due,
   CollectorAssignment,
   CollectorDashboard,
   CollectorPerformance,
@@ -36,6 +37,12 @@ export const contributionTypeService = {
   create: (input: ContributionTypeInput) => api.post<ContributionType>('/contribution-types/', input).then((r) => r.data),
   update: (id: string, input: ContributionTypeInput) => api.patch<ContributionType>(`/contribution-types/${id}/`, input).then((r) => r.data),
   outstanding: (id: string) => api.get<OutstandingReport>(`/contribution-types/${id}/outstanding/`).then((r) => r.data),
+}
+
+export const dueService = {
+  list: (params: ListParams & { person?: string; event?: string; open?: boolean }) =>
+    api.get<Paginated<Due>>('/dues/', { params }).then((r) => r.data),
+  cancel: (id: string, reason: string) => api.post<Due>(`/dues/${id}/cancel/`, { reason }).then((r) => r.data),
 }
 
 export const paymentService = {

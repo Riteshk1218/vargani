@@ -8,7 +8,7 @@ from apps.funds.models import Fund
 from apps.organizations.models import OrganizationMembership
 from apps.people.models import Person
 
-from .models import CollectorAssignment, Contribution, ContributionType
+from .models import CollectorAssignment, Contribution, ContributionType, Due
 
 
 class ContributionTypeSerializer(ImmutableFieldsMixin, serializers.ModelSerializer):
@@ -148,3 +148,43 @@ class AssignInputSerializer(serializers.Serializer):
         if len(value) > 500:
             raise serializers.ValidationError(_("Assign at most 500 people at a time."))
         return value
+
+
+class DueSerializer(serializers.ModelSerializer):
+    person_name = serializers.CharField(source="person.full_name", read_only=True)
+    person_mobile = serializers.CharField(source="person.mobile", read_only=True)
+    contribution_type_name = serializers.CharField(source="contribution_type.name", read_only=True)
+    collector_name = serializers.SerializerMethodField()
+    paid = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
+    remaining = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
+    receipt_number = serializers.CharField(read_only=True, allow_null=True)
+
+    class Meta:
+        model = Due
+        fields = [
+            "id",
+            "event",
+            "person",
+            "person_name",
+            "person_mobile",
+            "contribution_type",
+            "contribution_type_name",
+            "period_month",
+            "amount",
+            "paid",
+            "remaining",
+            "status",
+            "status_reason",
+            "payment",
+            "receipt_number",
+            "collector_name",
+            "created_at",
+        ]
+        read_only_fields = fields
+
+    def get_collector_name(self, obj) -> str | None:
+        return obj.collector.user.full_name if obj.collector_id else None
+
+
+class DueCancelSerializer(serializers.Serializer):
+    reason = serializers.CharField(max_length=300)

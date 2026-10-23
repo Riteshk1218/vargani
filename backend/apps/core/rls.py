@@ -20,6 +20,7 @@ TENANT_TABLES = [
     "contributions_collectorassignment",
     "contributions_contribution",
     "contributions_contributiontype",
+    "contributions_due",
     "events_event",
     "events_eventparticipant",
     "expenses_expense",

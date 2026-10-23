@@ -141,6 +141,7 @@ class PaymentViewSet(ListDownloadMixin, TenantModelViewSet):
             cheque_date=data.get("cheque_date"),
             notes=data["notes"],
             lines=[services.LineInput(**line) for line in data["lines"]],
+            received=data.get("received"),
             collector=self.membership,
             idempotency_key=key,
             replaces_receipt=replaces,

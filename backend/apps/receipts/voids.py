@@ -7,7 +7,7 @@ from django.utils import timezone
 from django.utils.translation import gettext as _
 
 from apps.audit import services as audit
-from apps.contributions.models import Contribution
+from apps.contributions.models import Contribution, Due
 from apps.core.exceptions import BusinessRuleViolation, InvalidStateTransition
 from apps.notifications import hooks as notify
 from apps.payments.models import Payment
@@ -81,6 +81,7 @@ def approve(void_request, *, approver_membership, note="", request=None, actor=N
         payment.updated_by = actor
         payment.save(update_fields=["status", "status_reason", "status_changed_at", "updated_by", "updated_at"])
         payment.lines.update(status=Contribution.Status.CANCELLED, updated_by=actor, updated_at=now)
+        payment.dues.update(status=Due.Status.CANCELLED, status_reason=void_request.reason, updated_at=now)
 
         void_request.status = ReceiptVoidRequest.Status.APPROVED
         void_request.decided_by = actor

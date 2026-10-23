@@ -1837,6 +1837,259 @@
                 }
             }
         },
+        "/api/v1/dues/": {
+            "get": {
+                "operationId": "dues_list",
+                "description": "Balances (baaki): money still owed on a receipt that was given before all of it came.\n\nCreated by recording a collection with `received` below the total, paid off by collection lines with\n`due` set, and written off with POST /dues/{id}/cancel/ (admin).",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "collector",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "contribution_type",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "event",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "open",
+                        "schema": {
+                            "type": "boolean"
+                        },
+                        "description": "Only balances still owed"
+                    },
+                    {
+                        "name": "ordering",
+                        "required": false,
+                        "in": "query",
+                        "description": "Which field to use when ordering the results.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "required": false,
+                        "in": "query",
+                        "description": "A page number within the paginated result set.",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "page_size",
+                        "required": false,
+                        "in": "query",
+                        "description": "Number of results to return per page.",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "person",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "required": false,
+                        "in": "query",
+                        "description": "A search term.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "status",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "cancelled",
+                                "open"
+                            ]
+                        },
+                        "description": "* `open` - Open\n* `cancelled` - Cancelled"
+                    }
+                ],
+                "tags": [
+                    "dues"
+                ],
+                "security": [
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaginatedDueList"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/dues/{id}/": {
+            "get": {
+                "operationId": "dues_retrieve",
+                "description": "Balances (baaki): money still owed on a receipt that was given before all of it came.\n\nCreated by recording a collection with `received` below the total, paid off by collection lines with\n`due` set, and written off with POST /dues/{id}/cancel/ (admin).",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "description": "A UUID string identifying this due.",
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "dues"
+                ],
+                "security": [
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Due"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/dues/{id}/cancel/": {
+            "post": {
+                "operationId": "dues_cancel_create",
+                "description": "Write off what is still owed (it will not be collected).",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "description": "A UUID string identifying this due.",
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "dues"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/DueCancelRequest"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/DueCancelRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/DueCancelRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Due"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/dues/download/": {
+            "get": {
+                "operationId": "dues_download_retrieve",
+                "description": "The list as a CSV or Excel file, with the same filters and search as the list.",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "file",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "csv",
+                                "xlsx"
+                            ]
+                        },
+                        "description": "csv (default) or xlsx"
+                    }
+                ],
+                "tags": [
+                    "dues"
+                ],
+                "security": [
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/octet-stream": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/v1/event-participants/": {
             "get": {
                 "operationId": "event_participants_list",
@@ -9140,6 +9393,139 @@
                     "token"
                 ]
             },
+            "Due": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "readOnly": true
+                    },
+                    "event": {
+                        "type": "string",
+                        "format": "uuid",
+                        "readOnly": true
+                    },
+                    "person": {
+                        "type": "string",
+                        "format": "uuid",
+                        "readOnly": true
+                    },
+                    "person_name": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "person_mobile": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "contribution_type": {
+                        "type": "string",
+                        "format": "uuid",
+                        "readOnly": true
+                    },
+                    "contribution_type_name": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "period_month": {
+                        "type": "string",
+                        "format": "date",
+                        "readOnly": true,
+                        "nullable": true
+                    },
+                    "amount": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,10}(?:\\.\\d{0,2})?$",
+                        "readOnly": true
+                    },
+                    "paid": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,10}(?:\\.\\d{0,2})?$",
+                        "readOnly": true
+                    },
+                    "remaining": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,10}(?:\\.\\d{0,2})?$",
+                        "readOnly": true
+                    },
+                    "status": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/DueStatusEnum"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "status_reason": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "payment": {
+                        "type": "string",
+                        "format": "uuid",
+                        "readOnly": true
+                    },
+                    "receipt_number": {
+                        "type": "string",
+                        "readOnly": true,
+                        "nullable": true
+                    },
+                    "collector_name": {
+                        "type": "string",
+                        "nullable": true,
+                        "readOnly": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "amount",
+                    "collector_name",
+                    "contribution_type",
+                    "contribution_type_name",
+                    "created_at",
+                    "event",
+                    "id",
+                    "paid",
+                    "payment",
+                    "period_month",
+                    "person",
+                    "person_mobile",
+                    "person_name",
+                    "receipt_number",
+                    "remaining",
+                    "status",
+                    "status_reason"
+                ]
+            },
+            "DueCancelRequest": {
+                "type": "object",
+                "properties": {
+                    "reason": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 300
+                    }
+                },
+                "required": [
+                    "reason"
+                ]
+            },
+            "DueStatusEnum": {
+                "enum": [
+                    "open",
+                    "cancelled"
+                ],
+                "type": "string",
+                "description": "* `open` - Open\n* `cancelled` - Cancelled"
+            },
             "Event": {
                 "type": "object",
                 "properties": {
@@ -11265,6 +11651,37 @@
                     }
                 }
             },
+            "PaginatedDueList": {
+                "type": "object",
+                "required": [
+                    "count",
+                    "results"
+                ],
+                "properties": {
+                    "count": {
+                        "type": "integer",
+                        "example": 123
+                    },
+                    "next": {
+                        "type": "string",
+                        "nullable": true,
+                        "format": "uri",
+                        "example": "http://api.example.org/accounts/?page=4"
+                    },
+                    "previous": {
+                        "type": "string",
+                        "nullable": true,
+                        "format": "uri",
+                        "example": "http://api.example.org/accounts/?page=2"
+                    },
+                    "results": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Due"
+                        }
+                    }
+                }
+            },
             "PaginatedEventList": {
                 "type": "object",
                 "required": [
@@ -12464,6 +12881,12 @@
                             "$ref": "#/components/schemas/PaymentLineInputRequest"
                         }
                     },
+                    "received": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,10}(?:\\.\\d{0,2})?$",
+                        "nullable": true
+                    },
                     "replaces_receipt": {
                         "type": "string",
                         "format": "uuid",
@@ -12561,11 +12984,15 @@
                         "type": "string",
                         "default": "",
                         "maxLength": 300
+                    },
+                    "due": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
                     }
                 },
                 "required": [
-                    "amount",
-                    "contribution_type"
+                    "amount"
                 ]
             },
             "PaymentModeEnum": {

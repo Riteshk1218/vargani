@@ -404,6 +404,61 @@ def dues(ctx: ReportContext) -> Report:
     )
 
 
+def balances(ctx: ReportContext) -> Report:
+    """Balances (baaki): receipts given before all the money came, and what is still owed on them."""
+    from apps.contributions.models import Due
+    from apps.contributions.selectors import with_balance
+    from apps.receipts.models import Receipt
+
+    qs = with_balance(Due.objects.for_org(ctx.org).filter(event__in=ctx.events, status=Due.Status.OPEN))
+    qs = ctx.date_range(qs, "created_at__date")
+    if ctx.filters.get("contribution_type"):
+        qs = qs.filter(contribution_type=ctx.filters["contribution_type"])
+    if ctx.filters.get("person"):
+        qs = qs.filter(person=ctx.filters["person"])
+    if ctx.filters.get("collector"):
+        qs = qs.filter(collector=ctx.filters["collector"])
+    qs = qs.filter(remaining__gt=0).select_related("person", "contribution_type", "collector__user")
+    numbers = dict(
+        Receipt.objects.filter(payment__in=qs.values("payment"), status=Receipt.Status.ISSUED).values_list(
+            "payment", "receipt_number"
+        )
+    )
+    rows = [
+        {
+            "person": d.person.full_name,
+            "mobile": d.person.mobile,
+            "type": d.contribution_type.name,
+            "month": _month(d.period_month),
+            "receipt": numbers.get(d.payment_id, ""),
+            "date": timezone.localtime(d.created_at).date(),
+            "collector": d.collector.user.full_name if d.collector_id else "",
+            "amount": d.amount,
+            "paid": d.paid,
+            "remaining": d.remaining,
+        }
+        for d in qs.order_by("person__full_name", "created_at")
+    ]
+    return Report(
+        _("Balance due"),
+        [
+            Column("person", _("Name")),
+            Column("mobile", _("Mobile")),
+            Column("type", _("Contribution type")),
+            Column("month", _("For month")),
+            Column("receipt", _("Receipt")),
+            Column("date", _("Date"), "date"),
+            Column("collector", _("Collected by")),
+            Column("amount", _("Balance due"), "money"),
+            Column("paid", _("Paid"), "money"),
+            Column("remaining", _("Still owed"), "money"),
+        ],
+        rows,
+        {k: sum((r[k] for r in rows), Decimal(0)) for k in ("amount", "paid", "remaining")},
+        [_("Balances are not counted as collected until they are paid.")],
+    )
+
+
 def expenses(ctx: ReportContext) -> Report:
     status = ctx.filters.get("status") or Expense.Status.APPROVED
     qs = Expense.objects.for_org(ctx.org).filter(event__in=ctx.events)
@@ -645,6 +700,13 @@ REPORTS = {
         ),
         ReportDef(
             "dues", gettext_noop("Pending dues"), FINANCIAL, dues, ("event", "contribution_type"), needs_event=True
+        ),
+        ReportDef(
+            "balances",
+            gettext_noop("Balance due"),
+            FINANCIAL,
+            balances,
+            ("event", "date_from", "date_to", "contribution_type", "collector", "person"),
         ),
         ReportDef(
             "expenses",

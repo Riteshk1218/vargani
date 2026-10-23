@@ -3,6 +3,7 @@
 import hashlib
 import secrets
 from datetime import date, datetime, timedelta
+from decimal import Decimal
 from urllib.parse import quote
 from zoneinfo import ZoneInfo
 
@@ -53,10 +54,21 @@ def receipt_pdf(receipt: Receipt, language: str | None = None) -> bytes:
                 "fund": line.get("fund"),
                 "month": date.fromisoformat(line["period_month"]) if line.get("period_month") else None,
                 "amount": _money(line["amount"]),
+                "towards_balance": line.get("towards_balance", False),
             }
             for line in s["lines"]
         ]
+        balance = [
+            {
+                "contribution_type": line["contribution_type"],
+                "month": date.fromisoformat(line["period_month"]) if line.get("period_month") else None,
+                "amount": _money(line["amount"]),
+            }
+            for line in s.get("balance_lines", [])
+        ]
         context = {
+            "balance": balance,
+            "balance_total": _money(s.get("balance_total") or "0"),
             "receipt": receipt,
             "s": {**s, "total": _money(s["total"])},
             "lines": lines,
@@ -108,6 +120,8 @@ def create_share(receipt: Receipt, *, request=None, actor=None) -> dict:
             "number": receipt.receipt_number,
             "url": share_url,
         }
+        if Decimal(s.get("balance_total") or "0") > 0:
+            text += " " + _("Balance due: Rs %(amount)s.") % {"amount": _money(s["balance_total"])}
     digits = "".join(ch for ch in (s["person"].get("mobile") or "") if ch.isdigit())
     whatsapp_url = f"https://wa.me/{digits}?text={quote(text)}" if digits else f"https://wa.me/?text={quote(text)}"
     return {"share_url": share_url, "expires_at": share.expires_at, "whatsapp_text": text, "whatsapp_url": whatsapp_url}

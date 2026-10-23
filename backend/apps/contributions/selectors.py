@@ -117,3 +117,30 @@ def outstanding(ctype: ContributionType, today: date) -> dict:
         "people_with_dues": sum(1 for r in rows if Decimal(r["due"]) > 0),
         "results": rows,
     }
+
+
+# --- Balances (baaki) --------------------------------------------------------------
+def _paid_towards():
+    from django.db.models import DecimalField, OuterRef, Subquery, Value
+    from django.db.models.functions import Coalesce
+
+    paid = (
+        Contribution.objects.filter(due=OuterRef("pk"), status=Contribution.Status.CONFIRMED)
+        .order_by()
+        .values("due")
+        .annotate(total=Sum("amount"))
+        .values("total")[:1]
+    )
+    return Coalesce(Subquery(paid), Value(Decimal("0")), output_field=DecimalField(max_digits=12, decimal_places=2))
+
+
+def with_balance(queryset):
+    """Balances with `paid` (confirmed money towards them) and `remaining` (still owed)."""
+    from django.db.models import F
+
+    return queryset.annotate(paid=_paid_towards()).annotate(remaining=F("amount") - F("paid"))
+
+
+def due_remaining(due) -> Decimal:
+    paid = due.settlements.filter(status=Contribution.Status.CONFIRMED).aggregate(total=Sum("amount"))["total"]
+    return due.amount - (paid or Decimal("0"))

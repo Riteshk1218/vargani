@@ -1,7 +1,12 @@
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { HandCoins, Search, Users, Wallet } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Link } from 'react-router-dom'
+import { Button } from '../../components/ui/Button'
+import { ConfirmDialog } from '../../components/ui/Modal'
+import { useToast } from '../../components/ui/Toast'
+import { useApiErrors } from '../../hooks/useApiErrors'
 import { Badge, Card, PageHeader, StatCard } from '../../components/ui/Card'
 import { BarList } from '../../components/ui/BarList'
 import { SelectInput, TextInput } from '../../components/ui/Field'
@@ -10,13 +15,14 @@ import { EmptyState, ErrorState, SkeletonRows } from '../../components/ui/States
 import { useEvents } from '../../context/EventContext'
 import { useOrg } from '../../context/OrgContext'
 import { useDebounced } from '../../hooks/useDebounced'
-import { contributionService, contributionTypeService } from '../../services/finance'
+import { contributionService, contributionTypeService, dueService } from '../../services/finance'
+import type { Due } from '../../types/api'
 import { formatDate, formatMobile, formatMoney, formatMonth } from '../../utils/format'
 import { cn } from '../../utils/cn'
 import { DownloadMenu } from '../../components/DownloadMenu'
 import { RemindButton } from './RemindButton'
 
-type Tab = 'list' | 'dues'
+type Tab = 'list' | 'balances' | 'dues'
 
 export function ContributionsPage() {
   const { t } = useTranslation()
@@ -35,13 +41,14 @@ export function ContributionsPage() {
     )
   }
   const showDues = scope('contributions.view') === 'all'
+  const tabs: Tab[] = showDues ? ['list', 'balances', 'dues'] : ['list', 'balances']
   return (
     <div>
       <PageHeader title={t('contributions.title')} description={`${activeEvent.name} · ${t('contributions.subtitle')}`} />
       <Summary eventId={activeEvent.id} />
-      {showDues && (
+      {(
         <div className="mb-3 mt-6 flex gap-1 border-b border-slate-200" role="tablist">
-          {(['list', 'dues'] as Tab[]).map((value) => (
+          {tabs.map((value) => (
             <button
               key={value}
               role="tab"
@@ -54,7 +61,9 @@ export function ContributionsPage() {
           ))}
         </div>
       )}
-      <div className={cn(!showDues && 'mt-6')}>{tab === 'list' ? <ContributionList eventId={activeEvent.id} /> : <Dues eventId={activeEvent.id} />}</div>
+      <div>
+        {tab === 'list' ? <ContributionList eventId={activeEvent.id} /> : tab === 'balances' ? <Balances eventId={activeEvent.id} /> : <Dues eventId={activeEvent.id} />}
+      </div>
     </div>
   )
 }
@@ -254,6 +263,105 @@ function Dues({ eventId }: { eventId: string }) {
           </table>
         </div>
       )}
+    </Card>
+  )
+}
+
+/** Balances (baaki): receipts given before all of the money came, and what is still owed. */
+function Balances({ eventId }: { eventId: string }) {
+  const { t } = useTranslation()
+  const { activeOrgId, detail, can } = useOrg()
+  const currency = detail?.organization.currency
+  const queryClient = useQueryClient()
+  const { notify } = useToast()
+  const onError = useApiErrors()
+  const [search, setSearch] = useState('')
+  const [page, setPage] = useState(1)
+  const [writeOff, setWriteOff] = useState<Due | null>(null)
+  const debounced = useDebounced(search)
+  const params = { event: eventId, open: true, search: debounced || undefined, page }
+  const dues = useQuery({ queryKey: ['org', activeOrgId, 'dues', 'list', params], queryFn: () => dueService.list(params) })
+  const cancel = useMutation({
+    mutationFn: (due: Due) => dueService.cancel(due.id, t('balances.writtenOffReason')),
+    onSuccess: async () => {
+      setWriteOff(null)
+      await queryClient.invalidateQueries({ queryKey: ['org', activeOrgId, 'dues'] })
+      notify(t('balances.writtenOff'))
+    },
+    onError,
+  })
+  const canCollect = can('payments.create')
+  return (
+    <Card>
+      <div className="flex flex-col gap-3 border-b border-slate-200 p-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="relative w-full sm:max-w-xs">
+          <TextInput label={t('common.search')} value={search} onChange={(e) => { setSearch(e.target.value); setPage(1) }} placeholder={t('collect.searchPerson')} />
+          <Search className="pointer-events-none absolute right-3 top-9 size-4 text-slate-400" aria-hidden />
+        </div>
+        <DownloadMenu path="/dues/" params={{ event: eventId, open: true, search: debounced || undefined }} />
+      </div>
+      {dues.isLoading ? (
+        <SkeletonRows />
+      ) : dues.isError ? (
+        <ErrorState onRetry={() => void dues.refetch()} />
+      ) : dues.data!.count === 0 ? (
+        <EmptyState title={t('balances.none')} message={t('balances.noneMessage')} />
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-sm">
+            <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+              <tr>
+                <th className="px-4 py-2 font-medium">{t('collect.person')}</th>
+                <th className="hidden px-4 py-2 font-medium sm:table-cell">{t('collect.type')}</th>
+                <th className="hidden px-4 py-2 text-right font-medium md:table-cell">{t('balances.balance')}</th>
+                <th className="px-4 py-2 text-right font-medium">{t('balances.stillOwed')}</th>
+                <th className="px-4 py-2" />
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {dues.data!.results.map((due) => (
+                <tr key={due.id}>
+                  <td className="px-4 py-3">
+                    <p className="font-medium">{due.person_name}</p>
+                    <p className="text-xs text-slate-500">{[formatMobile(due.person_mobile), due.receipt_number, formatDate(due.created_at)].filter(Boolean).join(' · ')}</p>
+                  </td>
+                  <td className="hidden px-4 py-3 sm:table-cell">
+                    {due.contribution_type_name}
+                    {due.period_month && <span className="text-slate-500"> · {formatMonth(due.period_month)}</span>}
+                  </td>
+                  <td className="hidden px-4 py-3 text-right tabular-nums md:table-cell">{formatMoney(due.amount, currency)}</td>
+                  <td className="px-4 py-3 text-right font-medium tabular-nums text-red-700">{formatMoney(due.remaining, currency)}</td>
+                  <td className="px-4 py-3 text-right">
+                    <div className="flex justify-end gap-2">
+                      {canCollect && (
+                        <Link to={`/app/collect?person=${due.person}`}>
+                          <Button size="sm" variant="secondary">{t('collect.collectBalance')}</Button>
+                        </Link>
+                      )}
+                      {can('records.admin_edit') && (
+                        <Button size="sm" variant="ghost" onClick={() => setWriteOff(due)}>
+                          {t('balances.writeOff')}
+                        </Button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      <Pagination page={page} pageSize={25} count={dues.data?.count ?? 0} onChange={setPage} />
+      <ConfirmDialog
+        open={Boolean(writeOff)}
+        title={t('balances.writeOffTitle')}
+        message={writeOff ? t('balances.writeOffMessage', { name: writeOff.person_name, amount: formatMoney(writeOff.remaining, currency) }) : ''}
+        confirmLabel={t('balances.writeOff')}
+        danger
+        loading={cancel.isPending}
+        onConfirm={() => writeOff && cancel.mutate(writeOff)}
+        onClose={() => setWriteOff(null)}
+      />
     </Card>
   )
 }

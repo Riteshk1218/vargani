@@ -4,7 +4,7 @@ from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
 from apps.accounts.serializers import MobileField
-from apps.contributions.models import Contribution, ContributionType
+from apps.contributions.models import Contribution, ContributionType, Due
 from apps.core.fields import TenantPrimaryKeyRelatedField
 from apps.events.models import Event
 from apps.people.models import Person
@@ -16,10 +16,21 @@ MONEY = {"max_digits": 12, "decimal_places": 2}
 
 
 class PaymentLineInputSerializer(serializers.Serializer):
-    contribution_type = TenantPrimaryKeyRelatedField(queryset=ContributionType.objects.all())
+    contribution_type = TenantPrimaryKeyRelatedField(queryset=ContributionType.objects.all(), required=False)
     amount = serializers.DecimalField(**MONEY, min_value=Decimal("0.01"))
     period_month = serializers.DateField(required=False, allow_null=True)
     notes = serializers.CharField(max_length=300, required=False, allow_blank=True, default="")
+    # Paying an earlier balance: the type and month come from the balance.
+    due = TenantPrimaryKeyRelatedField(
+        queryset=Due.objects.select_related("contribution_type"), required=False, allow_null=True, default=None
+    )
+
+    def validate(self, attrs):
+        if attrs.get("due") is not None:
+            attrs["contribution_type"] = attrs["due"].contribution_type
+        elif attrs.get("contribution_type") is None:
+            raise serializers.ValidationError({"contribution_type": [_("This field is required.")]})
+        return attrs
 
 
 class NewPersonSerializer(serializers.ModelSerializer):
@@ -69,6 +80,8 @@ class PaymentCreateSerializer(PayerChoiceMixin, serializers.Serializer):
     notes = serializers.CharField(max_length=500, required=False, allow_blank=True, default="")
     idempotency_key = serializers.CharField(max_length=100, required=False, allow_blank=True)
     lines = PaymentLineInputSerializer(many=True, allow_empty=False, max_length=36)
+    # Money that came now, when less than the total; the rest is kept as a balance for the person.
+    received = serializers.DecimalField(**MONEY, min_value=Decimal("0"), required=False, allow_null=True)
     replaces_receipt = TenantPrimaryKeyRelatedField(queryset=Receipt.objects.all(), required=False, allow_null=True)
 
     def validate_reference_number(self, value):

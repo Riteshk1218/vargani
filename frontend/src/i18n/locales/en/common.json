@@ -479,7 +479,17 @@
     "anonymousNote": "The collection is saved without a name. The receipt says “Anonymous”.",
     "newPersonSaved": "This person is saved and can be chosen next time.",
     "leaveEmptyAnonymous": "Leave empty to save without a name.",
-    "timeAuto": "The exact time is recorded automatically."
+    "timeAuto": "The exact time is recorded automatically.",
+    "receivedNow": "Received now",
+    "receivedHint": "Leave empty if all of it came. Type less (even 0) and the rest is kept as balance on the receipt.",
+    "receivedTooMuch": "Enter an amount from 0 up to the total.",
+    "balanceWillBe": "Balance {{amount}} will be shown on the receipt and in Balance due.",
+    "submitWithBalance": "Save {{amount}} received, {{balance}} balance, and issue receipt",
+    "balanceKept": "Balance due: {{amount}}",
+    "openBalances": "Balance due: {{amount}}",
+    "balanceStill": "{{amount}} still owed",
+    "collectBalance": "Collect",
+    "towardsBalance": "{{type}} (balance)"
   },
   "payments": {
     "title": "Payments",
@@ -517,7 +527,8 @@
     "emptyMessage": "Record a collection to see it here.",
     "tab": {
       "list": "All contributions",
-      "dues": "Dues"
+      "dues": "Dues",
+      "balances": "Balance due"
     },
     "expected": "Expected",
     "paid": "Paid",
@@ -561,7 +572,11 @@
     "status": {
       "issued": "Issued",
       "void": "Void"
-    }
+    },
+    "towardsBalance": "towards balance",
+    "nothingReceived": "Nothing received yet",
+    "received": "Received",
+    "balanceDue": "Balance due"
   },
   "approvals": {
     "title": "Approvals",
@@ -900,5 +915,16 @@
     "notVerified": "Code not entered",
     "verify": "Confirm account",
     "verified": "Account confirmed. They can log in now."
+  },
+  "balances": {
+    "none": "No balance due",
+    "noneMessage": "When less money comes than the receipt amount, the rest shows here until it is paid.",
+    "balance": "Balance",
+    "stillOwed": "Still owed",
+    "writeOff": "Write off",
+    "writeOffTitle": "Write off this balance?",
+    "writeOffMessage": "{{name}} will no longer owe {{amount}}. This is recorded in the audit log.",
+    "writtenOff": "Balance written off",
+    "writtenOffReason": "Written off by admin"
   }
 }

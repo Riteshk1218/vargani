@@ -84,6 +84,8 @@ class Contribution(TenantModel):
         "organizations.OrganizationMembership", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
     )
     notes = models.CharField(max_length=300, blank=True)
+    # Set when this line pays (part of) an earlier balance.
+    due = models.ForeignKey("Due", null=True, blank=True, on_delete=models.PROTECT, related_name="settlements")
 
     class Meta:
         ordering = ["-contributed_on", "-created_at"]
@@ -99,6 +101,47 @@ class Contribution(TenantModel):
             models.Index(fields=["organization", "event", "person"], name="contrib_org_person_idx"),
             models.Index(fields=["organization", "event", "period_month"], name="contrib_org_period_idx"),
             models.Index(fields=["organization", "collector", "contributed_on"], name="contrib_org_collector_idx"),
+        ]
+
+
+class Due(TenantModel):
+    """A balance (baaki): money a person still owes for a contribution, recorded when the receipt was given
+    but not all of the money came. It is paid off by later contribution lines that point to it, so what is
+    still owed is `amount` minus their confirmed total and never stored twice.
+
+    Only confirmed money counts as collected; a balance never adds to income until it is paid.
+    """
+
+    class Status(models.TextChoices):
+        OPEN = "open"
+        CANCELLED = "cancelled"  # written off, or its receipt was voided
+
+    financial_year = models.ForeignKey("organizations.FinancialYear", on_delete=models.PROTECT, related_name="+")
+    event = models.ForeignKey("events.Event", on_delete=models.PROTECT, related_name="dues")
+    contribution_type = models.ForeignKey(ContributionType, on_delete=models.PROTECT, related_name="dues")
+    person = models.ForeignKey("people.Person", on_delete=models.PROTECT, related_name="dues")
+    # The collection whose receipt shows this balance.
+    payment = models.ForeignKey("payments.Payment", on_delete=models.PROTECT, related_name="dues")
+    period_month = models.DateField(null=True, blank=True)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    collector = models.ForeignKey(
+        "organizations.OrganizationMembership", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.OPEN)
+    status_reason = models.CharField(max_length=300, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(fields=["organization", "id"], name="due_org_id_unique"),
+            models.CheckConstraint(condition=Q(amount__gt=0), name="due_amount_positive"),
+            models.CheckConstraint(
+                condition=Q(period_month__isnull=True) | Q(period_month__day=1), name="due_period_first_day"
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["organization", "event", "status"], name="due_org_event_idx"),
+            models.Index(fields=["organization", "person"], name="due_org_person_idx"),
         ]
 
 

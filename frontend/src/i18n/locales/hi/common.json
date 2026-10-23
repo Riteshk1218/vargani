@@ -479,7 +479,17 @@
     "anonymousNote": "संग्रह बिना नाम के सहेजा जाएगा। रसीद पर “गुमनाम” लिखा होगा।",
     "newPersonSaved": "यह व्यक्ति सहेजा जाएगा और अगली बार चुना जा सकेगा।",
     "leaveEmptyAnonymous": "बिना नाम के सहेजने के लिए खाली छोड़ें।",
-    "timeAuto": "सटीक समय अपने आप दर्ज होता है।"
+    "timeAuto": "सटीक समय अपने आप दर्ज होता है।",
+    "receivedNow": "अभी मिला",
+    "receivedHint": "पूरा पैसा मिला हो तो खाली छोड़ें. कम (0 भी) डालें तो बाकी रकम रसीद पर बकाया के रूप में रहेगी.",
+    "receivedTooMuch": "0 से कुल राशि तक की रकम डालें.",
+    "balanceWillBe": "बकाया {{amount}} रसीद पर और \"बकाया राशि\" में दिखेगा.",
+    "submitWithBalance": "{{amount}} मिला, {{balance}} बकाया — सहेजें और रसीद दें",
+    "balanceKept": "बकाया राशि: {{amount}}",
+    "openBalances": "बकाया राशि: {{amount}}",
+    "balanceStill": "{{amount}} अभी बकाया",
+    "collectBalance": "वसूल करें",
+    "towardsBalance": "{{type}} (बकाया)"
   },
   "payments": {
     "title": "भुगतान",
@@ -517,7 +527,8 @@
     "emptyMessage": "यहाँ देखने के लिए संग्रह दर्ज करें।",
     "tab": {
       "list": "सभी योगदान",
-      "dues": "बकाया"
+      "dues": "बकाया",
+      "balances": "बकाया राशि"
     },
     "expected": "अपेक्षित",
     "paid": "भुगतान किया",
@@ -561,7 +572,11 @@
     "status": {
       "issued": "जारी",
       "void": "रद्द"
-    }
+    },
+    "towardsBalance": "बकाया के लिए",
+    "nothingReceived": "अभी कुछ नहीं मिला",
+    "received": "प्राप्त",
+    "balanceDue": "बकाया राशि"
   },
   "approvals": {
     "title": "स्वीकृतियाँ",
@@ -900,5 +915,16 @@
     "notVerified": "कोड नहीं डाला",
     "verify": "खाता मंज़ूर करें",
     "verified": "खाता मंज़ूर हो गया. वे अब लॉगिन कर सकते हैं."
+  },
+  "balances": {
+    "none": "कोई बकाया नहीं",
+    "noneMessage": "रसीद से कम पैसे मिलने पर बाकी रकम भुगतान होने तक यहाँ दिखेगी.",
+    "balance": "बकाया",
+    "stillOwed": "अभी बकाया",
+    "writeOff": "माफ़ करें",
+    "writeOffTitle": "यह बकाया माफ़ करें?",
+    "writeOffMessage": "{{name}} से अब {{amount}} नहीं लेना है. इसकी नोंद ऑडिट लॉग में होगी.",
+    "writtenOff": "बकाया माफ़ किया",
+    "writtenOffReason": "एडमिन ने माफ़ किया"
   }
 }

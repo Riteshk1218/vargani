@@ -17,9 +17,9 @@ from apps.events.models import Event
 from apps.payments.models import Payment
 from apps.portal import reminders
 
-from . import selectors
-from .models import Contribution, ContributionType
-from .serializers import ContributionSerializer, ContributionTypeSerializer
+from . import selectors, services
+from .models import CollectorAssignment, Contribution, ContributionType, Due
+from .serializers import ContributionSerializer, ContributionTypeSerializer, DueCancelSerializer, DueSerializer
 
 
 class ContributionTypeViewSet(TenantModelViewSet):
@@ -132,3 +132,86 @@ class ContributionViewSet(ListDownloadMixin, TenantReadOnlyViewSet):
         data = selectors.summarize(lines, payments)
         data["target_amount"] = f"{event.target_amount:.2f}" if event.target_amount is not None else None
         return Response(data)
+
+
+class DueFilter(django_filters.FilterSet):
+    open = django_filters.BooleanFilter(method="filter_open", label="Only balances still owed")
+
+    class Meta:
+        model = Due
+        fields = ["event", "person", "contribution_type", "status", "collector"]
+
+    def filter_open(self, queryset, name, value):
+        if value:
+            return queryset.filter(status=Due.Status.OPEN, remaining__gt=0)
+        return queryset
+
+
+class DueViewSet(ListDownloadMixin, TenantReadOnlyViewSet):
+    """Balances (baaki): money still owed on a receipt that was given before all of it came.
+
+    Created by recording a collection with `received` below the total, paid off by collection lines with
+    `due` set, and written off with POST /dues/{id}/cancel/ (admin).
+    """
+
+    queryset = Due.objects.all()
+    download_title = gettext_noop("Balance due")
+    download_columns = [
+        Col("person_name", gettext_noop("Name")),
+        Col("person_mobile", gettext_noop("Mobile")),
+        Col("contribution_type_name", gettext_noop("Contribution type")),
+        Col("period_month", gettext_noop("For month"), "date"),
+        Col("receipt_number", gettext_noop("Receipt")),
+        Col("created_at", gettext_noop("Date"), "date"),
+        Col("amount", gettext_noop("Balance due"), "money"),
+        Col("paid", gettext_noop("Paid"), "money"),
+        Col("remaining", gettext_noop("Still owed"), "money"),
+    ]
+    serializer_class = DueSerializer
+    http_method_names = ["get", "post", "head", "options"]
+    filterset_class = DueFilter
+    search_fields = ["person__full_name", "person__mobile"]
+    ordering_fields = ["created_at", "amount", "remaining", "period_month"]
+    required_permissions = {
+        "list": "contributions.view",
+        "retrieve": "contributions.view",
+        "cancel": "records.admin_edit",
+    }
+
+    def get_base_queryset(self):
+        from django.db.models import OuterRef, Subquery
+
+        from apps.receipts.models import Receipt
+
+        receipts = Receipt.objects.filter(payment=OuterRef("payment"), status=Receipt.Status.ISSUED).values(
+            "receipt_number"
+        )[:1]
+        return selectors.with_balance(
+            Due.objects.for_org(self.organization)
+            .select_related("person", "contribution_type", "collector__user")
+            .annotate(receipt_number=Subquery(receipts))
+        )
+
+    def scope_queryset(self, queryset):
+        from django.db.models import Q
+
+        scope = self.org_context.scope("contributions.view")
+        if scope == SCOPE_ALL:
+            return queryset
+        if scope is None:
+            return queryset.none()
+        # Others see the balances they recorded, those of people assigned to them (so they can collect the
+        # rest) and their own.
+        assigned = CollectorAssignment.objects.filter(collector=self.membership, is_active=True).values("person")
+        return queryset.filter(
+            Q(collector=self.membership) | Q(person__in=assigned) | Q(person__user=self.request.user)
+        )
+
+    @extend_schema(request=DueCancelSerializer, responses=DueSerializer)
+    @action(detail=True, methods=["post"])
+    def cancel(self, request, pk=None):
+        """Write off what is still owed (it will not be collected)."""
+        serializer = DueCancelSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        due = services.cancel_due(self.get_object(), reason=serializer.validated_data["reason"], request=request)
+        return Response(DueSerializer(self.get_base_queryset().get(pk=due.pk)).data)

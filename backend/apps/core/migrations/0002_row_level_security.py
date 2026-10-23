@@ -1,6 +1,35 @@
 from django.db import migrations
 
-from apps.core.rls import TENANT_TABLES, disable_sql, enable_sql
+from apps.core.rls import disable_sql, enable_sql
+
+# Frozen: tables added later enable row-level security in their own migration.
+TABLES = [
+    "audit_auditlog",
+    "contributions_collectorassignment",
+    "contributions_contribution",
+    "contributions_contributiontype",
+    "events_event",
+    "events_eventparticipant",
+    "expenses_expense",
+    "expenses_expenseattachment",
+    "expenses_expensecategory",
+    "expenses_otherincome",
+    "funds_fund",
+    "gateway_gatewayconfig",
+    "gateway_gatewayevent",
+    "notifications_notification",
+    "organizations_financialyear",
+    "organizations_invitation",
+    "organizations_organizationmembership",
+    "organizations_role",
+    "payments_payment",
+    "people_person",
+    "receipts_receipt",
+    "receipts_receiptseries",
+    "receipts_receiptshare",
+    "receipts_receiptvoidrequest",
+    "reports_exportjob",
+]
 
 
 class Migration(migrations.Migration):
@@ -20,6 +49,4 @@ class Migration(migrations.Migration):
         ("reports", "0001_initial"),
     ]
 
-    operations = [
-        migrations.RunSQL(sql=enable_sql(table), reverse_sql=disable_sql(table)) for table in TENANT_TABLES
-    ]
+    operations = [migrations.RunSQL(sql=enable_sql(table), reverse_sql=disable_sql(table)) for table in TABLES]

@@ -12,7 +12,7 @@ from django.utils.translation import gettext as _
 from rest_framework.exceptions import ValidationError
 
 from apps.audit import services as audit
-from apps.contributions.models import Contribution
+from apps.contributions.models import Contribution, Due
 from apps.core.admin_override import ADMIN_DELETE_ACTION, ADMIN_EDIT_ACTION, allow_admin_changes
 from apps.core.exceptions import InvalidStateTransition
 from apps.receipts.models import Receipt
@@ -69,7 +69,16 @@ def edit_payment(payment, *, data, request=None, actor=None) -> Payment:
         if payment.paid_at > timezone.now() + CLOCK_SKEW:
             raise ValidationError({"paid_at": [_("Payment date cannot be in the future.")]})
 
+        has_balance = payment.dues.exists() or payment.lines.filter(due__isnull=False).exists()
+        if has_balance and payment.payer_id is None:
+            raise ValidationError({"payer": [_("This collection has a balance, so it needs the person's name.")]})
+        if has_balance:
+            payment.dues.update(person=payment.payer, updated_at=timezone.now())
         lines = data.get("lines")
+        if lines is not None and has_balance:
+            raise ValidationError(
+                {"lines": [_("This collection has a balance. Delete it and collect again to change the amounts.")]}
+            )
         line_status = (
             Contribution.Status.CONFIRMED
             if payment.status == Payment.Status.SUCCESSFUL
@@ -158,6 +167,7 @@ def delete_payment(payment, *, reason="", request=None, actor=None) -> Payment:
         payment.updated_by = actor
         payment.save(update_fields=["status", "status_reason", "status_changed_at", "updated_by", "updated_at"])
         payment.lines.update(status=Contribution.Status.CANCELLED, updated_by=actor, updated_at=now)
+        payment.dues.update(status=Due.Status.CANCELLED, status_reason=reason, updated_at=now)
         payment.receipts.filter(status=Receipt.Status.ISSUED).update(
             status=Receipt.Status.VOID, void_reason=reason, voided_by=actor, voided_at=now, updated_at=now
         )

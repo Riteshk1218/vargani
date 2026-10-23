@@ -8,6 +8,7 @@ export function ReceiptView({ receipt }: { receipt: Pick<Receipt, 'language' | '
   const lang = receipt.language || 'en'
   const t = i18n.getFixedT(lang)
   const s = receipt.snapshot
+  const balanceLines = s.balance_lines ?? []
   const locale = { en: 'en-IN', mr: 'mr-IN', hi: 'hi-IN' }[lang] ?? 'en-IN'
   const money = (value: string) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: s.currency || 'INR' }).format(Number(value))
   // "08-Oct-2026, 10:35 PM" in the organization's time zone, whatever the viewer's computer is set to.
@@ -95,19 +96,54 @@ export function ReceiptView({ receipt }: { receipt: Pick<Receipt, 'language' | '
               <td className="py-2">
                 {line.contribution_type}
                 {line.period_month && <span className="text-slate-600"> · {month(line.period_month)}</span>}
+                {line.towards_balance && <span className="text-xs text-slate-500"> ({t('receipts.towardsBalance')})</span>}
                 {line.fund && <span className="block text-xs text-slate-500">{line.fund}</span>}
               </td>
               <td className="py-2 text-right tabular-nums">{money(line.amount)}</td>
             </tr>
           ))}
+          {s.lines.length === 0 && (
+            <tr className="border-b border-slate-100">
+              <td className="py-2 text-slate-500">{t('receipts.nothingReceived')}</td>
+              <td className="py-2 text-right tabular-nums">{money('0')}</td>
+            </tr>
+          )}
         </tbody>
         <tfoot>
           <tr className="border-t-2 border-slate-800">
-            <td className="py-2 font-semibold">{t('common.total')}</td>
+            <td className="py-2 font-semibold">{balanceLines.length ? t('receipts.received') : t('common.total')}</td>
             <td className="py-2 text-right text-lg font-bold tabular-nums">{money(s.total)}</td>
           </tr>
         </tfoot>
       </table>
+
+      {balanceLines.length > 0 && (
+        <table className="mt-3 w-full text-sm">
+          <thead>
+            <tr className="border-y border-amber-300 bg-amber-50 text-left">
+              <th className="py-2 pl-2 font-medium text-amber-900">{t('receipts.balanceDue')}</th>
+              <th className="py-2 pr-2 text-right font-medium text-amber-900">{t('common.amount')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {balanceLines.map((line, index) => (
+              <tr key={index} className="border-b border-slate-100">
+                <td className="py-2 pl-2">
+                  {line.contribution_type}
+                  {line.period_month && <span className="text-slate-600"> · {month(line.period_month)}</span>}
+                </td>
+                <td className="py-2 pr-2 text-right tabular-nums">{money(line.amount)}</td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot>
+            <tr className="border-t-2 border-amber-700">
+              <td className="py-2 pl-2 font-semibold text-amber-900">{t('receipts.balanceDue')}</td>
+              <td className="py-2 pr-2 text-right text-lg font-bold tabular-nums text-amber-900">{money(s.balance_total ?? '0')}</td>
+            </tr>
+          </tfoot>
+        </table>
+      )}
 
       <dl className="mt-4 grid gap-1 text-sm">
         <div className="flex gap-2">

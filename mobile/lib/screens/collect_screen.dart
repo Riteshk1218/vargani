@@ -14,7 +14,17 @@ class _Line {
   String? typeId;
   final amount = TextEditingController();
   String? month; // YYYY-MM-01
+  Map<String, dynamic>? due; // set when this line pays an earlier balance (baaki)
 }
+
+/// "500.00" -> 50000 paise, so amounts can be compared without floating point.
+int _paise(String? amount) {
+  if (amount == null) return 0;
+  final parts = amount.split('.');
+  return int.parse(parts[0]) * 100 + (parts.length > 1 ? int.parse(parts[1].padRight(2, '0').substring(0, 2)) : 0);
+}
+
+String _fromPaise(int paise) => '${paise ~/ 100}.${(paise % 100).toString().padLeft(2, '0')}';
 
 /// Karyakarta workflow: who paid (optional) → type → amount → month → mode → save → receipt.
 ///
@@ -42,6 +52,9 @@ class _CollectScreenState extends State<CollectScreen> {
   String _mode = 'cash';
   final _reference = TextEditingController();
   final _notes = TextEditingController();
+  // Money that came now; empty means all of it. The rest is kept as a balance for the person.
+  final _received = TextEditingController();
+  List<Map<String, dynamic>> _dues = const [];
   bool _saving = false;
   ApiException? _error;
 
@@ -50,6 +63,63 @@ class _CollectScreenState extends State<CollectScreen> {
     super.initState();
     _person = widget.person;
     _loadTypes();
+    _loadDues();
+  }
+
+  /// Balances this person still owes in this event, so the collector can collect the rest.
+  Future<void> _loadDues() async {
+    final app = AppScope.read(context);
+    final id = _person?['id'];
+    if (id == null) {
+      setState(() => _dues = const []);
+      return;
+    }
+    try {
+      final data = await app.api.get('/dues/', query: {'event': app.eventId, 'person': '$id', 'open': 'true'});
+      if (mounted) setState(() => _dues = resultsOf(data));
+    } catch (_) {
+      if (mounted) setState(() => _dues = const []);
+    }
+  }
+
+  void _collectDue(Map<String, dynamic> due) {
+    if (_lines.any((l) => l.due?['id'] == due['id'])) return;
+    setState(() {
+      _lines.removeWhere((l) => l.due == null && l.amount.text.trim().isEmpty);
+      _lines.add(
+        _Line()
+          ..due = due
+          ..typeId = due['contribution_type'] as String?
+          ..amount.text = '${due['remaining']}',
+      );
+    });
+  }
+
+  bool get _named => (_payerKind == 'existing' && _person != null) || _payerKind == 'new';
+
+  int get _totalPaise => _lines.fold(0, (sum, l) => sum + _paise(normaliseAmount(l.amount.text)));
+
+  /// Like the server: what was received is spread over the lines in order; what new lines still lack
+  /// becomes the balance.
+  int _balancePaise(int received) {
+    var left = received;
+    var kept = 0;
+    for (final l in _lines) {
+      final amount = _paise(normaliseAmount(l.amount.text));
+      final now = amount < left ? amount : left;
+      left -= now;
+      if (l.due == null) kept += amount - now;
+    }
+    return kept;
+  }
+
+  /// The received amount typed in, in paise, or null when it was left empty (all of it came).
+  int? get _receivedPaise {
+    final raw = _received.text.trim();
+    if (raw.isEmpty || !_named) return null;
+    if (RegExp(r'^0+(\.0{1,2})?$').hasMatch(raw)) return 0;
+    final v = normaliseAmount(raw);
+    return v == null ? -1 : _paise(v);
   }
 
   Future<void> _loadTypes() async {
@@ -101,7 +171,14 @@ class _CollectScreenState extends State<CollectScreen> {
         ),
       ),
     );
-    if (p != null) setState(() => _person = p);
+    if (p != null) {
+      setState(() {
+        _person = p;
+        _lines.removeWhere((l) => l.due != null);
+        if (_lines.isEmpty) _lines.add(_Line());
+      });
+      _loadDues();
+    }
   }
 
   Future<void> _save() async {
@@ -119,11 +196,20 @@ class _CollectScreenState extends State<CollectScreen> {
         showMessage(context, l.typeId == null ? t('choose_type') : t('invalid_amount'), error: true);
         return;
       }
-      lines.add({
-        'contribution_type': l.typeId,
-        'amount': amount,
-        if (_type(l.typeId)?['kind'] == 'recurring_monthly' && l.month != null) 'period_month': l.month,
-      });
+      lines.add(
+        l.due != null
+            ? {'due': l.due!['id'], 'amount': amount}
+            : {
+                'contribution_type': l.typeId,
+                'amount': amount,
+                if (_type(l.typeId)?['kind'] == 'recurring_monthly' && l.month != null) 'period_month': l.month,
+              },
+      );
+    }
+    final received = _receivedPaise;
+    if (received != null && (received < 0 || received > _totalPaise)) {
+      showMessage(context, t('received_too_much'), error: true);
+      return;
     }
     setState(() {
       _saving = true;
@@ -144,6 +230,7 @@ class _CollectScreenState extends State<CollectScreen> {
           'reference_number': _reference.text.trim(),
           'notes': _notes.text.trim(),
           'lines': lines,
+          if (received != null && received < _totalPaise) 'received': _fromPaise(received),
         },
         {'Idempotency-Key': _idempotencyKey},
       );
@@ -277,6 +364,38 @@ class _CollectScreenState extends State<CollectScreen> {
                       subtitle: Text(t('anonymous_note')),
                     ),
                   ),
+                if (_payerKind == 'existing' && _dues.isNotEmpty)
+                  Card(
+                    key: const Key('collect-dues'),
+                    color: Colors.amber.shade50,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                          child: Text(
+                            '${t('balance_due')}: ${formatInr(_fromPaise(_dues.fold(0, (sum, d) => sum + _paise('${d['remaining']}'))))}',
+                            style: Theme.of(context).textTheme.titleSmall,
+                          ),
+                        ),
+                        for (final d in _dues)
+                          ListTile(
+                            dense: true,
+                            title: Text('${d['contribution_type_name']}'),
+                            subtitle: Text(
+                              [
+                                d['receipt_number'],
+                                '${formatInr('${d['remaining']}')} ${t('still_owed')}',
+                              ].where((x) => x != null && '$x'.isNotEmpty).join(' · '),
+                            ),
+                            trailing: TextButton(
+                              onPressed: _lines.any((l) => l.due?['id'] == d['id']) ? null : () => _collectDue(d),
+                              child: Text(t('collect_balance')),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
                 const SizedBox(height: 8),
                 for (var i = 0; i < _lines.length; i++) _lineCard(i),
                 if (_types!.length > 1)
@@ -288,6 +407,33 @@ class _CollectScreenState extends State<CollectScreen> {
                       onPressed: () => setState(() => _lines.add(_Line())),
                     ),
                   ),
+                if (_named) ...[
+                  const SizedBox(height: 8),
+                  TextField(
+                    key: const Key('collect-received'),
+                    controller: _received,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    decoration: InputDecoration(
+                      labelText: t('received_now'),
+                      prefixText: '₹ ',
+                      hintText: _fromPaise(_totalPaise),
+                      helperText: t('received_hint'),
+                      helperMaxLines: 3,
+                      errorText: _error?.fieldError('received'),
+                      border: const OutlineInputBorder(),
+                    ),
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  if ((_receivedPaise ?? -1) >= 0 && _balancePaise(_receivedPaise!) > 0)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Text(
+                        '${t('balance_due')}: ${formatInr(_fromPaise(_balancePaise(_receivedPaise!)))}',
+                        key: const Key('collect-balance'),
+                        style: TextStyle(color: Colors.amber.shade900, fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                ],
                 const SizedBox(height: 8),
                 Text(t('payment_mode'), style: Theme.of(context).textTheme.titleSmall),
                 const SizedBox(height: 8),
@@ -359,6 +505,47 @@ class _CollectScreenState extends State<CollectScreen> {
       final now = DateTime.now();
       line.month = _monthValue(
         months.firstWhere((m) => m.year == now.year && m.month == now.month, orElse: () => months.first),
+      );
+    }
+    if (line.due != null) {
+      return Card(
+        color: Colors.amber.shade50,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            children: [
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text('${line.due!['contribution_type_name']} (${t('towards_balance')})'),
+                subtitle: _error?.fieldError('lines.$i.due') != null
+                    ? Text(_error!.fieldError('lines.$i.due')!, style: TextStyle(color: Theme.of(context).colorScheme.error))
+                    : null,
+              ),
+              TextField(
+                key: Key('collect-amount-$i'),
+                controller: line.amount,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(
+                  labelText: t('amount'),
+                  prefixText: '₹ ',
+                  errorText: _error?.fieldError('lines.$i.amount'),
+                  border: const OutlineInputBorder(),
+                ),
+                onChanged: (_) => setState(() {}),
+              ),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () => setState(() {
+                    _lines.removeAt(i);
+                    if (_lines.isEmpty) _lines.add(_Line());
+                  }),
+                  child: Text(t('remove')),
+                ),
+              ),
+            ],
+          ),
+        ),
       );
     }
     return Card(

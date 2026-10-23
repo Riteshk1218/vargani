@@ -10,6 +10,43 @@ from pathlib import Path
 import polib
 
 T = {
+    "Balance due": ("बाकी रक्कम", "बकाया राशि"),
+    "Balance due: Rs %(amount)s.": ("बाकी: रु %(amount)s.", "बकाया: रु %(amount)s।"),
+    "towards balance": ("बाकीपोटी", "बकाया के लिए"),
+    "Nothing received yet": ("अजून काही मिळाले नाही", "अभी कुछ नहीं मिला"),
+    "Received": ("मिळाले", "प्राप्त"),
+    "Still owed": ("अजून बाकी", "अभी बकाया"),
+    "Balances are not counted as collected until they are paid.": (
+        "बाकी रक्कम भरली जाईपर्यंत जमा म्हणून मोजली जात नाही.",
+        "बकाया राशि भुगतान होने तक जमा में नहीं गिनी जाती।",
+    ),
+    "This balance belongs to another person or event.": (
+        "ही बाकी दुसऱ्या व्यक्तीची किंवा कार्यक्रमाची आहे.",
+        "यह बकाया किसी दूसरे व्यक्ति या कार्यक्रम का है।",
+    ),
+    "This balance is already closed.": ("ही बाकी आधीच बंद झाली आहे.", "यह बकाया पहले ही बंद हो चुका है।"),
+    "This is more than the balance still owed.": ("हे बाकी रकमेपेक्षा जास्त आहे.", "यह बकाया राशि से अधिक है।"),
+    "The amount received must be between zero and the total.": (
+        "मिळालेली रक्कम शून्य ते एकूण रकमेच्या दरम्यान हवी.",
+        "प्राप्त राशि शून्य और कुल राशि के बीच होनी चाहिए।",
+    ),
+    "Choose the person to keep a balance for them.": (
+        "बाकी ठेवण्यासाठी व्यक्ती निवडा.",
+        "बकाया रखने के लिए व्यक्ति चुनें।",
+    ),
+    "A balance can be kept only on a received collection.": (
+        "बाकी फक्त मिळालेल्या वसुलीवरच ठेवता येते.",
+        "बकाया केवल प्राप्त संग्रह पर ही रखा जा सकता है।",
+    ),
+    "Nothing would be recorded.": ("काहीही नोंदवले जाणार नाही.", "कुछ भी दर्ज नहीं होगा।"),
+    "This collection has a balance, so it needs the person's name.": (
+        "या वसुलीवर बाकी आहे, त्यामुळे व्यक्तीचे नाव हवे.",
+        "इस संग्रह पर बकाया है, इसलिए व्यक्ति का नाम चाहिए।",
+    ),
+    "This collection has a balance. Delete it and collect again to change the amounts.": (
+        "या वसुलीवर बाकी आहे. रक्कम बदलण्यासाठी ती हटवा आणि पुन्हा वसुली करा.",
+        "इस संग्रह पर बकाया है। राशि बदलने के लिए इसे हटाएँ और फिर से संग्रह करें।",
+    ),
     "This email and this mobile number belong to two different accounts.": (
         "हा ईमेल आणि हा मोबाईल नंबर दोन वेगवेगळ्या खात्यांचे आहेत.",
         "यह ईमेल और यह मोबाइल नंबर दो अलग खातों के हैं।",

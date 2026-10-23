@@ -67,6 +67,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
           final person = (s['person'] as Map?) ?? {};
           final event = (s['event'] as Map?) ?? {};
           final lines = (s['lines'] as List? ?? []).cast<Map>();
+          final balance = (s['balance_lines'] as List? ?? []).cast<Map>();
           final number = '${r['receipt_number']}';
           final text = Theme.of(context).textTheme;
           Widget row(String k, Object? v) => (v == null || '$v'.isEmpty)
@@ -145,6 +146,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                                     l['contribution_type'],
                                     l['fund'],
                                     if (l['period_month'] != null) formatDate('${l['period_month']}').substring(3),
+                                    if (l['towards_balance'] == true) t('towards_balance'),
                                   ].where((x) => x != null && '$x'.isNotEmpty).join(' · '),
                                 ),
                               ),
@@ -152,16 +154,57 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                             ],
                           ),
                         ),
+                      if (lines.isEmpty) Text(t('nothing_received'), style: text.bodySmall),
                       const Divider(height: 24),
                       Row(
                         children: [
-                          Expanded(child: Text(t('total'), style: text.titleMedium)),
+                          Expanded(child: Text(balance.isEmpty ? t('total') : t('received'), style: text.titleMedium)),
                           Text(
                             formatInr('${s['total'] ?? r['amount']}'),
                             style: text.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                           ),
                         ],
                       ),
+                      if (balance.isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        Container(
+                          key: const Key('receipt-balance'),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.amber.shade50,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Column(
+                            children: [
+                              for (final b in balance)
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        [
+                                          b['contribution_type'],
+                                          if (b['period_month'] != null)
+                                            formatDate('${b['period_month']}').substring(3),
+                                        ].where((x) => x != null && '$x'.isNotEmpty).join(' · '),
+                                      ),
+                                    ),
+                                    Text(formatInr('${b['amount']}')),
+                                  ],
+                                ),
+                              const Divider(),
+                              Row(
+                                children: [
+                                  Expanded(child: Text(t('balance_due'), style: text.titleMedium)),
+                                  Text(
+                                    formatInr('${s['balance_total']}'),
+                                    style: text.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                       if ('${s['thank_you_message'] ?? ''}'.isNotEmpty) ...[
                         const SizedBox(height: 12),
                         Text(

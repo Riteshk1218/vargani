@@ -73,7 +73,8 @@ class Payment(TenantModel):
                 condition=Q(gateway_payment_id__isnull=False),
                 name="payment_gateway_payment_unique",
             ),
-            models.CheckConstraint(condition=Q(amount__gt=0), name="payment_amount_positive"),
+            # ₹0 only when the whole amount was left as a balance (the receipt then shows what is owed).
+            models.CheckConstraint(condition=Q(amount__gte=0), name="payment_amount_not_negative"),
         ]
         indexes = [
             models.Index(fields=["organization", "event", "status", "paid_at"], name="payment_org_event_idx"),

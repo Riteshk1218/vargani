@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { CheckCircle2, Plus, ReceiptText, Search, Trash2, UserPlus, UserRound, UserX } from 'lucide-react'
+import { CheckCircle2, HandCoins, Plus, ReceiptText, Search, Trash2, UserPlus, UserRound, UserX } from 'lucide-react'
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useSearchParams } from 'react-router-dom'
@@ -12,10 +12,10 @@ import { useEvents } from '../../context/EventContext'
 import { useOrg } from '../../context/OrgContext'
 import { useDebounced } from '../../hooks/useDebounced'
 import { toApiError } from '../../services/apiClient'
-import { contributionTypeService, paymentService } from '../../services/finance'
+import { contributionTypeService, dueService, paymentService } from '../../services/finance'
 import { peopleService } from '../../services/people'
-import type { ContributionType, NewPersonInput, Payment, PaymentInput, PaymentMode, Person } from '../../types/api'
-import { formatMobile, formatMoney, formatStamp, sumMoney } from '../../utils/format'
+import type { ContributionType, Due, NewPersonInput, Payment, PaymentInput, PaymentMode, Person } from '../../types/api'
+import { formatMobile, formatMoney, formatMonth, formatStamp, sumMoney } from '../../utils/format'
 import { MANUAL_MODES } from '../../utils/payments'
 
 const MONEY = /^\d+(\.\d{1,2})?$/
@@ -25,12 +25,28 @@ interface Line {
   typeId: string
   month: string // YYYY-MM
   amount: string
+  /** Set when this line pays an earlier balance; its type and month come from the balance. */
+  due?: Due
 }
 
 function today() {
   const now = new Date()
   const pad = (n: number) => String(n).padStart(2, '0')
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
+}
+
+/** Like the server: the money received is spread over the lines in order. What new lines still lack becomes
+ * a balance; what a line paying an old balance lacks just leaves that balance open. */
+function keptBalance(lines: Line[], received: string): string {
+  let left = Math.round(Number(received) * 100)
+  let kept = 0
+  for (const line of lines) {
+    const amount = MONEY.test(line.amount) ? Math.round(Number(line.amount) * 100) : 0
+    const now = Math.min(amount, left)
+    left -= now
+    if (!line.due) kept += amount - now
+  }
+  return (kept / 100).toFixed(2)
 }
 
 function newKey() {
@@ -86,6 +102,22 @@ export function CollectPage() {
   const [submitting, setSubmitting] = useState(false)
   const [done, setDone] = useState<Payment | null>(null)
   const [idempotencyKey, setIdempotencyKey] = useState(newKey)
+  // Money that came now; empty means all of it. The rest is kept as a balance (baaki) for the person.
+  const [received, setReceived] = useState('')
+  const [balanceKept, setBalanceKept] = useState('0.00')
+  const openDues = useQuery({
+    queryKey: ['org', activeOrgId, 'dues', eventId, person?.id],
+    queryFn: () => dueService.list({ person: person!.id, event: eventId, open: true, page_size: 50 }),
+    enabled: Boolean(person && eventId && payerKind === 'existing'),
+  })
+  const collectDue = (due: Due) =>
+    setLines((ls) => {
+      if (ls.some((l) => l.due?.id === due.id)) return ls
+      const line: Line = { key: Math.max(0, ...ls.map((l) => l.key)) + 1, typeId: due.contribution_type, month: (due.period_month ?? '').slice(0, 7), amount: due.remaining, due }
+      // Replace the empty starting line instead of leaving it to fill in.
+      const kept = ls.filter((l) => l.due || l.amount)
+      return [...kept, line]
+    })
 
   // New lines start on the monthly type, the most common collection.
   const defaultType = activeTypes.find((ct) => ct.kind === 'recurring_monthly') ?? activeTypes[0]
@@ -96,6 +128,11 @@ export function CollectPage() {
 
   const typeById = (id: string): ContributionType | undefined => activeTypes.find((ct) => ct.id === id)
   const total = sumMoney(lines.map((l) => (MONEY.test(l.amount) ? l.amount : '0')))
+  const named = (payerKind === 'existing' && Boolean(person)) || payerKind === 'new'
+  const canKeepBalance = named && !(mode === 'cheque' && pending) && !replaces
+  const receivedNow = canKeepBalance && received !== '' && MONEY.test(received) ? received : total
+  const hasBalance = Number(receivedNow) < Number(total)
+  const balance = keptBalance(lines, receivedNow)
   const updateLine = (key: number, patch: Partial<Line>) => setLines((ls) => ls.map((l) => (l.key === key ? { ...l, ...patch } : l)))
 
   const reset = () => {
@@ -113,6 +150,8 @@ export function CollectPage() {
     setErrors({})
     setDone(null)
     setIdempotencyKey(newKey())
+    setReceived('')
+    setBalanceKept('0.00')
     if (params.get('person') || params.get('replaces')) setParams({})
   }
 
@@ -125,6 +164,7 @@ export function CollectPage() {
       if (typeById(line.typeId)?.kind === 'recurring_monthly' && !line.month) found[`lines.${index}.period_month`] = t('validation.required')
     })
     if ((mode === 'cheque' || mode === 'bank_transfer') && !reference.trim()) found.reference_number = t('validation.required')
+    if (canKeepBalance && received !== '' && (!MONEY.test(received) || Number(received) > Number(total))) found.received = t('collect.receivedTooMuch')
     setErrors(found)
     if (Object.keys(found).length) return
 
@@ -140,18 +180,24 @@ export function CollectPage() {
       cheque_bank: mode === 'cheque' ? chequeBank : '',
       cheque_date: mode === 'cheque' && chequeDate ? chequeDate : null,
       notes,
-      lines: lines.map((line) => ({
-        contribution_type: line.typeId,
-        amount: line.amount,
-        period_month: typeById(line.typeId)?.kind === 'recurring_monthly' ? `${line.month}-01` : null,
-      })),
+      lines: lines.map((line) =>
+        line.due
+          ? { due: line.due.id, amount: line.amount }
+          : {
+              contribution_type: line.typeId,
+              amount: line.amount,
+              period_month: typeById(line.typeId)?.kind === 'recurring_monthly' ? `${line.month}-01` : null,
+            },
+      ),
     }
+    if (hasBalance) payload.received = receivedNow
     if (replaces) payload.replaces_receipt = replaces
     if (paidOn && paidOn !== today()) payload.paid_at = new Date(`${paidOn}T12:00:00`).toISOString()
 
     setSubmitting(true)
     try {
       const payment = await paymentService.record(payload, idempotencyKey)
+      setBalanceKept(hasBalance ? balance : '0.00')
       setDone(payment)
       await queryClient.invalidateQueries({ queryKey: ['org', activeOrgId] })
     } catch (error) {
@@ -191,6 +237,9 @@ export function CollectPage() {
           <p className="mt-1 text-slate-600">
             {done.payer_name} · {formatMoney(done.amount, currency)} · {t(`mode.${done.mode}`)}
           </p>
+          {Number(balanceKept) > 0 && (
+            <p className="mt-2 rounded-lg bg-amber-50 p-2 text-sm font-medium text-amber-900">{t('collect.balanceKept', { amount: formatMoney(balanceKept, currency) })}</p>
+          )}
           <p className="mt-1 text-sm text-slate-500" data-testid="collect-stamp">
             {done.event_name} · {t('finance.fy', { label: done.financial_year_label })} · {formatStamp(done.paid_at)}
           </p>
@@ -248,25 +297,62 @@ export function CollectPage() {
             />
           </Card>
 
+          {payerKind === 'existing' && person && (openDues.data?.results.length ?? 0) > 0 && (
+            <Card className="p-4">
+              <p className="mb-2 flex items-center gap-2 font-semibold text-amber-900">
+                <HandCoins className="size-4" aria-hidden /> {t('collect.openBalances', { amount: formatMoney(sumMoney(openDues.data!.results.map((d) => d.remaining)), currency) })}
+              </p>
+              <ul className="divide-y divide-slate-100 rounded-lg ring-1 ring-amber-200">
+                {openDues.data!.results.map((due) => (
+                  <li key={due.id} className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
+                    <span>
+                      <span className="font-medium">{due.contribution_type_name}</span>
+                      {due.period_month && <span className="text-slate-500"> · {formatMonth(due.period_month)}</span>}
+                      <span className="block text-slate-500">
+                        {[due.receipt_number, t('collect.balanceStill', { amount: formatMoney(due.remaining, currency) })].filter(Boolean).join(' · ')}
+                      </span>
+                    </span>
+                    <Button size="sm" variant="secondary" disabled={lines.some((l) => l.due?.id === due.id)} onClick={() => collectDue(due)}>
+                      {t('collect.collectBalance')}
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          )}
+
           <Card className="space-y-4 p-4">
             {lines.map((line, index) => {
               const ct = typeById(line.typeId)
               const range = [ct?.suggested_min, ct?.suggested_max].filter(Boolean).map((v) => formatMoney(v, currency)).join(' – ')
               return (
                 <div key={line.key} className="grid gap-3 border-b border-slate-100 pb-4 last:border-0 last:pb-0 sm:grid-cols-[1fr_9rem_8rem_auto] sm:items-start">
-                  <SelectInput
-                    label={t('collect.type')}
-                    value={line.typeId}
-                    error={errors[`lines.${index}.contribution_type`]}
-                    onChange={(e) => updateLine(line.key, { typeId: e.target.value })}
-                  >
-                    {activeTypes.map((option) => (
-                      <option key={option.id} value={option.id}>
-                        {option.name}
-                      </option>
-                    ))}
-                  </SelectInput>
-                  {ct?.kind === 'recurring_monthly' ? (
+                  {line.due ? (
+                    <div>
+                      <p className="mb-1.5 text-sm font-medium text-slate-700">{t('collect.type')}</p>
+                      <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900 ring-1 ring-amber-200">
+                        {t('collect.towardsBalance', { type: line.due.contribution_type_name })}
+                        {line.due.period_month ? ` · ${formatMonth(line.due.period_month)}` : ''}
+                      </p>
+                      {errors[`lines.${index}.due`] && <p className="mt-1 text-sm text-red-600">{errors[`lines.${index}.due`]}</p>}
+                    </div>
+                  ) : (
+                    <SelectInput
+                      label={t('collect.type')}
+                      value={line.typeId}
+                      error={errors[`lines.${index}.contribution_type`]}
+                      onChange={(e) => updateLine(line.key, { typeId: e.target.value })}
+                    >
+                      {activeTypes.map((option) => (
+                        <option key={option.id} value={option.id}>
+                          {option.name}
+                        </option>
+                      ))}
+                    </SelectInput>
+                  )}
+                  {line.due ? (
+                    <div className="hidden sm:block" />
+                  ) : ct?.kind === 'recurring_monthly' ? (
                     <TextInput
                       label={t('collect.month')}
                       type="month"
@@ -316,6 +402,24 @@ export function CollectPage() {
                 </span>
               </p>
             </div>
+            {canKeepBalance && (
+              <div className="grid gap-3 border-t border-slate-100 pt-4 sm:grid-cols-2 sm:items-start">
+                <TextInput
+                  label={t('collect.receivedNow')}
+                  inputMode="decimal"
+                  placeholder={total}
+                  value={received}
+                  hint={t('collect.receivedHint')}
+                  error={errors.received}
+                  onChange={(e) => setReceived(e.target.value.replace(/[^\d.]/g, ''))}
+                />
+                {Number(balance) > 0 && (
+                  <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900 ring-1 ring-amber-200 sm:mt-6" data-testid="collect-balance">
+                    {t('collect.balanceWillBe', { amount: formatMoney(balance, currency) })}
+                  </p>
+                )}
+              </div>
+            )}
           </Card>
 
           <Card className="grid gap-4 p-4 sm:grid-cols-2">
@@ -356,7 +460,11 @@ export function CollectPage() {
           </Card>
 
           <Button type="submit" loading={submitting} className="w-full" icon={<ReceiptText className="size-4" />}>
-            {mode === 'cheque' && pending ? t('collect.submitPending') : t('collect.submit', { amount: formatMoney(total, currency) })}
+            {mode === 'cheque' && pending
+              ? t('collect.submitPending')
+              : hasBalance
+                ? t('collect.submitWithBalance', { amount: formatMoney(receivedNow, currency), balance: formatMoney(balance, currency) })
+                : t('collect.submit', { amount: formatMoney(total, currency) })}
           </Button>
         </form>
       )}

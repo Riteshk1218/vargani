@@ -339,8 +339,31 @@ export interface PaymentInput {
   cheque_bank?: string
   cheque_date?: string | null
   notes?: string
-  lines: { contribution_type: string; amount: string; period_month?: string | null; notes?: string }[]
+  lines: { contribution_type?: string; amount: string; period_month?: string | null; notes?: string; due?: string }[]
+  /** Money that came now, when less than the total: the rest is kept as a balance for the person. */
+  received?: string
   replaces_receipt?: string
+}
+
+/** A balance (baaki): money a person still owes on a receipt given before all of it came. */
+export interface Due {
+  id: string
+  event: string
+  person: string
+  person_name: string
+  person_mobile: string
+  contribution_type: string
+  contribution_type_name: string
+  period_month: string | null
+  amount: string
+  paid: string
+  remaining: string
+  status: 'open' | 'cancelled'
+  status_reason: string
+  payment: string
+  receipt_number: string | null
+  collector_name: string | null
+  created_at: string
 }
 
 /** Organization Admin edit: send only what changes; `lines` replaces every line. */
@@ -381,8 +404,11 @@ export interface ReceiptSnapshot {
   person: { name: string; mobile: string; address: string; anonymous?: boolean }
   event: { name: string; code: string }
   financial_year: string
-  lines: { contribution_type: string; fund: string | null; period_month: string | null; amount: string }[]
+  lines: { contribution_type: string; fund: string | null; period_month: string | null; amount: string; towards_balance?: boolean }[]
   total: string
+  /** What the person still owes after this receipt (receipts issued before balances existed have none). */
+  balance_lines?: { contribution_type: string; period_month: string | null; amount: string }[]
+  balance_total?: string
   currency: string
   mode: PaymentMode
   reference_number: string

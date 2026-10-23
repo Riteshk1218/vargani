@@ -55,11 +55,23 @@ footer { display: flex; justify-content: space-between; align-items: flex-end; m
   <thead><tr><th>{% trans "Details" %}</th><th class="amount">{% trans "Amount" %}</th></tr></thead>
   <tbody>
   {% for line in lines %}
-    <tr><td>{{ line.contribution_type }}{% if line.month %} · {{ line.month|date:"F Y" }}{% endif %}{% if line.fund %}<div class="muted small">{{ line.fund }}</div>{% endif %}</td><td class="amount">₹{{ line.amount }}</td></tr>
+    <tr><td>{{ line.contribution_type }}{% if line.month %} · {{ line.month|date:"F Y" }}{% endif %}{% if line.towards_balance %} <span class="muted small">({% trans "towards balance" %})</span>{% endif %}{% if line.fund %}<div class="muted small">{{ line.fund }}</div>{% endif %}</td><td class="amount">₹{{ line.amount }}</td></tr>
+  {% endfor %}
+  {% if not lines %}<tr><td class="muted">{% trans "Nothing received yet" %}</td><td class="amount">₹0.00</td></tr>{% endif %}
+  </tbody>
+  <tfoot><tr><td>{% if balance %}{% trans "Received" %}{% else %}{% trans "Total" %}{% endif %}</td><td class="amount">₹{{ s.total }}</td></tr></tfoot>
+</table>
+{% if balance %}
+<table>
+  <thead><tr><th>{% trans "Balance due" %}</th><th class="amount">{% trans "Amount" %}</th></tr></thead>
+  <tbody>
+  {% for line in balance %}
+    <tr><td>{{ line.contribution_type }}{% if line.month %} · {{ line.month|date:"F Y" }}{% endif %}</td><td class="amount">₹{{ line.amount }}</td></tr>
   {% endfor %}
   </tbody>
-  <tfoot><tr><td>{% trans "Total" %}</td><td class="amount">₹{{ s.total }}</td></tr></tfoot>
+  <tfoot><tr><td>{% trans "Balance due" %}</td><td class="amount">₹{{ balance_total }}</td></tr></tfoot>
 </table>
+{% endif %}
 {% if words %}<div class="small muted" style="margin-top:3pt">{{ words }}</div>{% endif %}
 <dl>
   <dt>{% trans "Payment mode" %}</dt><dd>{{ mode }}{% if s.reference_number %} · {{ s.reference_number }}{% endif %}{% if s.cheque_bank %} · {{ s.cheque_bank }}{% endif %}</dd>
