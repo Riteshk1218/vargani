@@ -10,6 +10,24 @@ from pathlib import Path
 import polib
 
 T = {
+    "This email and this mobile number belong to two different accounts.": (
+        "हा ईमेल आणि हा मोबाईल नंबर दोन वेगवेगळ्या खात्यांचे आहेत.",
+        "यह ईमेल और यह मोबाइल नंबर दो अलग खातों के हैं।",
+    ),
+    "Change your own password from My profile.": (
+        "तुमचा स्वतःचा पासवर्ड माझी प्रोफाइलमधून बदला.",
+        "अपना पासवर्ड मेरी प्रोफ़ाइल से बदलें।",
+    ),
+    "This person also uses Vargani with another organization. They can reset it with Forgot password.": (
+        "ही व्यक्ती दुसऱ्या संस्थेतही Vargani वापरते. ते 'पासवर्ड विसरलात' वापरून तो बदलू शकतात.",
+        "यह व्यक्ति किसी दूसरी संस्था में भी Vargani इस्तेमाल करता है। वे 'पासवर्ड भूल गए' से इसे बदल सकते हैं।",
+    ),
+    "Enter the name.": ("नाव टाका.", "नाम दर्ज करें।"),
+    "A closed organization cannot be changed.": ("बंद संस्था बदलता येत नाही.", "बंद संस्था को बदला नहीं जा सकता।"),
+    "Change your own password and details from My profile.": (
+        "तुमचा स्वतःचा पासवर्ड आणि माहिती माझी प्रोफाइलमधून बदला.",
+        "अपना पासवर्ड और जानकारी मेरी प्रोफ़ाइल से बदलें।",
+    ),
     "Add the key id and key secret before switching on.": (
         "चालू करण्यापूर्वी key id आणि key secret टाका.",
         "चालू करने से पहले key id और key secret दर्ज करें।",

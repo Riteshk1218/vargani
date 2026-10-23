@@ -180,7 +180,10 @@ export interface Member {
   role: RoleSummary
   status: 'active' | 'suspended' | 'removed'
   can_download: boolean | null
+  can_reset_password: boolean
   joined_at: string
+  /** Only on the reply to adding a user: false when the person already had a login (and kept their password). */
+  new_login?: boolean
 }
 
 export interface Invitation {
@@ -715,4 +718,48 @@ export interface FinancialSummary {
   organization: { id: string; name: string }
   events: EventFinance[]
   total: Omit<EventFinance, 'event' | 'financial_year'>
+}
+
+export interface PlatformSummary {
+  organizations: { total: number; active: number; suspended: number }
+  users: number
+  people: number
+  receipts: number
+}
+
+export interface PlatformOrganization {
+  id: string
+  name: string
+  city: string
+  state: string
+  phone: string
+  email: string
+  status: 'active' | 'suspended' | 'closed'
+  logo_url: string | null
+  created_at: string
+  users_count: number
+  people_count: number
+  events_count: number
+  receipts_count: number
+  admins: { id: string; full_name: string; email: string | null; mobile: string | null }[]
+  new_login?: boolean
+}
+
+export interface PlatformUser {
+  id: string
+  full_name: string
+  email: string | null
+  mobile: string | null
+  is_active: boolean
+  is_platform_admin: boolean
+  last_login: string | null
+  date_joined: string
+  organizations: { id: string; name: string; role: { code: string; name: string }; status: Member['status'] }[]
+}
+
+export interface LoginDetailsInput {
+  full_name: string
+  email?: string
+  mobile?: string
+  password: string
 }

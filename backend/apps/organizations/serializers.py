@@ -143,8 +143,13 @@ class MemberSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = OrganizationMembership
-        fields = ["id", "user", "role", "role_id", "status", "can_download", "joined_at"]
-        read_only_fields = ["id", "user", "role", "joined_at"]
+        fields = ["id", "user", "role", "role_id", "status", "can_download", "can_reset_password", "joined_at"]
+        read_only_fields = ["id", "user", "role", "can_reset_password", "joined_at"]
+
+    can_reset_password = serializers.SerializerMethodField()
+
+    def get_can_reset_password(self, obj) -> bool:
+        return services.can_admin_reset_password(obj)
 
     def get_fields(self):
         fields = super().get_fields()
@@ -186,6 +191,61 @@ class InvitationSerializer(serializers.ModelSerializer):
         if not attrs["email"] and not attrs["mobile"]:
             raise serializers.ValidationError(_("Enter an email address or a mobile number."))
         return attrs
+
+
+def _check_password(password, *, full_name="", email=None, mobile=None):
+    from django.contrib.auth import password_validation
+    from django.core.exceptions import ValidationError as DjangoValidationError
+
+    from apps.accounts.models import User
+
+    try:
+        password_validation.validate_password(password, User(full_name=full_name, email=email, mobile=mobile))
+    except DjangoValidationError as exc:
+        raise serializers.ValidationError({"password": exc.messages}) from exc
+
+
+class LoginDetailsSerializer(serializers.Serializer):
+    """Name, email or mobile and a password that an admin types in for someone else."""
+
+    full_name = serializers.CharField(max_length=150)
+    email = serializers.EmailField(required=False, allow_blank=True, allow_null=True)
+    mobile = MobileField(required=False, allow_blank=True, allow_null=True)
+    password = serializers.CharField(write_only=True, style={"input_type": "password"})
+
+    def validate_full_name(self, value):
+        value = value.strip()
+        if not value:
+            raise serializers.ValidationError(_("Enter the name."))
+        return value
+
+    def validate(self, attrs):
+        attrs["email"] = (attrs.get("email") or "").lower() or None
+        attrs["mobile"] = attrs.get("mobile") or None
+        if not attrs["email"] and not attrs["mobile"]:
+            raise serializers.ValidationError(_("Enter an email address or a mobile number."))
+        _check_password(attrs["password"], full_name=attrs["full_name"], email=attrs["email"], mobile=attrs["mobile"])
+        return attrs
+
+
+class MemberCreateSerializer(LoginDetailsSerializer):
+    role_id = serializers.PrimaryKeyRelatedField(source="role", queryset=Role.objects.none())
+
+    def get_fields(self):
+        fields = super().get_fields()
+        org = self.context.get("organization")
+        if org is not None:
+            fields["role_id"].queryset = services.assignable_roles(org)
+        return fields
+
+
+class SetPasswordSerializer(serializers.Serializer):
+    password = serializers.CharField(write_only=True, style={"input_type": "password"})
+
+    def validate_password(self, value):
+        user = self.context.get("user")
+        _check_password(value, full_name=getattr(user, "full_name", ""), email=getattr(user, "email", None))
+        return value
 
 
 class InvitationAcceptSerializer(serializers.Serializer):

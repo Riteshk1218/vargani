@@ -440,3 +440,110 @@ def update_membership(
             after=after,
         )
     return membership
+
+
+# --- Users added directly by an admin -------------------------------------------
+def _find_existing_user(email, mobile):
+    from apps.accounts.models import User
+
+    matches = {}
+    if email:
+        matches.update({u.pk: u for u in User.objects.filter(email__iexact=email)})
+    if mobile:
+        matches.update({u.pk: u for u in User.objects.filter(mobile=mobile)})
+    if len(matches) > 1:
+        raise ValidationError(
+            {"non_field_errors": [_("This email and this mobile number belong to two different accounts.")]},
+            code="identity_conflict",
+        )
+    return next(iter(matches.values()), None)
+
+
+def create_login(*, full_name, email, mobile, password):
+    """A new login whose details the admin typed in. Returns (user, created): an existing account is reused
+    and keeps its own password."""
+    from apps.accounts.models import User
+
+    existing = _find_existing_user(email, mobile)
+    if existing is not None:
+        return existing, False
+    user = User.objects.create_user(full_name=full_name, email=email, mobile=mobile, password=password)
+    # The admin vouches for these details, so the person can log in straight away.
+    now = timezone.now()
+    user.email_verified_at = now if user.email else None
+    user.mobile_verified_at = now if user.mobile else None
+    user.save(update_fields=["email_verified_at", "mobile_verified_at"])
+    return user, True
+
+
+@transaction.atomic
+def add_member_directly(*, org, role, full_name, email, mobile, password, request):
+    """Give someone access without an invitation link: the admin sets their login details."""
+    user, created = create_login(full_name=full_name, email=email, mobile=mobile, password=password)
+    membership = OrganizationMembership.objects.filter(organization=org, user=user).first()
+    if membership is not None and membership.status == OrganizationMembership.Status.ACTIVE:
+        raise ValidationError(
+            {"non_field_errors": [_("This person already has access to the organization.")]}, code="already_member"
+        )
+    if membership is None:
+        membership = OrganizationMembership.objects.create(
+            organization=org, user=user, role=role, invited_by=request.user
+        )
+    else:
+        membership.role = role
+        membership.status = OrganizationMembership.Status.ACTIVE
+        membership.save(update_fields=["role", "status", "updated_at"])
+    # Any open invitation for the same person is no longer needed.
+    pending = Invitation.objects.filter(organization=org, status=Invitation.Status.PENDING)
+    if user.email:
+        pending.filter(email=user.email).update(status=Invitation.Status.REVOKED)
+    if user.mobile:
+        pending.filter(mobile=user.mobile).update(status=Invitation.Status.REVOKED)
+    audit.record(
+        request=request,
+        organization=org,
+        action=audit.ROLE_CHANGE,
+        entity_type="organizations.organizationmembership",
+        entity_id=membership.pk,
+        after={"user": str(user.pk), "role": role.code, "reason": "added_by_admin", "new_login": created},
+    )
+    return membership, created
+
+
+def can_admin_reset_password(membership: OrganizationMembership) -> bool:
+    """An organization admin may set the password only of a login that belongs to their organization alone,
+    so they can never take over an account someone also uses elsewhere."""
+    from apps.core.rls import unscoped
+
+    user = membership.user
+    if user.is_platform_admin or user.is_staff:
+        return False
+    # Row-level security hides other organizations' memberships during a request, so look past it here.
+    with unscoped():
+        return not (
+            OrganizationMembership.objects.filter(user=user).exclude(organization=membership.organization).exists()
+        )
+
+
+@transaction.atomic
+def set_member_password(membership: OrganizationMembership, password: str, request):
+    from apps.accounts.services import revoke_all_tokens
+
+    if membership.user_id == request.user.pk:
+        raise BusinessRuleViolation(_("Change your own password from My profile."))
+    if not can_admin_reset_password(membership):
+        raise BusinessRuleViolation(
+            _("This person also uses Vargani with another organization. They can reset it with Forgot password.")
+        )
+    user = membership.user
+    user.set_password(password)
+    user.save(update_fields=["password"])
+    revoke_all_tokens(user)
+    audit.record(
+        request=request,
+        organization=membership.organization,
+        action=audit.PASSWORD_CHANGE,
+        entity_type="accounts.user",
+        entity_id=user.pk,
+        after={"reason": "set_by_admin", "membership": str(membership.pk)},
+    )

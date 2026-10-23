@@ -1,4 +1,4 @@
-import { LogOut, UserRound } from 'lucide-react'
+import { LogOut, ShieldCheck, UserRound } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
@@ -36,6 +36,19 @@ export function UserMenu() {
           >
             <UserRound className="size-4" /> {t('topbar.myProfile')}
           </button>
+          {user.is_platform_admin && (
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                close()
+                navigate('/platform')
+              }}
+              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-slate-50"
+            >
+              <ShieldCheck className="size-4" /> {t('platform.title')}
+            </button>
+          )}
           <button
             type="button"
             role="menuitem"

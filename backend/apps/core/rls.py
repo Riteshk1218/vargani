@@ -9,6 +9,8 @@ New tenant tables must be added to TENANT_TABLES and get a migration that calls 
 `test_every_tenant_table_has_row_level_security` fails until they do.
 """
 
+from contextlib import contextmanager
+
 from django.db import connection
 
 GUC = "app.org_id"
@@ -79,6 +81,26 @@ def activate(organization_id) -> None:
 
 def deactivate() -> None:
     _set("")
+
+
+def _current() -> str:
+    if connection.vendor != "postgresql":
+        return ""
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT coalesce(current_setting(%s, true), '')", [GUC])
+        return cursor.fetchone()[0]
+
+
+@contextmanager
+def unscoped():
+    """Look across organizations for one check that must see every row (e.g. whether a login is also used
+    by another organization), then restore the request's organization."""
+    previous = _current()
+    deactivate()
+    try:
+        yield
+    finally:
+        _set(previous)
 
 
 class TenantDatabaseMiddleware:

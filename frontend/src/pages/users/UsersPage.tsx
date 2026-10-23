@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Copy, MailPlus, MessageCircle } from 'lucide-react'
+import { Copy, KeyRound, MailPlus, MessageCircle, UserPlus } from 'lucide-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
@@ -12,10 +12,12 @@ import { useToast } from '../../components/ui/Toast'
 import { useAuth } from '../../context/AuthContext'
 import { useOrg } from '../../context/OrgContext'
 import { useApiErrors } from '../../hooks/useApiErrors'
+import { toApiError } from '../../services/apiClient'
 import { memberService } from '../../services/organizations'
 import type { Invitation, Member, Role } from '../../types/api'
 import { formatDate, formatMobile } from '../../utils/format'
 import { DownloadMenu } from '../../components/DownloadMenu'
+import { LoginShareCard, PasswordField } from '../../components/LoginDetails'
 
 export function UsersPage() {
   const { t } = useTranslation()
@@ -26,6 +28,8 @@ export function UsersPage() {
   const onError = useApiErrors()
   const canManage = can('members.manage')
   const [inviting, setInviting] = useState(false)
+  const [adding, setAdding] = useState(false)
+  const [passwordFor, setPasswordFor] = useState<Member | null>(null)
   const members = useQuery({ queryKey: ['org', activeOrgId, 'members'], queryFn: () => memberService.list({}) })
   const roles = useQuery({ queryKey: ['org', activeOrgId, 'roles'], queryFn: memberService.roles })
   const invitations = useQuery({
@@ -59,9 +63,14 @@ export function UsersPage() {
           <>
             <DownloadMenu path="/members/" params={{}} />
             {canManage && (
-              <Button icon={<MailPlus className="size-4" />} onClick={() => setInviting(true)}>
-                {t('users.invite')}
-              </Button>
+              <>
+                <Button variant="secondary" icon={<MailPlus className="size-4" />} onClick={() => setInviting(true)}>
+                  {t('users.invite')}
+                </Button>
+                <Button icon={<UserPlus className="size-4" />} onClick={() => setAdding(true)}>
+                  {t('users.add')}
+                </Button>
+              </>
             )}
           </>
         }
@@ -85,7 +94,7 @@ export function UsersPage() {
                   </div>
                   {member.status !== 'active' && <Badge tone="amber">{t(`status.${member.status}`)}</Badge>}
                   {canManage && !self ? (
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <select
                         aria-label={t('users.role')}
                         value={member.role.id}
@@ -113,6 +122,11 @@ export function UsersPage() {
                         <option value="yes">{t('download.allowed')}</option>
                         <option value="no">{t('download.notAllowed')}</option>
                       </select>
+                      {member.can_reset_password && (
+                        <Button variant="ghost" size="sm" icon={<KeyRound className="size-4" />} onClick={() => setPasswordFor(member)}>
+                          {t('users.setPassword')}
+                        </Button>
+                      )}
                       <Button
                         variant="secondary"
                         size="sm"
@@ -158,6 +172,8 @@ export function UsersPage() {
         </Card>
       )}
       <InviteModal open={inviting} roles={roles.data ?? []} onClose={() => setInviting(false)} />
+      <AddUserModal open={adding} roles={roles.data ?? []} onClose={() => setAdding(false)} />
+      <SetPasswordModal member={passwordFor} onClose={() => setPasswordFor(null)} />
     </div>
   )
 }
@@ -251,6 +267,169 @@ function InviteModal({ open, roles, onClose }: { open: boolean; roles: Role[]; o
             </Button>
             <Button type="submit" loading={formState.isSubmitting}>
               {t('users.sendInvite')}
+            </Button>
+          </div>
+        </form>
+      )}
+    </Modal>
+  )
+}
+
+interface AddValues {
+  full_name: string
+  email: string
+  mobile: string
+  password: string
+  role_id: string
+}
+
+/** The admin types in the person's details and password; no invitation link is needed. */
+function AddUserModal({ open, roles, onClose }: { open: boolean; roles: Role[]; onClose: () => void }) {
+  const { t } = useTranslation()
+  const { activeOrgId, detail } = useOrg()
+  const queryClient = useQueryClient()
+  const [added, setAdded] = useState<{ member: Member; password: string } | null>(null)
+  const { register, handleSubmit, reset, setError, setValue, watch, formState } = useForm<AddValues>({
+    defaultValues: { full_name: '', email: '', mobile: '', password: '', role_id: '' },
+  })
+  const onError = useApiErrors(setError, ['full_name', 'email', 'mobile', 'password', 'role_id'])
+  register('password', { required: true })
+
+  const close = () => {
+    setAdded(null)
+    reset()
+    onClose()
+  }
+  const onSubmit = async (values: AddValues) => {
+    try {
+      const member = await memberService.add({
+        full_name: values.full_name,
+        email: values.email || undefined,
+        mobile: values.mobile || undefined,
+        password: values.password,
+        role_id: values.role_id,
+      })
+      setAdded({ member, password: values.password })
+      await queryClient.invalidateQueries({ queryKey: ['org', activeOrgId, 'members'] })
+      await queryClient.invalidateQueries({ queryKey: ['org', activeOrgId, 'invitations'] })
+    } catch (error) {
+      onError(error)
+    }
+  }
+
+  return (
+    <Modal open={open} title={t('users.add')} onClose={close}>
+      {added ? (
+        <div className="space-y-4">
+          {added.member.new_login === false ? (
+            <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-800">{t('users.addedExisting', { name: added.member.user.full_name })}</p>
+          ) : (
+            <>
+              <p className="text-sm text-slate-600">{t('users.added', { name: added.member.user.full_name })}</p>
+              <LoginShareCard
+                name={added.member.user.full_name}
+                organization={detail?.organization.name}
+                identifier={added.member.user.mobile ? formatMobile(added.member.user.mobile) : (added.member.user.email ?? '')}
+                mobile={added.member.user.mobile}
+                password={added.password}
+              />
+            </>
+          )}
+          <div className="flex justify-end">
+            <Button onClick={close}>{t('common.close')}</Button>
+          </div>
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+          <TextInput label={t('users.name')} required error={formState.errors.full_name && (formState.errors.full_name.message || t('validation.required'))} {...register('full_name', { required: true })} />
+          <TextInput label={t('auth.mobile')} type="tel" inputMode="tel" error={formState.errors.mobile?.message} {...register('mobile')} />
+          <TextInput label={t('auth.email')} type="email" error={formState.errors.email?.message} {...register('email')} />
+          <p className="text-xs text-slate-500">{t('users.addHint')}</p>
+          <PasswordField
+            value={watch('password')}
+            onChange={(value) => setValue('password', value, { shouldValidate: formState.isSubmitted })}
+            error={formState.errors.password && (formState.errors.password.message || t('validation.required'))}
+          />
+          <SelectInput label={t('users.role')} required error={formState.errors.role_id && (formState.errors.role_id.message || t('validation.required'))} {...register('role_id', { required: true })}>
+            <option value="">{t('users.chooseRole')}</option>
+            {roles.map((role) => (
+              <option key={role.id} value={role.id}>
+                {t(`roles.${role.code}`, role.name)}
+              </option>
+            ))}
+          </SelectInput>
+          {formState.errors.root && <p className="text-sm text-red-600">{formState.errors.root.message}</p>}
+          <div className="flex justify-end gap-2">
+            <Button variant="secondary" onClick={close}>
+              {t('common.cancel')}
+            </Button>
+            <Button type="submit" loading={formState.isSubmitting}>
+              {t('users.addButton')}
+            </Button>
+          </div>
+        </form>
+      )}
+    </Modal>
+  )
+}
+
+function SetPasswordModal({ member, onClose }: { member: Member | null; onClose: () => void }) {
+  const { t } = useTranslation()
+  const { detail } = useOrg()
+  const [password, setPassword] = useState('')
+  const [saved, setSaved] = useState(false)
+  const [error, setFieldError] = useState<string | undefined>()
+  const onError = useApiErrors()
+  const save = useMutation({
+    mutationFn: () => memberService.setPassword(member!.id, password),
+    onSuccess: () => setSaved(true),
+    onError: (err) => {
+      const message = toApiError(err).fieldError('password')
+      if (message) setFieldError(message)
+      else onError(err)
+    },
+  })
+  const close = () => {
+    setPassword('')
+    setSaved(false)
+    setFieldError(undefined)
+    onClose()
+  }
+  if (!member) return null
+  return (
+    <Modal open title={t('users.setPasswordFor', { name: member.user.full_name })} onClose={close}>
+      {saved ? (
+        <div className="space-y-4">
+          <p className="text-sm text-slate-600">{t('users.passwordSet')}</p>
+          <LoginShareCard
+            name={member.user.full_name}
+            organization={detail?.organization.name}
+            identifier={member.user.mobile ? formatMobile(member.user.mobile) : (member.user.email ?? '')}
+            mobile={member.user.mobile}
+            password={password}
+          />
+          <div className="flex justify-end">
+            <Button onClick={close}>{t('common.close')}</Button>
+          </div>
+        </div>
+      ) : (
+        <form
+          className="space-y-4"
+          noValidate
+          onSubmit={(e) => {
+            e.preventDefault()
+            if (!password) return setFieldError(t('validation.required'))
+            save.mutate()
+          }}
+        >
+          <PasswordField label={t('users.newPassword')} value={password} onChange={setPassword} error={error} />
+          <p className="text-xs text-slate-500">{t('users.setPasswordHint')}</p>
+          <div className="flex justify-end gap-2">
+            <Button variant="secondary" onClick={close}>
+              {t('common.cancel')}
+            </Button>
+            <Button type="submit" loading={save.isPending}>
+              {t('common.save')}
             </Button>
           </div>
         </form>

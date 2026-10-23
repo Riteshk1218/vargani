@@ -24,6 +24,7 @@ import { AcceptInvitePage } from '../pages/invite/AcceptInvitePage'
 import { NotFoundPage } from '../pages/NotFoundPage'
 import { CreateOrganizationPage } from '../pages/onboarding/CreateOrganizationPage'
 import { PaymentsPage } from '../pages/payments/PaymentsPage'
+import { PlatformPage } from '../pages/platform/PlatformPage'
 import { PeoplePage } from '../pages/people/PeoplePage'
 import { PublicReceiptPage } from '../pages/receipts/PublicReceiptPage'
 import { ReceiptPage } from '../pages/receipts/ReceiptPage'
@@ -52,6 +53,7 @@ export function AppRoutes() {
         <Route element={<AuthLayout />}>
           <Route path="/onboarding/create-organization" element={<CreateOrganizationPage />} />
         </Route>
+        <Route path="/platform" element={<PlatformPage />} />
         <Route element={<RequireOrganization />}>
           <Route path="/app" element={<AppLayout />}>
             <Route index element={<Navigate to="dashboard" replace />} />

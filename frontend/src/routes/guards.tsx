@@ -25,8 +25,11 @@ export function RedirectIfAuthenticated() {
 /** Users without any organization go to onboarding to create one. */
 export function RequireOrganization() {
   const { memberships, membershipsLoading, activeOrgId } = useOrg()
+  const { user } = useAuth()
   if (membershipsLoading) return <FullPageSpinner />
   if (memberships.length === 0) {
+    // The platform owner runs the platform; they need not belong to any organization.
+    if (user?.is_platform_admin) return <Navigate to="/platform" replace />
     // A member who logged in with a code but is not linked to any organization's records yet.
     if (session.read(MEMBER_LOGIN_KEY)) return <NotLinkedYet />
     return <Navigate to="/onboarding/create-organization" replace />

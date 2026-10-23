@@ -68,10 +68,19 @@ Every push to the `main` branch on GitHub redeploys automatically.
 - **Organization Admin** (runs one mandal): whoever registers on the website and creates the organization.
   Everything for that mandal is on the website: people, collections, receipts, expenses, reports, users and
   roles, settings.
-- **Platform Admin** (you, running the whole platform): log in at `https://<your address>/django-admin/`
-  with `DJANGO_SUPERUSER_EMAIL` and its password. There you can see the list of organizations and users,
-  suspend an organization or block a user. It deliberately shows no money records of any mandal. To see a
-  mandal's data, the platform admin must be added to that organization like anyone else.
+- **Platform Admin** (you, running the whole platform): log in on the website with `DJANGO_SUPERUSER_EMAIL`
+  and its password. You land on the **Platform owner** page (also in the profile menu), which lists every
+  organization with its admins and counts of users, people, events and receipts, and every login with the
+  organizations and roles it has. From there you can create a new organization together with its admin's
+  login and password (for a new mandal that buys the app), suspend or reactivate an organization, set a new
+  password for a user who is locked out, and block or unblock a login. It deliberately shows no money
+  records or member details of any mandal. To see a mandal's data, the platform admin must be added to that
+  organization like anyone else. The raw database screens stay at `https://<your address>/django-admin/`.
+
+An Organization Admin adds a user on **Users & Roles → Add user** by typing their name, mobile or email, a
+password and a role; the website then shows the login details to copy or send on WhatsApp. **Invite by link**
+is still there for people who should choose their own password. The admin can also **Set password** for a
+user whose login belongs only to that organization.
 
 ### Keeping it awake (optional)
 

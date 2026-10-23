@@ -282,7 +282,7 @@
   "users": {
     "title": "Users & Roles",
     "subtitle": "People who can log in, and what each one can do.",
-    "invite": "Invite user",
+    "invite": "Invite by link",
     "you": "you",
     "role": "Role",
     "suspend": "Suspend",
@@ -302,7 +302,17 @@
     "shareWhatsApp": "Share on WhatsApp",
     "inviteOnce": "For security this link is shown only once.",
     "inviteMessage": "You are invited to join {{organization}} on Vargani as {{role}}. Accept here: {{link}}",
-    "inviteEmailFailed": "The invitation email could not be sent. Copy the link below or share it on WhatsApp instead."
+    "inviteEmailFailed": "The invitation email could not be sent. Copy the link below or share it on WhatsApp instead.",
+    "add": "Add user",
+    "addButton": "Add user",
+    "addHint": "Enter a mobile number or an email (or both). They log in with it and the password below.",
+    "added": "{{name}} can log in now. Send them these login details:",
+    "addedExisting": "{{name}} already had a Vargani login, so they were given access and keep their own password.",
+    "setPassword": "Set password",
+    "setPasswordFor": "New password for {{name}}",
+    "newPassword": "New password",
+    "setPasswordHint": "They are logged out on every phone and computer and must use the new password.",
+    "passwordSet": "Password changed. Send them the new login details:"
   },
   "invite": {
     "title": "Join {{organization}}",
@@ -849,5 +859,43 @@
     "no": "no",
     "allowed": "Download: allowed",
     "notAllowed": "Download: not allowed"
+  },
+  "loginDetails": {
+    "generate": "Make a password",
+    "passwordHint": "At least 8 characters. Not only numbers.",
+    "site": "Website",
+    "login": "Login",
+    "copy": "Copy login details",
+    "once": "Keep this safe: the password is not shown again. You can set a new one any time.",
+    "message": "Namaste {{name}}, your Vargani login for {{organization}}:\nWebsite / app: {{site}}\nLogin: {{login}}\nPassword: {{password}}\nPlease change the password after you log in (My profile)."
+  },
+  "platform": {
+    "title": "Platform owner",
+    "subtitle": "Every organization using Vargani and every login, across the whole platform.",
+    "backToApp": "Open my organization",
+    "organizations": "Organizations",
+    "users": "Users",
+    "people": "People (members)",
+    "receipts": "Receipts",
+    "activeSuspended": "{{active}} active · {{suspended}} suspended",
+    "newOrganization": "New organization",
+    "noOrganizations": "No organizations yet",
+    "noUsers": "No users found",
+    "since": "since {{date}}",
+    "admin": "Admin",
+    "counts": "{{users}} users · {{people}} people · {{events}} events · {{receipts}} receipts",
+    "suspend": "Suspend",
+    "activate": "Activate",
+    "organizationName": "Organization name",
+    "firstAdmin": "Organization Admin login",
+    "create": "Create organization",
+    "created": "{{name}} is ready. Its admin can log in now.",
+    "owner": "Platform owner",
+    "blocked": "Blocked",
+    "block": "Block login",
+    "unblock": "Unblock",
+    "noOrganization": "Not in any organization yet",
+    "lastLogin": "Last login: {{date}}",
+    "privacyNote": "Each organization's money, members' details, receipts and expenses stay private to that organization. To work inside one, ask its admin to add you as a user."
   }
 }

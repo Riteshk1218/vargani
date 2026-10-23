@@ -22,6 +22,7 @@ from .serializers import (
     InvitationAcceptSerializer,
     InvitationSerializer,
     LogoUploadSerializer,
+    MemberCreateSerializer,
     MemberSerializer,
     MyOrganizationSerializer,
     OrganizationCreateSerializer,
@@ -29,6 +30,7 @@ from .serializers import (
     OrganizationSettingsSerializer,
     PermissionSerializer,
     RoleSerializer,
+    SetPasswordSerializer,
     roles_for,
 )
 
@@ -186,6 +188,9 @@ class MemberViewSet(
     mixins.UpdateModelMixin,
     viewsets.GenericViewSet,
 ):
+    """Users with access to the organization. An admin can add someone directly with a login and password,
+    or send an invitation link instead (see InvitationViewSet)."""
+
     queryset = OrganizationMembership.objects.all()
     download_title = gettext_noop("Users")
     download_columns = [
@@ -196,11 +201,17 @@ class MemberViewSet(
         Col("status", gettext_noop("Status"), "status"),
     ]
     serializer_class = MemberSerializer
-    http_method_names = ["get", "patch", "head", "options"]
+    http_method_names = ["get", "post", "patch", "head", "options"]
     filterset_fields = ["status"]
     search_fields = ["user__full_name", "user__email", "user__mobile"]
     ordering_fields = ["joined_at"]
-    required_permissions = {"list": "members.view", "retrieve": "members.view", "partial_update": "members.manage"}
+    required_permissions = {
+        "list": "members.view",
+        "retrieve": "members.view",
+        "create": "members.manage",
+        "partial_update": "members.manage",
+        "set_password": "members.manage",
+    }
 
     def get_base_queryset(self):
         return OrganizationMembership.objects.filter(organization=self.organization).select_related("user", "role")
@@ -217,6 +228,34 @@ class MemberViewSet(
             request=request,
         )
         return Response(self.get_serializer(membership).data)
+
+    @extend_schema(request=MemberCreateSerializer, responses=MemberSerializer)
+    def create(self, request):
+        serializer = MemberCreateSerializer(data=request.data, context=self.get_serializer_context())
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        membership, created = services.add_member_directly(
+            org=self.organization,
+            role=data["role"],
+            full_name=data["full_name"],
+            email=data["email"],
+            mobile=data["mobile"],
+            password=data["password"],
+            request=request,
+        )
+        body = self.get_serializer(membership).data
+        # False when the person already had a Vargani login: they keep their own password.
+        body["new_login"] = created
+        return Response(body, status=status.HTTP_201_CREATED)
+
+    @extend_schema(request=SetPasswordSerializer, responses=OpenApiTypes.OBJECT)
+    @action(detail=True, methods=["post"], url_path="set-password")
+    def set_password(self, request, pk=None):
+        membership = self.get_object()
+        serializer = SetPasswordSerializer(data=request.data, context={"user": membership.user})
+        serializer.is_valid(raise_exception=True)
+        services.set_member_password(membership, serializer.validated_data["password"], request)
+        return Response({"detail": "ok"})
 
 
 class InvitationViewSet(

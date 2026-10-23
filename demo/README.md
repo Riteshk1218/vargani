@@ -19,7 +19,7 @@ takes 5 to 15 minutes; after that it starts in under a minute. When it is ready,
 |---|---|---|
 | Website (committee) | http://localhost:8080 | `admin@demo.test`, password `DemoPass#2026` |
 | Mobile app (collector) | http://localhost:8081 | `collector@demo.test`, password `DemoPass#2026` |
-| Platform Admin (super admin) | http://localhost:8080/django-admin/ | `superadmin@demo.test`, password `DemoPass#2026` |
+| Platform owner (super admin) | http://localhost:8080/platform (raw screens: `/django-admin/`) | `superadmin@demo.test`, password `DemoPass#2026` |
 | Mobile app (member) | http://localhost:8081 → **Member** tab | mobile `9822001122`, tap *Send code* (the code fills in by itself) |
 
 The mobile app runs in the browser here. To see it at phone size in Chrome, press `F12` and then

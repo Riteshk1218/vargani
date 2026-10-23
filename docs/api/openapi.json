@@ -56,7 +56,7 @@
         "/api/v1/audit-logs/": {
             "get": {
                 "operationId": "audit_logs_list",
-                "description": "Base for every endpoint that reads or writes organization-owned data.\n\n- Organization comes from the validated membership (never from the request body).\n- get_queryset() always starts from Model.objects.for_org(active organization).\n- Creates/updates stamp organization and user, and write an audit entry.",
+                "description": "Add to a tenant list viewset and set `download_title` and `download_columns`.",
                 "parameters": [
                     {
                         "in": "query",
@@ -165,7 +165,7 @@
         "/api/v1/audit-logs/{id}/": {
             "get": {
                 "operationId": "audit_logs_retrieve",
-                "description": "Base for every endpoint that reads or writes organization-owned data.\n\n- Organization comes from the validated membership (never from the request body).\n- get_queryset() always starts from Model.objects.for_org(active organization).\n- Creates/updates stamp organization and user, and write an audit entry.",
+                "description": "Add to a tenant list viewset and set `download_title` and `download_columns`.",
                 "parameters": [
                     {
                         "in": "path",
@@ -191,6 +191,47 @@
                             "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/AuditLog"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/audit-logs/download/": {
+            "get": {
+                "operationId": "audit_logs_download_retrieve",
+                "description": "The list as a CSV or Excel file, with the same filters and search as the list.",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "file",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "csv",
+                                "xlsx"
+                            ]
+                        },
+                        "description": "csv (default) or xlsx"
+                    }
+                ],
+                "tags": [
+                    "audit-logs"
+                ],
+                "security": [
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/octet-stream": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
                                 }
                             }
                         },
@@ -672,7 +713,7 @@
         "/api/v1/collections/": {
             "post": {
                 "operationId": "collections_create",
-                "description": "Payments with their contribution lines and receipt.\n\nPOST records a payment (also exposed as POST /collections/). Send an `Idempotency-Key` header so a retry\nafter a network error returns the first payment instead of recording it twice. Only `notes` can be\nedited; amounts never change.",
+                "description": "Payments with their contribution lines and receipt.\n\nPOST records a payment (also exposed as POST /collections/). Send an `Idempotency-Key` header so a retry\nafter a network error returns the first payment instead of recording it twice. `payer` is optional: leave\nit empty for an anonymous collection, or send `new_person` to add the contributor while collecting.\n\nPATCH edits only `notes`. An Organization Admin can edit everything with POST /payments/{id}/edit/ and\ndelete with DELETE /payments/{id}/ (the receipt is voided; the record stays in the audit log).",
                 "tags": [
                     "collections"
                 ],
@@ -1596,6 +1637,47 @@
                 }
             }
         },
+        "/api/v1/contributions/download/": {
+            "get": {
+                "operationId": "contributions_download_retrieve",
+                "description": "The list as a CSV or Excel file, with the same filters and search as the list.",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "file",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "csv",
+                                "xlsx"
+                            ]
+                        },
+                        "description": "csv (default) or xlsx"
+                    }
+                ],
+                "tags": [
+                    "contributions"
+                ],
+                "security": [
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/octet-stream": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/v1/contributions/summary/": {
             "get": {
                 "operationId": "contributions_summary_retrieve",
@@ -2019,7 +2101,7 @@
         "/api/v1/events/": {
             "get": {
                 "operationId": "events_list",
-                "description": "Create/read/update without hard delete. Subclasses expose archive/void actions instead of DELETE.",
+                "description": "Add to a tenant list viewset and set `download_title` and `download_columns`.",
                 "parameters": [
                     {
                         "in": "query",
@@ -2118,7 +2200,7 @@
             },
             "post": {
                 "operationId": "events_create",
-                "description": "Create/read/update without hard delete. Subclasses expose archive/void actions instead of DELETE.",
+                "description": "Add to a tenant list viewset and set `download_title` and `download_columns`.",
                 "tags": [
                     "events"
                 ],
@@ -2164,7 +2246,7 @@
         "/api/v1/events/{id}/": {
             "get": {
                 "operationId": "events_retrieve",
-                "description": "Create/read/update without hard delete. Subclasses expose archive/void actions instead of DELETE.",
+                "description": "Add to a tenant list viewset and set `download_title` and `download_columns`.",
                 "parameters": [
                     {
                         "in": "path",
@@ -2200,7 +2282,7 @@
             },
             "patch": {
                 "operationId": "events_partial_update",
-                "description": "Create/read/update without hard delete. Subclasses expose archive/void actions instead of DELETE.",
+                "description": "Add to a tenant list viewset and set `download_title` and `download_columns`.",
                 "parameters": [
                     {
                         "in": "path",
@@ -2252,12 +2334,41 @@
                         "description": ""
                     }
                 }
+            },
+            "delete": {
+                "operationId": "events_destroy",
+                "description": "Organization Admin: delete an event. It disappears from every list and summary; its records stay.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "description": "A UUID string identifying this event.",
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "events"
+                ],
+                "security": [
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No response body"
+                    }
+                }
             }
         },
         "/api/v1/events/{id}/activate/": {
             "post": {
                 "operationId": "events_activate_create",
-                "description": "Create/read/update without hard delete. Subclasses expose archive/void actions instead of DELETE.",
+                "description": "Add to a tenant list viewset and set `download_title` and `download_columns`.",
                 "parameters": [
                     {
                         "in": "path",
@@ -2315,7 +2426,7 @@
         "/api/v1/events/{id}/archive/": {
             "post": {
                 "operationId": "events_archive_create",
-                "description": "Create/read/update without hard delete. Subclasses expose archive/void actions instead of DELETE.",
+                "description": "Add to a tenant list viewset and set `download_title` and `download_columns`.",
                 "parameters": [
                     {
                         "in": "path",
@@ -2373,7 +2484,7 @@
         "/api/v1/events/{id}/close/": {
             "post": {
                 "operationId": "events_close_create",
-                "description": "Create/read/update without hard delete. Subclasses expose archive/void actions instead of DELETE.",
+                "description": "Add to a tenant list viewset and set `download_title` and `download_columns`.",
                 "parameters": [
                     {
                         "in": "path",
@@ -2431,7 +2542,7 @@
         "/api/v1/events/{id}/reopen/": {
             "post": {
                 "operationId": "events_reopen_create",
-                "description": "Create/read/update without hard delete. Subclasses expose archive/void actions instead of DELETE.",
+                "description": "Add to a tenant list viewset and set `download_title` and `download_columns`.",
                 "parameters": [
                     {
                         "in": "path",
@@ -2478,6 +2589,47 @@
                             "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/Event"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/events/download/": {
+            "get": {
+                "operationId": "events_download_retrieve",
+                "description": "The list as a CSV or Excel file, with the same filters and search as the list.",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "file",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "csv",
+                                "xlsx"
+                            ]
+                        },
+                        "description": "csv (default) or xlsx"
+                    }
+                ],
+                "tags": [
+                    "events"
+                ],
+                "security": [
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/octet-stream": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
                                 }
                             }
                         },
@@ -2682,7 +2834,7 @@
         "/api/v1/expenses/": {
             "get": {
                 "operationId": "expenses_list",
-                "description": "Expenses with bills and an approval flow. Only approved expenses count in the balance.\n\nEditable while draft, submitted or rejected. Approved expenses can only be voided (with a reason).",
+                "description": "Expenses with bills and an approval flow. Only approved expenses count in the balance.\n\nEditable while draft, submitted or rejected. Approved expenses can only be voided (with a reason).\nCollectors see and change only the expenses they entered. An Organization Admin can edit any expense and\ndelete it with DELETE.",
                 "parameters": [
                     {
                         "in": "query",
@@ -2807,7 +2959,7 @@
             },
             "post": {
                 "operationId": "expenses_create",
-                "description": "Expenses with bills and an approval flow. Only approved expenses count in the balance.\n\nEditable while draft, submitted or rejected. Approved expenses can only be voided (with a reason).",
+                "description": "Expenses with bills and an approval flow. Only approved expenses count in the balance.\n\nEditable while draft, submitted or rejected. Approved expenses can only be voided (with a reason).\nCollectors see and change only the expenses they entered. An Organization Admin can edit any expense and\ndelete it with DELETE.",
                 "tags": [
                     "expenses"
                 ],
@@ -2853,7 +3005,7 @@
         "/api/v1/expenses/{id}/": {
             "get": {
                 "operationId": "expenses_retrieve",
-                "description": "Expenses with bills and an approval flow. Only approved expenses count in the balance.\n\nEditable while draft, submitted or rejected. Approved expenses can only be voided (with a reason).",
+                "description": "Expenses with bills and an approval flow. Only approved expenses count in the balance.\n\nEditable while draft, submitted or rejected. Approved expenses can only be voided (with a reason).\nCollectors see and change only the expenses they entered. An Organization Admin can edit any expense and\ndelete it with DELETE.",
                 "parameters": [
                     {
                         "in": "path",
@@ -2889,7 +3041,7 @@
             },
             "patch": {
                 "operationId": "expenses_partial_update",
-                "description": "Expenses with bills and an approval flow. Only approved expenses count in the balance.\n\nEditable while draft, submitted or rejected. Approved expenses can only be voided (with a reason).",
+                "description": "Expenses with bills and an approval flow. Only approved expenses count in the balance.\n\nEditable while draft, submitted or rejected. Approved expenses can only be voided (with a reason).\nCollectors see and change only the expenses they entered. An Organization Admin can edit any expense and\ndelete it with DELETE.",
                 "parameters": [
                     {
                         "in": "path",
@@ -2941,12 +3093,41 @@
                         "description": ""
                     }
                 }
+            },
+            "delete": {
+                "operationId": "expenses_destroy",
+                "description": "Organization Admin: delete an expense and its bills (a copy stays in the audit log).",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "description": "A UUID string identifying this expense.",
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "expenses"
+                ],
+                "security": [
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No response body"
+                    }
+                }
             }
         },
         "/api/v1/expenses/{id}/approve/": {
             "post": {
                 "operationId": "expenses_approve_create",
-                "description": "Expenses with bills and an approval flow. Only approved expenses count in the balance.\n\nEditable while draft, submitted or rejected. Approved expenses can only be voided (with a reason).",
+                "description": "Expenses with bills and an approval flow. Only approved expenses count in the balance.\n\nEditable while draft, submitted or rejected. Approved expenses can only be voided (with a reason).\nCollectors see and change only the expenses they entered. An Organization Admin can edit any expense and\ndelete it with DELETE.",
                 "parameters": [
                     {
                         "in": "path",
@@ -3126,7 +3307,7 @@
         "/api/v1/expenses/{id}/reject/": {
             "post": {
                 "operationId": "expenses_reject_create",
-                "description": "Expenses with bills and an approval flow. Only approved expenses count in the balance.\n\nEditable while draft, submitted or rejected. Approved expenses can only be voided (with a reason).",
+                "description": "Expenses with bills and an approval flow. Only approved expenses count in the balance.\n\nEditable while draft, submitted or rejected. Approved expenses can only be voided (with a reason).\nCollectors see and change only the expenses they entered. An Organization Admin can edit any expense and\ndelete it with DELETE.",
                 "parameters": [
                     {
                         "in": "path",
@@ -3183,7 +3364,7 @@
         "/api/v1/expenses/{id}/submit/": {
             "post": {
                 "operationId": "expenses_submit_create",
-                "description": "Expenses with bills and an approval flow. Only approved expenses count in the balance.\n\nEditable while draft, submitted or rejected. Approved expenses can only be voided (with a reason).",
+                "description": "Expenses with bills and an approval flow. Only approved expenses count in the balance.\n\nEditable while draft, submitted or rejected. Approved expenses can only be voided (with a reason).\nCollectors see and change only the expenses they entered. An Organization Admin can edit any expense and\ndelete it with DELETE.",
                 "parameters": [
                     {
                         "in": "path",
@@ -3221,7 +3402,7 @@
         "/api/v1/expenses/{id}/void/": {
             "post": {
                 "operationId": "expenses_void_create",
-                "description": "Expenses with bills and an approval flow. Only approved expenses count in the balance.\n\nEditable while draft, submitted or rejected. Approved expenses can only be voided (with a reason).",
+                "description": "Expenses with bills and an approval flow. Only approved expenses count in the balance.\n\nEditable while draft, submitted or rejected. Approved expenses can only be voided (with a reason).\nCollectors see and change only the expenses they entered. An Organization Admin can edit any expense and\ndelete it with DELETE.",
                 "parameters": [
                     {
                         "in": "path",
@@ -3267,6 +3448,47 @@
                             "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/Expense"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/expenses/download/": {
+            "get": {
+                "operationId": "expenses_download_retrieve",
+                "description": "The list as a CSV or Excel file, with the same filters and search as the list.",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "file",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "csv",
+                                "xlsx"
+                            ]
+                        },
+                        "description": "csv (default) or xlsx"
+                    }
+                ],
+                "tags": [
+                    "expenses"
+                ],
+                "security": [
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/octet-stream": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
                                 }
                             }
                         },
@@ -3340,6 +3562,33 @@
                                 "schema": {
                                     "type": "string",
                                     "format": "binary"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/finance/summary/": {
+            "get": {
+                "operationId": "finance_summary_retrieve",
+                "description": "Financial summary for the active organization: one row per event, never mixing events or years.\n\nCollection − Approved expenses (+ other income) = Balance. Filter with `financial_year` and/or `event`;\nwithout a filter every event of every financial year is listed, newest year first.",
+                "tags": [
+                    "finance"
+                ],
+                "security": [
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": {}
                                 }
                             }
                         },
@@ -4459,7 +4708,7 @@
         "/api/v1/members/": {
             "get": {
                 "operationId": "members_list",
-                "description": "Base for every endpoint that reads or writes organization-owned data.\n\n- Organization comes from the validated membership (never from the request body).\n- get_queryset() always starts from Model.objects.for_org(active organization).\n- Creates/updates stamp organization and user, and write an audit entry.",
+                "description": "Users with access to the organization. An admin can add someone directly with a login and password,\nor send an invitation link instead (see InvitationViewSet).",
                 "parameters": [
                     {
                         "name": "ordering",
@@ -4531,12 +4780,56 @@
                         "description": ""
                     }
                 }
+            },
+            "post": {
+                "operationId": "members_create",
+                "description": "Users with access to the organization. An admin can add someone directly with a login and password,\nor send an invitation link instead (see InvitationViewSet).",
+                "tags": [
+                    "members"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/MemberCreateRequest"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/MemberCreateRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/MemberCreateRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Member"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
             }
         },
         "/api/v1/members/{id}/": {
             "get": {
                 "operationId": "members_retrieve",
-                "description": "Base for every endpoint that reads or writes organization-owned data.\n\n- Organization comes from the validated membership (never from the request body).\n- get_queryset() always starts from Model.objects.for_org(active organization).\n- Creates/updates stamp organization and user, and write an audit entry.",
+                "description": "Users with access to the organization. An admin can add someone directly with a login and password,\nor send an invitation link instead (see InvitationViewSet).",
                 "parameters": [
                     {
                         "in": "path",
@@ -4572,7 +4865,7 @@
             },
             "patch": {
                 "operationId": "members_partial_update",
-                "description": "Base for every endpoint that reads or writes organization-owned data.\n\n- Organization comes from the validated membership (never from the request body).\n- get_queryset() always starts from Model.objects.for_org(active organization).\n- Creates/updates stamp organization and user, and write an audit entry.",
+                "description": "Users with access to the organization. An admin can add someone directly with a login and password,\nor send an invitation link instead (see InvitationViewSet).",
                 "parameters": [
                     {
                         "in": "path",
@@ -4618,6 +4911,106 @@
                             "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/Member"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/members/{id}/set-password/": {
+            "post": {
+                "operationId": "members_set_password_create",
+                "description": "Users with access to the organization. An admin can add someone directly with a login and password,\nor send an invitation link instead (see InvitationViewSet).",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "description": "A UUID string identifying this organization membership.",
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "members"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SetPasswordRequest"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SetPasswordRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SetPasswordRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": {}
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/members/download/": {
+            "get": {
+                "operationId": "members_download_retrieve",
+                "description": "The list as a CSV or Excel file, with the same filters and search as the list.",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "file",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "csv",
+                                "xlsx"
+                            ]
+                        },
+                        "description": "csv (default) or xlsx"
+                    }
+                ],
+                "tags": [
+                    "members"
+                ],
+                "security": [
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/octet-stream": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
                                 }
                             }
                         },
@@ -5121,7 +5514,7 @@
         "/api/v1/other-income/": {
             "get": {
                 "operationId": "other_income_list",
-                "description": "Income not from a person (donation box, sponsorship, interest, sales). Amounts never change; void instead.",
+                "description": "Income not from a person (donation box, sponsorship, interest, sales). Amounts never change; void instead.\n\nAn Organization Admin can change every field with PATCH and delete with DELETE.",
                 "parameters": [
                     {
                         "in": "query",
@@ -5258,7 +5651,7 @@
             },
             "post": {
                 "operationId": "other_income_create",
-                "description": "Income not from a person (donation box, sponsorship, interest, sales). Amounts never change; void instead.",
+                "description": "Income not from a person (donation box, sponsorship, interest, sales). Amounts never change; void instead.\n\nAn Organization Admin can change every field with PATCH and delete with DELETE.",
                 "tags": [
                     "other-income"
                 ],
@@ -5304,7 +5697,7 @@
         "/api/v1/other-income/{id}/": {
             "get": {
                 "operationId": "other_income_retrieve",
-                "description": "Income not from a person (donation box, sponsorship, interest, sales). Amounts never change; void instead.",
+                "description": "Income not from a person (donation box, sponsorship, interest, sales). Amounts never change; void instead.\n\nAn Organization Admin can change every field with PATCH and delete with DELETE.",
                 "parameters": [
                     {
                         "in": "path",
@@ -5340,7 +5733,7 @@
             },
             "patch": {
                 "operationId": "other_income_partial_update",
-                "description": "Income not from a person (donation box, sponsorship, interest, sales). Amounts never change; void instead.",
+                "description": "Income not from a person (donation box, sponsorship, interest, sales). Amounts never change; void instead.\n\nAn Organization Admin can change every field with PATCH and delete with DELETE.",
                 "parameters": [
                     {
                         "in": "path",
@@ -5392,12 +5785,41 @@
                         "description": ""
                     }
                 }
+            },
+            "delete": {
+                "operationId": "other_income_destroy",
+                "description": "Income not from a person (donation box, sponsorship, interest, sales). Amounts never change; void instead.\n\nAn Organization Admin can change every field with PATCH and delete with DELETE.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "description": "A UUID string identifying this other income.",
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "other-income"
+                ],
+                "security": [
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No response body"
+                    }
+                }
             }
         },
         "/api/v1/other-income/{id}/void/": {
             "post": {
                 "operationId": "other_income_void_create",
-                "description": "Income not from a person (donation box, sponsorship, interest, sales). Amounts never change; void instead.",
+                "description": "Income not from a person (donation box, sponsorship, interest, sales). Amounts never change; void instead.\n\nAn Organization Admin can change every field with PATCH and delete with DELETE.",
                 "parameters": [
                     {
                         "in": "path",
@@ -5443,6 +5865,47 @@
                             "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/OtherIncome"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/other-income/download/": {
+            "get": {
+                "operationId": "other_income_download_retrieve",
+                "description": "The list as a CSV or Excel file, with the same filters and search as the list.",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "file",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "csv",
+                                "xlsx"
+                            ]
+                        },
+                        "description": "csv (default) or xlsx"
+                    }
+                ],
+                "tags": [
+                    "other-income"
+                ],
+                "security": [
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/octet-stream": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
                                 }
                             }
                         },
@@ -5454,7 +5917,7 @@
         "/api/v1/payments/": {
             "get": {
                 "operationId": "payments_list",
-                "description": "Payments with their contribution lines and receipt.\n\nPOST records a payment (also exposed as POST /collections/). Send an `Idempotency-Key` header so a retry\nafter a network error returns the first payment instead of recording it twice. Only `notes` can be\nedited; amounts never change.",
+                "description": "Payments with their contribution lines and receipt.\n\nPOST records a payment (also exposed as POST /collections/). Send an `Idempotency-Key` header so a retry\nafter a network error returns the first payment instead of recording it twice. `payer` is optional: leave\nit empty for an anonymous collection, or send `new_person` to add the contributor while collecting.\n\nPATCH edits only `notes`. An Organization Admin can edit everything with POST /payments/{id}/edit/ and\ndelete with DELETE /payments/{id}/ (the receipt is voided; the record stays in the audit log).",
                 "parameters": [
                     {
                         "in": "query",
@@ -5555,13 +6018,14 @@
                             "type": "string",
                             "enum": [
                                 "cancelled",
+                                "deleted",
                                 "failed",
                                 "pending",
                                 "refunded",
                                 "successful"
                             ]
                         },
-                        "description": "* `pending` - Pending\n* `successful` - Successful\n* `failed` - Failed\n* `cancelled` - Cancelled\n* `refunded` - Refunded"
+                        "description": "* `pending` - Pending\n* `successful` - Successful\n* `failed` - Failed\n* `cancelled` - Cancelled\n* `refunded` - Refunded\n* `deleted` - Deleted"
                     }
                 ],
                 "tags": [
@@ -5587,7 +6051,7 @@
             },
             "post": {
                 "operationId": "payments_create",
-                "description": "Payments with their contribution lines and receipt.\n\nPOST records a payment (also exposed as POST /collections/). Send an `Idempotency-Key` header so a retry\nafter a network error returns the first payment instead of recording it twice. Only `notes` can be\nedited; amounts never change.",
+                "description": "Payments with their contribution lines and receipt.\n\nPOST records a payment (also exposed as POST /collections/). Send an `Idempotency-Key` header so a retry\nafter a network error returns the first payment instead of recording it twice. `payer` is optional: leave\nit empty for an anonymous collection, or send `new_person` to add the contributor while collecting.\n\nPATCH edits only `notes`. An Organization Admin can edit everything with POST /payments/{id}/edit/ and\ndelete with DELETE /payments/{id}/ (the receipt is voided; the record stays in the audit log).",
                 "tags": [
                     "payments"
                 ],
@@ -5643,7 +6107,7 @@
         "/api/v1/payments/{id}/": {
             "get": {
                 "operationId": "payments_retrieve",
-                "description": "Payments with their contribution lines and receipt.\n\nPOST records a payment (also exposed as POST /collections/). Send an `Idempotency-Key` header so a retry\nafter a network error returns the first payment instead of recording it twice. Only `notes` can be\nedited; amounts never change.",
+                "description": "Payments with their contribution lines and receipt.\n\nPOST records a payment (also exposed as POST /collections/). Send an `Idempotency-Key` header so a retry\nafter a network error returns the first payment instead of recording it twice. `payer` is optional: leave\nit empty for an anonymous collection, or send `new_person` to add the contributor while collecting.\n\nPATCH edits only `notes`. An Organization Admin can edit everything with POST /payments/{id}/edit/ and\ndelete with DELETE /payments/{id}/ (the receipt is voided; the record stays in the audit log).",
                 "parameters": [
                     {
                         "in": "path",
@@ -5679,7 +6143,7 @@
             },
             "patch": {
                 "operationId": "payments_partial_update",
-                "description": "Payments with their contribution lines and receipt.\n\nPOST records a payment (also exposed as POST /collections/). Send an `Idempotency-Key` header so a retry\nafter a network error returns the first payment instead of recording it twice. Only `notes` can be\nedited; amounts never change.",
+                "description": "Payments with their contribution lines and receipt.\n\nPOST records a payment (also exposed as POST /collections/). Send an `Idempotency-Key` header so a retry\nafter a network error returns the first payment instead of recording it twice. `payer` is optional: leave\nit empty for an anonymous collection, or send `new_person` to add the contributor while collecting.\n\nPATCH edits only `notes`. An Organization Admin can edit everything with POST /payments/{id}/edit/ and\ndelete with DELETE /payments/{id}/ (the receipt is voided; the record stays in the audit log).",
                 "parameters": [
                     {
                         "in": "path",
@@ -5729,6 +6193,35 @@
                             }
                         },
                         "description": ""
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "payments_destroy",
+                "description": "Organization Admin: delete a collection. It leaves every list and total; its receipt is voided.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "description": "A UUID string identifying this payment.",
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "payments"
+                ],
+                "security": [
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No response body"
                     }
                 }
             }
@@ -5847,6 +6340,63 @@
                 }
             }
         },
+        "/api/v1/payments/{id}/edit/": {
+            "post": {
+                "operationId": "payments_edit_create",
+                "description": "Organization Admin: change the person, amount and lines, mode, date and time or notes.\n\nThe receipt keeps its number and shows the new details. Old and new values go to the audit log.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "description": "A UUID string identifying this payment.",
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "payments"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PaymentAdminEditRequest"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PaymentAdminEditRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PaymentAdminEditRequest"
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Payment"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/v1/payments/{id}/fail/": {
             "post": {
                 "operationId": "payments_fail_create",
@@ -5904,10 +6454,51 @@
                 }
             }
         },
+        "/api/v1/payments/download/": {
+            "get": {
+                "operationId": "payments_download_retrieve",
+                "description": "The list as a CSV or Excel file, with the same filters and search as the list.",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "file",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "csv",
+                                "xlsx"
+                            ]
+                        },
+                        "description": "csv (default) or xlsx"
+                    }
+                ],
+                "tags": [
+                    "payments"
+                ],
+                "security": [
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/octet-stream": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/v1/people/": {
             "get": {
                 "operationId": "people_list",
-                "description": "Create/read/update without hard delete. Subclasses expose archive/void actions instead of DELETE.",
+                "description": "Add to a tenant list viewset and set `download_title` and `download_columns`.",
                 "parameters": [
                     {
                         "in": "query",
@@ -6006,7 +6597,7 @@
             },
             "post": {
                 "operationId": "people_create",
-                "description": "Create/read/update without hard delete. Subclasses expose archive/void actions instead of DELETE.",
+                "description": "Add to a tenant list viewset and set `download_title` and `download_columns`.",
                 "tags": [
                     "people"
                 ],
@@ -6052,7 +6643,7 @@
         "/api/v1/people/{id}/": {
             "get": {
                 "operationId": "people_retrieve",
-                "description": "Create/read/update without hard delete. Subclasses expose archive/void actions instead of DELETE.",
+                "description": "Add to a tenant list viewset and set `download_title` and `download_columns`.",
                 "parameters": [
                     {
                         "in": "path",
@@ -6088,7 +6679,7 @@
             },
             "patch": {
                 "operationId": "people_partial_update",
-                "description": "Create/read/update without hard delete. Subclasses expose archive/void actions instead of DELETE.",
+                "description": "Add to a tenant list viewset and set `download_title` and `download_columns`.",
                 "parameters": [
                     {
                         "in": "path",
@@ -6145,7 +6736,7 @@
         "/api/v1/people/{id}/archive/": {
             "post": {
                 "operationId": "people_archive_create",
-                "description": "Create/read/update without hard delete. Subclasses expose archive/void actions instead of DELETE.",
+                "description": "Add to a tenant list viewset and set `download_title` and `download_columns`.",
                 "parameters": [
                     {
                         "in": "path",
@@ -6261,7 +6852,7 @@
         "/api/v1/people/{id}/unlink-user/": {
             "post": {
                 "operationId": "people_unlink_user_create",
-                "description": "Create/read/update without hard delete. Subclasses expose archive/void actions instead of DELETE.",
+                "description": "Add to a tenant list viewset and set `download_title` and `download_columns`.",
                 "parameters": [
                     {
                         "in": "path",
@@ -6314,6 +6905,47 @@
                             "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/Person"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/people/download/": {
+            "get": {
+                "operationId": "people_download_retrieve",
+                "description": "The list as a CSV or Excel file, with the same filters and search as the list.",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "file",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "csv",
+                                "xlsx"
+                            ]
+                        },
+                        "description": "csv (default) or xlsx"
+                    }
+                ],
+                "tags": [
+                    "people"
+                ],
+                "security": [
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/octet-stream": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
                                 }
                             }
                         },
@@ -6380,6 +7012,393 @@
                             "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/Permission"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/platform/organizations/": {
+            "get": {
+                "operationId": "platform_organizations_list",
+                "parameters": [
+                    {
+                        "name": "ordering",
+                        "required": false,
+                        "in": "query",
+                        "description": "Which field to use when ordering the results.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "required": false,
+                        "in": "query",
+                        "description": "A page number within the paginated result set.",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "page_size",
+                        "required": false,
+                        "in": "query",
+                        "description": "Number of results to return per page.",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "required": false,
+                        "in": "query",
+                        "description": "A search term.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "status",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "active",
+                                "closed",
+                                "suspended"
+                            ]
+                        },
+                        "description": "* `active` - Active\n* `suspended` - Suspended\n* `closed` - Closed"
+                    }
+                ],
+                "tags": [
+                    "platform"
+                ],
+                "security": [
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaginatedPlatformOrganizationList"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "post": {
+                "operationId": "platform_organizations_create",
+                "description": "Start a new organization for a customer, with its first Organization Admin login.",
+                "tags": [
+                    "platform"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PlatformOrganizationCreateRequest"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PlatformOrganizationCreateRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PlatformOrganizationCreateRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PlatformOrganization"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/platform/organizations/{org_id}/status/": {
+            "post": {
+                "operationId": "platform_organizations_status_create",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "org_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "platform"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/InputRequest"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/InputRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/InputRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PlatformOrganization"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/platform/summary/": {
+            "get": {
+                "operationId": "platform_summary_retrieve",
+                "tags": [
+                    "platform"
+                ],
+                "security": [
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": {}
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/platform/users/": {
+            "get": {
+                "operationId": "platform_users_list",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "is_active",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    {
+                        "name": "ordering",
+                        "required": false,
+                        "in": "query",
+                        "description": "Which field to use when ordering the results.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "required": false,
+                        "in": "query",
+                        "description": "A page number within the paginated result set.",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "page_size",
+                        "required": false,
+                        "in": "query",
+                        "description": "Number of results to return per page.",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "required": false,
+                        "in": "query",
+                        "description": "A search term.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "tags": [
+                    "platform"
+                ],
+                "security": [
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaginatedPlatformUserList"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/platform/users/{user_id}/password/": {
+            "post": {
+                "operationId": "platform_users_password_create",
+                "description": "Support: set a new password for a user who is locked out. They are logged out everywhere.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "user_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "platform"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SetPasswordRequest"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SetPasswordRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SetPasswordRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": {}
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/platform/users/{user_id}/status/": {
+            "post": {
+                "operationId": "platform_users_status_create",
+                "description": "Block or unblock a login on the whole platform.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "user_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "platform"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/InputRequest"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/InputRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/InputRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PlatformUser"
                                 }
                             }
                         },
@@ -7290,6 +8309,47 @@
                 }
             }
         },
+        "/api/v1/receipts/download/": {
+            "get": {
+                "operationId": "receipts_download_retrieve",
+                "description": "The list as a CSV or Excel file, with the same filters and search as the list.",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "file",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "csv",
+                                "xlsx"
+                            ]
+                        },
+                        "description": "csv (default) or xlsx"
+                    }
+                ],
+                "tags": [
+                    "receipts"
+                ],
+                "security": [
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/octet-stream": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/v1/reports/": {
             "get": {
                 "operationId": "reports_list",
@@ -7734,7 +8794,8 @@
                     "person": {
                         "type": "string",
                         "format": "uuid",
-                        "readOnly": true
+                        "readOnly": true,
+                        "nullable": true
                     },
                     "person_name": {
                         "type": "string",
@@ -8304,6 +9365,11 @@
                         "type": "string",
                         "format": "date"
                     },
+                    "expense_time": {
+                        "type": "string",
+                        "format": "time",
+                        "nullable": true
+                    },
                     "mode": {
                         "allOf": [
                             {
@@ -8426,10 +9492,8 @@
                     "decided_by_name",
                     "event",
                     "event_name",
-                    "expense_date",
                     "financial_year",
                     "id",
-                    "payee",
                     "rejection_reason",
                     "status",
                     "submitted_at",
@@ -8554,6 +9618,11 @@
                         "type": "string",
                         "format": "date"
                     },
+                    "expense_time": {
+                        "type": "string",
+                        "format": "time",
+                        "nullable": true
+                    },
                     "mode": {
                         "allOf": [
                             {
@@ -8564,7 +9633,6 @@
                     },
                     "payee": {
                         "type": "string",
-                        "minLength": 1,
                         "maxLength": 200
                     },
                     "description": {
@@ -8578,9 +9646,7 @@
                 "required": [
                     "amount",
                     "category",
-                    "event",
-                    "expense_date",
-                    "payee"
+                    "event"
                 ]
             },
             "ExpenseStatusEnum": {
@@ -8980,6 +10046,25 @@
                     "key_id"
                 ]
             },
+            "InputRequest": {
+                "type": "object",
+                "properties": {
+                    "status": {
+                        "$ref": "#/components/schemas/InputStatusEnum"
+                    }
+                },
+                "required": [
+                    "status"
+                ]
+            },
+            "InputStatusEnum": {
+                "enum": [
+                    "active",
+                    "suspended"
+                ],
+                "type": "string",
+                "description": "* `active` - active\n* `suspended` - suspended"
+            },
             "Invitation": {
                 "type": "object",
                 "properties": {
@@ -9198,6 +10283,14 @@
                     "status": {
                         "$ref": "#/components/schemas/MemberStatusEnum"
                     },
+                    "can_download": {
+                        "type": "boolean",
+                        "nullable": true
+                    },
+                    "can_reset_password": {
+                        "type": "boolean",
+                        "readOnly": true
+                    },
                     "joined_at": {
                         "type": "string",
                         "format": "date-time",
@@ -9205,10 +10298,53 @@
                     }
                 },
                 "required": [
+                    "can_reset_password",
                     "id",
                     "joined_at",
                     "role",
                     "user"
+                ]
+            },
+            "MemberCreateRequest": {
+                "type": "object",
+                "description": "Name, email or mobile and a password that an admin types in for someone else.",
+                "properties": {
+                    "full_name": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 150
+                    },
+                    "email": {
+                        "nullable": true,
+                        "oneOf": [
+                            {
+                                "type": "string",
+                                "format": "email"
+                            },
+                            {
+                                "type": "string",
+                                "maxLength": 0
+                            }
+                        ]
+                    },
+                    "mobile": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "password": {
+                        "type": "string",
+                        "writeOnly": true,
+                        "minLength": 1
+                    },
+                    "role_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                },
+                "required": [
+                    "full_name",
+                    "password",
+                    "role_id"
                 ]
             },
             "MemberStatusEnum": {
@@ -9289,6 +10425,59 @@
                 ],
                 "type": "string",
                 "description": "* `successful` - successful\n* `pending` - pending"
+            },
+            "NewPersonRequest": {
+                "type": "object",
+                "description": "A contributor added while collecting: name required, everything else optional.",
+                "properties": {
+                    "full_name": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 150
+                    },
+                    "mobile": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "email": {
+                        "oneOf": [
+                            {
+                                "type": "string",
+                                "format": "email",
+                                "maxLength": 254
+                            },
+                            {
+                                "type": "string",
+                                "maxLength": 0
+                            }
+                        ]
+                    },
+                    "unit": {
+                        "type": "string",
+                        "description": "Flat / house number",
+                        "maxLength": 50
+                    },
+                    "building": {
+                        "type": "string",
+                        "description": "Building / wing",
+                        "maxLength": 100
+                    },
+                    "area": {
+                        "type": "string",
+                        "maxLength": 100
+                    },
+                    "address_line": {
+                        "type": "string",
+                        "maxLength": 250
+                    },
+                    "city": {
+                        "type": "string",
+                        "maxLength": 100
+                    }
+                },
+                "required": [
+                    "full_name"
+                ]
             },
             "Notification": {
                 "type": "object",
@@ -10380,6 +11569,68 @@
                     }
                 }
             },
+            "PaginatedPlatformOrganizationList": {
+                "type": "object",
+                "required": [
+                    "count",
+                    "results"
+                ],
+                "properties": {
+                    "count": {
+                        "type": "integer",
+                        "example": 123
+                    },
+                    "next": {
+                        "type": "string",
+                        "nullable": true,
+                        "format": "uri",
+                        "example": "http://api.example.org/accounts/?page=4"
+                    },
+                    "previous": {
+                        "type": "string",
+                        "nullable": true,
+                        "format": "uri",
+                        "example": "http://api.example.org/accounts/?page=2"
+                    },
+                    "results": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PlatformOrganization"
+                        }
+                    }
+                }
+            },
+            "PaginatedPlatformUserList": {
+                "type": "object",
+                "required": [
+                    "count",
+                    "results"
+                ],
+                "properties": {
+                    "count": {
+                        "type": "integer",
+                        "example": 123
+                    },
+                    "next": {
+                        "type": "string",
+                        "nullable": true,
+                        "format": "uri",
+                        "example": "http://api.example.org/accounts/?page=4"
+                    },
+                    "previous": {
+                        "type": "string",
+                        "nullable": true,
+                        "format": "uri",
+                        "example": "http://api.example.org/accounts/?page=2"
+                    },
+                    "results": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PlatformUser"
+                        }
+                    }
+                }
+            },
             "PaginatedReceiptList": {
                 "type": "object",
                 "required": [
@@ -10614,6 +11865,11 @@
                         "type": "string",
                         "format": "date"
                     },
+                    "expense_time": {
+                        "type": "string",
+                        "format": "time",
+                        "nullable": true
+                    },
                     "mode": {
                         "allOf": [
                             {
@@ -10624,7 +11880,6 @@
                     },
                     "payee": {
                         "type": "string",
-                        "minLength": 1,
                         "maxLength": 200
                     },
                     "description": {
@@ -10691,6 +11946,10 @@
                     },
                     "status": {
                         "$ref": "#/components/schemas/MemberStatusEnum"
+                    },
+                    "can_download": {
+                        "type": "boolean",
+                        "nullable": true
                     }
                 }
             },
@@ -10922,13 +12181,29 @@
                     "payer": {
                         "type": "string",
                         "format": "uuid",
-                        "readOnly": true
+                        "readOnly": true,
+                        "nullable": true,
+                        "description": "Empty for an anonymous (no name) collection"
                     },
                     "payer_name": {
                         "type": "string",
                         "readOnly": true
                     },
                     "payer_mobile": {
+                        "type": "string",
+                        "readOnly": true,
+                        "default": ""
+                    },
+                    "is_anonymous": {
+                        "type": "boolean",
+                        "readOnly": true
+                    },
+                    "financial_year": {
+                        "type": "string",
+                        "format": "uuid",
+                        "readOnly": true
+                    },
+                    "financial_year_label": {
                         "type": "string",
                         "readOnly": true
                     },
@@ -11014,7 +12289,10 @@
                     "created_at",
                     "event",
                     "event_name",
+                    "financial_year",
+                    "financial_year_label",
                     "id",
+                    "is_anonymous",
                     "lines",
                     "mode",
                     "paid_at",
@@ -11027,8 +12305,58 @@
                     "status_reason"
                 ]
             },
+            "PaymentAdminEditRequest": {
+                "type": "object",
+                "description": "Organization Admin edit. Send only what changes; `lines` replaces every line.",
+                "properties": {
+                    "payer": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "new_person": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/NewPersonRequest"
+                            }
+                        ],
+                        "nullable": true
+                    },
+                    "mode": {
+                        "$ref": "#/components/schemas/PaymentModeEnum"
+                    },
+                    "paid_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "reference_number": {
+                        "type": "string",
+                        "maxLength": 60
+                    },
+                    "cheque_bank": {
+                        "type": "string",
+                        "maxLength": 100
+                    },
+                    "cheque_date": {
+                        "type": "string",
+                        "format": "date",
+                        "nullable": true
+                    },
+                    "notes": {
+                        "type": "string",
+                        "maxLength": 500
+                    },
+                    "lines": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PaymentLineInputRequest"
+                        }
+                    }
+                }
+            },
             "PaymentCreateRequest": {
                 "type": "object",
+                "description": "Who paid: an existing person (`payer`), a new person (`new_person`) or nobody named (both empty).",
                 "properties": {
                     "event": {
                         "type": "string",
@@ -11036,7 +12364,16 @@
                     },
                     "payer": {
                         "type": "string",
-                        "format": "uuid"
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "new_person": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/NewPersonRequest"
+                            }
+                        ],
+                        "nullable": true
                     },
                     "mode": {
                         "$ref": "#/components/schemas/PaymentModeEnum"
@@ -11099,8 +12436,7 @@
                 "required": [
                     "event",
                     "lines",
-                    "mode",
-                    "payer"
+                    "mode"
                 ]
             },
             "PaymentLine": {
@@ -11223,10 +12559,11 @@
                     "successful",
                     "failed",
                     "cancelled",
-                    "refunded"
+                    "refunded",
+                    "deleted"
                 ],
                 "type": "string",
-                "description": "* `pending` - Pending\n* `successful` - Successful\n* `failed` - Failed\n* `cancelled` - Cancelled\n* `refunded` - Refunded"
+                "description": "* `pending` - Pending\n* `successful` - Successful\n* `failed` - Failed\n* `cancelled` - Cancelled\n* `refunded` - Refunded\n* `deleted` - Deleted"
             },
             "Permission": {
                 "type": "object",
@@ -11448,6 +12785,204 @@
                 "type": "string",
                 "description": "* `android` - Android\n* `ios` - Ios\n* `web` - Web"
             },
+            "PlatformOrganization": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "readOnly": true
+                    },
+                    "name": {
+                        "type": "string",
+                        "maxLength": 200
+                    },
+                    "city": {
+                        "type": "string",
+                        "maxLength": 100
+                    },
+                    "state": {
+                        "type": "string",
+                        "maxLength": 100
+                    },
+                    "phone": {
+                        "type": "string",
+                        "maxLength": 16
+                    },
+                    "email": {
+                        "oneOf": [
+                            {
+                                "type": "string",
+                                "format": "email",
+                                "maxLength": 254
+                            },
+                            {
+                                "type": "string",
+                                "maxLength": 0
+                            }
+                        ]
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/OrganizationStatusEnum"
+                    },
+                    "logo_url": {
+                        "type": "string",
+                        "nullable": true,
+                        "readOnly": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    },
+                    "users_count": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "people_count": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "events_count": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "receipts_count": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "admins": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "additionalProperties": {}
+                        },
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "admins",
+                    "created_at",
+                    "events_count",
+                    "id",
+                    "logo_url",
+                    "name",
+                    "people_count",
+                    "receipts_count",
+                    "users_count"
+                ]
+            },
+            "PlatformOrganizationCreateRequest": {
+                "type": "object",
+                "description": "The organization's name, plus full_name, email or mobile and password of its first admin.",
+                "properties": {
+                    "full_name": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 150
+                    },
+                    "email": {
+                        "nullable": true,
+                        "oneOf": [
+                            {
+                                "type": "string",
+                                "format": "email"
+                            },
+                            {
+                                "type": "string",
+                                "maxLength": 0
+                            }
+                        ]
+                    },
+                    "mobile": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "password": {
+                        "type": "string",
+                        "writeOnly": true,
+                        "minLength": 1
+                    },
+                    "name": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200
+                    },
+                    "city": {
+                        "type": "string",
+                        "maxLength": 100
+                    },
+                    "financial_year": {
+                        "$ref": "#/components/schemas/FinancialYearInputRequest"
+                    }
+                },
+                "required": [
+                    "full_name",
+                    "name",
+                    "password"
+                ]
+            },
+            "PlatformUser": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "readOnly": true
+                    },
+                    "full_name": {
+                        "type": "string",
+                        "maxLength": 150
+                    },
+                    "email": {
+                        "nullable": true,
+                        "oneOf": [
+                            {
+                                "type": "string",
+                                "format": "email",
+                                "maxLength": 254
+                            },
+                            {
+                                "type": "string",
+                                "maxLength": 0
+                            }
+                        ]
+                    },
+                    "mobile": {
+                        "type": "string",
+                        "nullable": true,
+                        "maxLength": 16
+                    },
+                    "is_active": {
+                        "type": "boolean"
+                    },
+                    "is_platform_admin": {
+                        "type": "boolean"
+                    },
+                    "last_login": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "date_joined": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "organizations": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "additionalProperties": {}
+                        },
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "full_name",
+                    "id",
+                    "organizations"
+                ]
+            },
             "PortalPayRequestRequest": {
                 "type": "object",
                 "properties": {
@@ -11567,6 +13102,11 @@
                         "type": "string",
                         "readOnly": true
                     },
+                    "paid_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    },
                     "void_reason": {
                         "type": "string",
                         "readOnly": true
@@ -11616,6 +13156,7 @@
                     "language",
                     "logo_url",
                     "mode",
+                    "paid_at",
                     "payer",
                     "payer_name",
                     "payment",
@@ -11905,6 +13446,19 @@
                 "required": [
                     "code",
                     "name"
+                ]
+            },
+            "SetPasswordRequest": {
+                "type": "object",
+                "properties": {
+                    "password": {
+                        "type": "string",
+                        "writeOnly": true,
+                        "minLength": 1
+                    }
+                },
+                "required": [
+                    "password"
                 ]
             },
             "Share": {
