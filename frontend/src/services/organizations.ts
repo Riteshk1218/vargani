@@ -78,6 +78,7 @@ export const platformService = {
   users: (params: { page?: number; search?: string }) =>
     api.get<Paginated<PlatformUser>>('/platform/users/', { params }).then((r) => r.data),
   setUserPassword: (id: string, password: string) => api.post(`/platform/users/${id}/password/`, { password }).then((r) => r.data),
+  verifyUser: (id: string) => api.post<PlatformUser>(`/platform/users/${id}/verify/`).then((r) => r.data),
   setUserActive: (id: string, is_active: boolean) =>
     api.post<PlatformUser>(`/platform/users/${id}/status/`, { is_active }).then((r) => r.data),
 }

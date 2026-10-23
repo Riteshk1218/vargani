@@ -752,6 +752,7 @@ export interface PlatformUser {
   mobile: string | null
   is_active: boolean
   is_platform_admin: boolean
+  is_verified: boolean
   last_login: string | null
   date_joined: string
   organizations: { id: string; name: string; role: { code: string; name: string }; status: Member['status'] }[]

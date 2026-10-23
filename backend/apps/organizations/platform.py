@@ -114,6 +114,7 @@ class PlatformOrganizationCreateSerializer(LoginDetailsSerializer):
 
 class PlatformUserSerializer(serializers.ModelSerializer):
     organizations = serializers.SerializerMethodField()
+    is_verified = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = User
@@ -124,6 +125,7 @@ class PlatformUserSerializer(serializers.ModelSerializer):
             "mobile",
             "is_active",
             "is_platform_admin",
+            "is_verified",
             "last_login",
             "date_joined",
             "organizations",
@@ -310,3 +312,28 @@ class PlatformUserStatusView(PlatformView, APIView):
     @staticmethod
     def _fresh(user):
         return PlatformUserListView().get_queryset().get(pk=user.pk)
+
+
+class PlatformUserVerifyView(PlatformView, APIView):
+    """Support: confirm a login whose sign-up code never arrived, so the person can log in."""
+
+    @extend_schema(request=None, responses=PlatformUserSerializer)
+    def post(self, request, user_id):
+        from django.utils import timezone
+
+        user = get_object_or_404(User, pk=user_id)
+        with transaction.atomic():
+            now = timezone.now()
+            if user.email and not user.email_verified_at:
+                user.email_verified_at = now
+            if user.mobile and not user.mobile_verified_at:
+                user.mobile_verified_at = now
+            user.save(update_fields=["email_verified_at", "mobile_verified_at"])
+            audit.record(
+                request=request,
+                action=audit.STATUS_CHANGE,
+                entity_type="accounts.user",
+                entity_id=user.pk,
+                after={"verified": True, "reason": "platform_admin"},
+            )
+        return Response(PlatformUserSerializer(PlatformUserStatusView._fresh(user)).data)

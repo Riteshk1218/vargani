@@ -896,6 +896,9 @@
     "unblock": "Unblock",
     "noOrganization": "Not in any organization yet",
     "lastLogin": "Last login: {{date}}",
-    "privacyNote": "Each organization's money, members' details, receipts and expenses stay private to that organization. To work inside one, ask its admin to add you as a user."
+    "privacyNote": "Each organization's money, members' details, receipts and expenses stay private to that organization. To work inside one, ask its admin to add you as a user.",
+    "notVerified": "Code not entered",
+    "verify": "Confirm account",
+    "verified": "Account confirmed. They can log in now."
   }
 }

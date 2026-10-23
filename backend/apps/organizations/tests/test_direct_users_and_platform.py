@@ -3,6 +3,7 @@ import pytest
 from apps.accounts.models import User
 from apps.audit.models import AuditLog
 from apps.organizations.models import Invitation, Organization, OrganizationMembership
+from conftest import DEFAULT_PASSWORD
 
 pytestmark = pytest.mark.django_db
 
@@ -195,3 +196,34 @@ def test_owner_resets_password_and_blocks_user(client_for, make_org, owner, api)
     blocked = api.post("/api/v1/auth/login/", {"identifier": user.email, "password": NEW_PASSWORD}, format="json")
     assert blocked.status_code == 400
     assert client.post(f"/api/v1/platform/users/{owner.pk}/status/", {"is_active": False}).status_code == 422
+
+
+def test_owner_confirms_account_whose_code_never_arrived(client_for, make_user, owner, api):
+    user = make_user(email="stuck@example.com", verified=False)
+    before = api.post("/api/v1/auth/login/", {"identifier": user.email, "password": DEFAULT_PASSWORD}, format="json")
+    assert before.status_code == 403
+    response = client_for(owner).post(f"/api/v1/platform/users/{user.pk}/verify/")
+    assert response.status_code == 200 and response.data["is_verified"] is True
+    after = api.post("/api/v1/auth/login/", {"identifier": user.email, "password": DEFAULT_PASSWORD}, format="json")
+    assert after.status_code == 200
+
+
+def test_admin_adding_unconfirmed_signup_sets_their_login(client_for, make_org, make_user, api):
+    org = make_org()
+    make_user(email="stuck@example.com", verified=False)
+    client = org_client(client_for, org, org.admin_user)
+    response = client.post(
+        "/api/v1/members/",
+        {
+            "full_name": "Stuck",
+            "email": "stuck@example.com",
+            "password": NEW_PASSWORD,
+            "role_id": _role_id(client, "collector"),
+        },
+        format="json",
+    )
+    assert response.status_code == 201 and response.data["new_login"] is True
+    login = api.post(
+        "/api/v1/auth/login/", {"identifier": "stuck@example.com", "password": NEW_PASSWORD}, format="json"
+    )
+    assert login.status_code == 200

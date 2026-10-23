@@ -7407,6 +7407,43 @@
                 }
             }
         },
+        "/api/v1/platform/users/{user_id}/verify/": {
+            "post": {
+                "operationId": "platform_users_verify_create",
+                "description": "Support: confirm a login whose sign-up code never arrived, so the person can log in.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "user_id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "platform"
+                ],
+                "security": [
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PlatformUser"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/v1/portal/me/": {
             "get": {
                 "operationId": "portal_me_retrieve",
@@ -12959,6 +12996,10 @@
                     "is_platform_admin": {
                         "type": "boolean"
                     },
+                    "is_verified": {
+                        "type": "boolean",
+                        "readOnly": true
+                    },
                     "last_login": {
                         "type": "string",
                         "format": "date-time",
@@ -12980,6 +13021,7 @@
                 "required": [
                     "full_name",
                     "id",
+                    "is_verified",
                     "organizations"
                 ]
             },

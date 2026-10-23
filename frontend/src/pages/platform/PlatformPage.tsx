@@ -1,5 +1,5 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Building2, KeyRound, Plus, Search, ShieldCheck } from 'lucide-react'
+import { BadgeCheck, Building2, KeyRound, Plus, Search, ShieldCheck } from 'lucide-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
@@ -307,6 +307,14 @@ function UsersTab() {
     queryFn: () => platformService.users({ search: debounced || undefined, page }),
     placeholderData: keepPreviousData,
   })
+  const verify = useMutation({
+    mutationFn: (id: string) => platformService.verifyUser(id),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['platform', 'users'] })
+      notify(t('platform.verified'))
+    },
+    onError,
+  })
   const setActive = useMutation({
     mutationFn: ({ id, active }: { id: string; active: boolean }) => platformService.setUserActive(id, active),
     onSuccess: async () => {
@@ -339,7 +347,8 @@ function UsersTab() {
                 <div className="min-w-0 flex-1">
                   <p className="font-medium">
                     {row.full_name} {row.is_platform_admin && <Badge tone="brand">{t('platform.owner')}</Badge>}{' '}
-                    {!row.is_active && <Badge tone="amber">{t('platform.blocked')}</Badge>}
+                    {!row.is_active && <Badge tone="amber">{t('platform.blocked')}</Badge>}{' '}
+                    {!row.is_verified && <Badge tone="red">{t('platform.notVerified')}</Badge>}
                   </p>
                   <p className="truncate text-sm text-slate-500">{[row.mobile && formatMobile(row.mobile), row.email].filter(Boolean).join(' · ')}</p>
                   <p className="text-sm text-slate-600">
@@ -353,6 +362,11 @@ function UsersTab() {
                 </div>
                 {row.id !== me?.id && (
                   <div className="flex flex-wrap gap-2">
+                    {!row.is_verified && (
+                      <Button size="sm" icon={<BadgeCheck className="size-4" />} loading={verify.isPending && verify.variables === row.id} onClick={() => verify.mutate(row.id)}>
+                        {t('platform.verify')}
+                      </Button>
+                    )}
                     <Button variant="ghost" size="sm" icon={<KeyRound className="size-4" />} onClick={() => setPasswordFor(row)}>
                       {t('users.setPassword')}
                     </Button>

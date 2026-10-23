@@ -465,9 +465,19 @@ def create_login(*, full_name, email, mobile, password):
     from apps.accounts.models import User
 
     existing = _find_existing_user(email, mobile)
-    if existing is not None:
+    if existing is not None and existing.is_verified:
         return existing, False
-    user = User.objects.create_user(full_name=full_name, email=email, mobile=mobile, password=password)
+    if existing is not None:
+        # Someone started signing up but never entered the code, so nobody has proved the account is theirs
+        # (a new sign-up may take it over the same way). The admin's details replace it.
+        user = existing
+        user.full_name = full_name
+        user.email = email or user.email
+        user.mobile = mobile or user.mobile
+        user.set_password(password)
+        user.save()
+    else:
+        user = User.objects.create_user(full_name=full_name, email=email, mobile=mobile, password=password)
     # The admin vouches for these details, so the person can log in straight away.
     now = timezone.now()
     user.email_verified_at = now if user.email else None

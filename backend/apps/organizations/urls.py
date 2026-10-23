@@ -32,5 +32,8 @@ urlpatterns = [
     path(
         "platform/users/<uuid:user_id>/status/", platform.PlatformUserStatusView.as_view(), name="platform-user-status"
     ),
+    path(
+        "platform/users/<uuid:user_id>/verify/", platform.PlatformUserVerifyView.as_view(), name="platform-user-verify"
+    ),
     *router.urls,
 ]
