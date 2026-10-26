@@ -208,6 +208,7 @@ def record_payment(
     assign_new_person=False,
     received=None,
     follow_up_on=None,
+    custom_fields=None,
     request=None,
     actor=None,
 ) -> tuple[Payment, bool]:
@@ -220,6 +221,9 @@ def record_payment(
     (`Due`) for the named person and shown on the receipt, and it is paid off later by lines with `due` set.
     It may be zero, when the receipt is given and all the money comes later. `follow_up_on` is the date to go
     back for the rest; it is kept only when a balance is kept (payments/followups.py).
+
+    `custom_fields` are the answers to the organization's own dropdowns, already checked by
+    `organizations.form_studio.clean_values`.
 
     Returns (payment, created). A repeated idempotency key returns the original payment unchanged, so a
     collector on a flaky mobile network can safely retry.
@@ -291,6 +295,7 @@ def record_payment(
                 gateway=gateway,
                 notes=notes,
                 follow_up_on=follow_up_on,
+                custom_fields=custom_fields or {},
                 created_by=actor,
                 updated_by=actor,
             )

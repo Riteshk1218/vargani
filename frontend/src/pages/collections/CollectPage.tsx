@@ -11,12 +11,13 @@ import { useToast } from '../../components/ui/Toast'
 import { useEvents } from '../../context/EventContext'
 import { useOrg } from '../../context/OrgContext'
 import { useDebounced } from '../../hooks/useDebounced'
+import { useFormStudio } from '../../hooks/useFormStudio'
 import { toApiError } from '../../services/apiClient'
 import { contributionTypeService, dueService, paymentService } from '../../services/finance'
 import { peopleService } from '../../services/people'
 import type { ContributionType, NewPersonInput, Payment, PaymentInput, PaymentMode, Person } from '../../types/api'
 import { formatDate, formatMobile, formatMoney, formatMonth, formatStamp, searchTerm, sumMoney } from '../../utils/format'
-import { MANUAL_MODES, todayIso } from '../../utils/payments'
+import { todayIso } from '../../utils/payments'
 import { PavtiVisitModal } from '../payments/PavtiVisitModal'
 
 const MONEY = /^\d+(\.\d{1,2})?$/
@@ -51,6 +52,7 @@ export function CollectPage() {
   const queryClient = useQueryClient()
   const { notify } = useToast()
   const currency = detail?.organization.currency
+  const studio = useFormStudio()
 
   // ?event= and ?person= let other pages open this form pre-filled.
   useEffect(() => {
@@ -88,6 +90,8 @@ export function CollectPage() {
   const [pending, setPending] = useState(false)
   const [paidOn, setPaidOn] = useState(today())
   const [notes, setNotes] = useState('')
+  // Answers to the organization's own dropdowns (admin studio): field key -> option.
+  const [customValues, setCustomValues] = useState<Record<string, string>>({})
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [submitting, setSubmitting] = useState(false)
   const [done, setDone] = useState<Payment | null>(null)
@@ -129,6 +133,10 @@ export function CollectPage() {
 
   // New lines start on the first type in the event's order: Donation, for the default types.
   const defaultType = activeTypes[0]
+  // The admin studio may hide cash; start on the first mode still shown.
+  useEffect(() => {
+    if (studio.modes.length && !studio.modes.includes(mode)) setMode(studio.modes[0])
+  }, [studio.modes, mode])
   const blankLine = (key: number): Line => ({ key, typeId: defaultType?.id ?? '', month: today().slice(0, 7), amount: '' })
   useEffect(() => {
     if (activeTypes.length) setLines((current) => (current.length ? current : [blankLine(1)]))
@@ -148,7 +156,8 @@ export function CollectPage() {
     setPayerKind('existing')
     setNewPerson({ full_name: '' })
     setLines([blankLine(1)])
-    setMode('cash')
+    setMode(studio.modes.includes('cash') ? 'cash' : (studio.modes[0] ?? 'cash'))
+    setCustomValues({})
     setReference('')
     setChequeBank('')
     setChequeDate('')
@@ -173,6 +182,7 @@ export function CollectPage() {
       if (typeById(line.typeId)?.kind === 'recurring_monthly' && !line.month) found[`lines.${index}.period_month`] = t('validation.required')
     })
     if ((mode === 'cheque' || mode === 'bank_transfer') && !reference.trim()) found.reference_number = t('validation.required')
+    for (const field of studio.customFields) if (field.required && !customValues[field.key!]) found[`custom_fields.${field.key}`] = t('validation.required')
     if (canKeepBalance && received !== '' && (!MONEY.test(received) || Number(received) > Number(total))) found.received = t('collect.receivedTooMuch')
     if (hasBalance && followUp && followUp < todayIso()) found.follow_up_on = t('pavti.datePast')
     setErrors(found)
@@ -190,6 +200,7 @@ export function CollectPage() {
       cheque_bank: mode === 'cheque' ? chequeBank : '',
       cheque_date: mode === 'cheque' && chequeDate ? chequeDate : null,
       notes,
+      custom_fields: Object.fromEntries(studio.customFields.filter((f) => customValues[f.key!]).map((f) => [f.key!, customValues[f.key!]])),
       lines: lines.map((line) => ({
         contribution_type: line.typeId,
         amount: line.amount,
@@ -244,7 +255,7 @@ export function CollectPage() {
             {done.receipt ? t('collect.success', { number: done.receipt.receipt_number }) : t('collect.pendingSaved')}
           </h1>
           <p className="mt-1 text-slate-600">
-            {done.payer_name} · {formatMoney(done.amount, currency)} · {t(`mode.${done.mode}`)}
+            {done.payer_name} · {formatMoney(done.amount, currency)} · {studio.modeLabel(done.mode)}
           </p>
           {Number(balanceKept) > 0 && (
             <p className="mt-2 rounded-lg bg-amber-50 p-2 text-sm font-medium text-amber-900">
@@ -341,7 +352,7 @@ export function CollectPage() {
               return (
                 <div key={line.key} className="grid gap-3 border-b border-slate-100 pb-4 last:border-0 last:pb-0 sm:grid-cols-[1fr_9rem_8rem_auto] sm:items-start">
                   <SelectInput
-                    label={t('collect.type')}
+                    label={studio.label('contribution_type')}
                     value={line.typeId}
                     error={errors[`lines.${index}.contribution_type`]}
                     onChange={(e) => updateLine(line.key, { typeId: e.target.value })}
@@ -354,7 +365,7 @@ export function CollectPage() {
                   </SelectInput>
                   {ct?.kind === 'recurring_monthly' ? (
                     <TextInput
-                      label={t('collect.month')}
+                      label={studio.label('month')}
                       type="month"
                       value={line.month}
                       error={errors[`lines.${index}.period_month`]}
@@ -364,7 +375,7 @@ export function CollectPage() {
                     <div className="hidden sm:block" />
                   )}
                   <TextInput
-                    label={t('common.amount')}
+                    label={studio.label('amount')}
                     inputMode="decimal"
                     value={line.amount}
                     placeholder="0"
@@ -405,7 +416,7 @@ export function CollectPage() {
             {canKeepBalance && (
               <div className="grid gap-3 border-t border-slate-100 pt-4 sm:grid-cols-2 sm:items-start">
                 <TextInput
-                  label={t('collect.receivedNow')}
+                  label={studio.label('received')}
                   inputMode="decimal"
                   placeholder={total}
                   value={received}
@@ -421,7 +432,7 @@ export function CollectPage() {
                 {hasBalance && (
                   <TextInput
                     className="sm:col-span-2"
-                    label={t('pavti.followUpDate')}
+                    label={studio.label('follow_up_on')}
                     type="date"
                     min={todayIso()}
                     value={followUp}
@@ -435,15 +446,15 @@ export function CollectPage() {
           </Card>
 
           <Card className="grid gap-4 p-4 sm:grid-cols-2">
-            <SelectInput label={t('collect.mode')} value={mode} onChange={(e) => setMode(e.target.value as PaymentMode)}>
-              {MANUAL_MODES.map((m) => (
+            <SelectInput label={studio.label('mode')} value={mode} onChange={(e) => setMode(e.target.value as PaymentMode)}>
+              {studio.modes.map((m) => (
                 <option key={m} value={m}>
-                  {t(`mode.${m}`)}
+                  {studio.modeLabel(m)}
                 </option>
               ))}
             </SelectInput>
             <TextInput
-              label={t('collect.paidOn')}
+              label={studio.label('paid_on')}
               type="date"
               max={today()}
               value={paidOn}
@@ -453,7 +464,7 @@ export function CollectPage() {
             />
             {mode !== 'cash' && (
               <TextInput
-                label={mode === 'cheque' ? t('collect.chequeNumber') : t('collect.reference')}
+                label={mode === 'cheque' ? studio.label('cheque_number') : studio.label('reference')}
                 required={mode === 'cheque' || mode === 'bank_transfer'}
                 hint={mode === 'upi' || mode === 'other' ? t('common.optional') : undefined}
                 value={reference}
@@ -463,12 +474,31 @@ export function CollectPage() {
             )}
             {mode === 'cheque' && (
               <>
-                <TextInput label={t('collect.chequeBank')} value={chequeBank} onChange={(e) => setChequeBank(e.target.value)} />
-                <TextInput label={t('collect.chequeDate')} type="date" value={chequeDate} onChange={(e) => setChequeDate(e.target.value)} />
+                <TextInput label={studio.label('cheque_bank')} value={chequeBank} onChange={(e) => setChequeBank(e.target.value)} />
+                <TextInput label={studio.label('cheque_date')} type="date" value={chequeDate} onChange={(e) => setChequeDate(e.target.value)} />
                 <Checkbox className="sm:col-span-2" label={t('collect.pending')} checked={pending} onChange={(e) => setPending(e.target.checked)} />
               </>
             )}
-            <TextInput className="sm:col-span-2" label={t('common.notes')} hint={t('common.optional')} value={notes} maxLength={500} onChange={(e) => setNotes(e.target.value)} />
+            {studio.customFields.map((field) => (
+              <SelectInput
+                key={field.key}
+                label={field.label}
+                required={field.required}
+                hint={field.required ? undefined : t('common.optional')}
+                value={customValues[field.key!] ?? ''}
+                error={errors[`custom_fields.${field.key}`]}
+                data-testid={`collect-custom-${field.key}`}
+                onChange={(e) => setCustomValues((v) => ({ ...v, [field.key!]: e.target.value }))}
+              >
+                <option value="">{t('collect.choose')}</option>
+                {field.options.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </SelectInput>
+            ))}
+            <TextInput className="sm:col-span-2" label={studio.label('notes')} hint={t('common.optional')} value={notes} maxLength={500} onChange={(e) => setNotes(e.target.value)} />
           </Card>
 
           <Button type="submit" loading={submitting} className="w-full" icon={<ReceiptText className="size-4" />}>
@@ -506,6 +536,7 @@ export function PayerChoice({
 }) {
   const { t } = useTranslation()
   const { can } = useOrg()
+  const studio = useFormStudio()
   const canAdd = can('people.create') || can('people.manage')
   const options: { value: PayerKind; label: string; icon: React.ReactNode }[] = [
     { value: 'existing', label: t('collect.payerExisting'), icon: <UserRound className="size-4" aria-hidden /> },
@@ -516,9 +547,9 @@ export function PayerChoice({
     <div className="space-y-3">
       <div>
         <p className="mb-1.5 text-sm font-medium text-slate-700">
-          {t('collect.person')} <span className="font-normal text-slate-500">({t('common.optional')})</span>
+          {studio.label('payer')} <span className="font-normal text-slate-500">({t('common.optional')})</span>
         </p>
-        <div role="radiogroup" aria-label={t('collect.person')} className="grid grid-cols-3 gap-2">
+        <div role="radiogroup" aria-label={studio.label('payer')} className="grid grid-cols-3 gap-2">
           {options.map((option) => (
             <button
               key={option.value}

@@ -81,6 +81,27 @@ class OrganizationSettingsSerializer(serializers.Serializer):
     auto_reminders = serializers.BooleanField(required=False)
 
 
+class FormStudioModeSerializer(serializers.Serializer):
+    label = serializers.CharField(allow_blank=True, required=False)
+    hidden = serializers.BooleanField(required=False)
+
+
+class FormStudioFieldSerializer(serializers.Serializer):
+    key = serializers.CharField(required=False, help_text="Empty for a new dropdown; the server assigns one.")
+    label = serializers.CharField()
+    options = serializers.ListField(child=serializers.CharField())
+    required = serializers.BooleanField(required=False)
+    active = serializers.BooleanField(required=False)
+
+
+class FormStudioSerializer(serializers.Serializer):
+    """Schema only: organizations/form_studio.py validates the admin studio."""
+
+    labels = serializers.DictField(child=serializers.CharField(allow_blank=True), required=False)
+    modes = serializers.DictField(child=FormStudioModeSerializer(), required=False)
+    custom_fields = FormStudioFieldSerializer(many=True, required=False)
+
+
 class LogoUploadSerializer(serializers.Serializer):
     logo = serializers.FileField()
 

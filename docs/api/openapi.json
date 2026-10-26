@@ -5594,6 +5594,99 @@
                 }
             }
         },
+        "/api/v1/organizations/{id}/form-studio/": {
+            "get": {
+                "operationId": "organizations_form_studio_retrieve",
+                "description": "Admin studio: field names, payment mode dropdown and the organization's own dropdowns on Collect.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "description": "A UUID string identifying this organization.",
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "organizations"
+                ],
+                "security": [
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FormStudio"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "put": {
+                "operationId": "organizations_form_studio_update",
+                "description": "Admin studio: field names, payment mode dropdown and the organization's own dropdowns on Collect.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "description": "A UUID string identifying this organization.",
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "organizations"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/FormStudioRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/FormStudioRequest"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/FormStudioRequest"
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FormStudio"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/v1/organizations/{id}/logo/": {
             "put": {
                 "operationId": "organizations_logo_update",
@@ -9424,6 +9517,25 @@
                     "name"
                 ]
             },
+            "CustomFieldValue": {
+                "type": "object",
+                "properties": {
+                    "key": {
+                        "type": "string"
+                    },
+                    "label": {
+                        "type": "string"
+                    },
+                    "value": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "key",
+                    "label",
+                    "value"
+                ]
+            },
             "DetailResponse": {
                 "type": "object",
                 "properties": {
@@ -10405,6 +10517,135 @@
                 "required": [
                     "identifier"
                 ]
+            },
+            "FormStudio": {
+                "type": "object",
+                "description": "Schema only: organizations/form_studio.py validates the admin studio.",
+                "properties": {
+                    "labels": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string"
+                        }
+                    },
+                    "modes": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "$ref": "#/components/schemas/FormStudioMode"
+                        }
+                    },
+                    "custom_fields": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/FormStudioField"
+                        }
+                    }
+                }
+            },
+            "FormStudioField": {
+                "type": "object",
+                "properties": {
+                    "key": {
+                        "type": "string",
+                        "description": "Empty for a new dropdown; the server assigns one."
+                    },
+                    "label": {
+                        "type": "string"
+                    },
+                    "options": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "required": {
+                        "type": "boolean"
+                    },
+                    "active": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "label",
+                    "options"
+                ]
+            },
+            "FormStudioFieldRequest": {
+                "type": "object",
+                "properties": {
+                    "key": {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Empty for a new dropdown; the server assigns one."
+                    },
+                    "label": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "options": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "minLength": 1
+                        }
+                    },
+                    "required": {
+                        "type": "boolean"
+                    },
+                    "active": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "label",
+                    "options"
+                ]
+            },
+            "FormStudioMode": {
+                "type": "object",
+                "properties": {
+                    "label": {
+                        "type": "string"
+                    },
+                    "hidden": {
+                        "type": "boolean"
+                    }
+                }
+            },
+            "FormStudioModeRequest": {
+                "type": "object",
+                "properties": {
+                    "label": {
+                        "type": "string"
+                    },
+                    "hidden": {
+                        "type": "boolean"
+                    }
+                }
+            },
+            "FormStudioRequest": {
+                "type": "object",
+                "description": "Schema only: organizations/form_studio.py validates the admin studio.",
+                "properties": {
+                    "labels": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string"
+                        }
+                    },
+                    "modes": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "$ref": "#/components/schemas/FormStudioModeRequest"
+                        }
+                    },
+                    "custom_fields": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/FormStudioFieldRequest"
+                        }
+                    }
+                }
             },
             "FormatEnum": {
                 "enum": [
@@ -12842,6 +13083,13 @@
                         "description": "overdue, today or upcoming while money is owed and a follow-up date is set.",
                         "readOnly": true
                     },
+                    "custom_fields": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/CustomFieldValue"
+                        },
+                        "readOnly": true
+                    },
                     "created_at": {
                         "type": "string",
                         "format": "date-time",
@@ -12855,6 +13103,7 @@
                     "cheque_date",
                     "collector_name",
                     "created_at",
+                    "custom_fields",
                     "event",
                     "event_name",
                     "financial_year",
@@ -13013,6 +13262,13 @@
                         "type": "string",
                         "format": "uuid",
                         "nullable": true
+                    },
+                    "custom_fields": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string",
+                            "maxLength": 60
+                        }
                     }
                 },
                 "required": [

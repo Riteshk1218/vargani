@@ -77,7 +77,7 @@ def receipt_pdf(receipt: Receipt, language: str | None = None) -> bytes:
             "paid_at": local_time(
                 datetime.fromisoformat(s["paid_at"]), s.get("timezone") or receipt.organization.timezone
             ),
-            "mode": _(MODE_LABELS.get(s["mode"], s["mode"])),
+            "mode": s.get("mode_label") or _(MODE_LABELS.get(s["mode"], s["mode"])),
             "words": rupees_in_words(s["total"]) if language == "en" else "",
         }
         return render_pdf("receipts/receipt_pdf.html", context)

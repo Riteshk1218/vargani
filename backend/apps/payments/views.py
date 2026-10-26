@@ -12,6 +12,7 @@ from apps.core.downloads import Col, ListDownloadMixin
 from apps.core.scoping import scope_money
 from apps.core.tenancy import SCOPE_ALL
 from apps.core.viewsets import TenantModelViewSet
+from apps.organizations import form_studio
 
 from . import admin_edit, followups, services
 from .models import Payment
@@ -165,6 +166,7 @@ class PaymentViewSet(ListDownloadMixin, TenantModelViewSet):
             lines=[services.LineInput(**line) for line in data["lines"]],
             received=data.get("received"),
             follow_up_on=data.get("follow_up_on"),
+            custom_fields=form_studio.clean_values(self.organization, data["custom_fields"]),
             collector=self.membership,
             idempotency_key=key,
             replaces_receipt=replaces,

@@ -54,6 +54,29 @@ class AppState extends ChangeNotifier {
   String get orgName => (orgDetail?['organization'] as Map?)?['name']?.toString() ?? '';
   String? get logoUrl => (orgDetail?['organization'] as Map?)?['logo_url']?.toString();
 
+  /// Admin studio: how this organization's admins set up the Collect form.
+  Map<String, dynamic> get formStudio => (orgDetail?['form_studio'] as Map?)?.cast<String, dynamic>() ?? const {};
+
+  /// The admin's own name for a Collect field, or [fallback] for the standard one.
+  String fieldLabel(String field, String fallback) {
+    final label = (formStudio['labels'] as Map?)?[field];
+    return label is String && label.isNotEmpty ? label : fallback;
+  }
+
+  Map? _studioMode(String mode) => (formStudio['modes'] as Map?)?[mode] as Map?;
+  String? customModeLabel(String mode) {
+    final label = _studioMode(mode)?['label'];
+    return label is String && label.isNotEmpty ? label : null;
+  }
+
+  bool modeHidden(String mode) => _studioMode(mode)?['hidden'] == true;
+
+  /// The organization's own dropdowns shown on Collect.
+  List<Map<String, dynamic>> get customFields => [
+    for (final f in (formStudio['custom_fields'] as List? ?? const []))
+      if (f is Map && f['active'] != false && f['key'] != null) f.cast<String, dynamic>(),
+  ];
+
   /// Committee roles that collect money get the collector screens.
   bool get isCollector => can('payments.create');
 

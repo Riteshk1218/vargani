@@ -100,6 +100,39 @@ export interface MyOrganizationDetail {
   permissions: Record<string, string>
   current_financial_year: FinancialYear | null
   member_portal_enabled: boolean
+  form_studio: FormStudio
+}
+
+/** Collect form fields whose name an Organization Admin can change in the admin studio. */
+export type StudioLabelField =
+  | 'payer'
+  | 'contribution_type'
+  | 'month'
+  | 'amount'
+  | 'received'
+  | 'follow_up_on'
+  | 'mode'
+  | 'paid_on'
+  | 'reference'
+  | 'cheque_number'
+  | 'cheque_bank'
+  | 'cheque_date'
+  | 'notes'
+
+/** A dropdown the organization added to Collect. `key` is empty until the server saves it. */
+export interface StudioField {
+  key?: string
+  label: string
+  options: string[]
+  required: boolean
+  active: boolean
+}
+
+/** Admin studio: how the Collect form looks in this organization. */
+export interface FormStudio {
+  labels: Partial<Record<StudioLabelField, string>>
+  modes: Partial<Record<PaymentMode, { label: string; hidden: boolean }>>
+  custom_fields: StudioField[]
 }
 
 export interface OrganizationSettings {
@@ -323,6 +356,8 @@ export interface Payment {
   /** When to go back for the money still owed. */
   follow_up_on: string | null
   follow_up_state: FollowUpState | null
+  /** The organization's own dropdowns answered on this collection. */
+  custom_fields: { key: string; label: string; value: string }[]
   created_at: string
 }
 
@@ -364,6 +399,8 @@ export interface PaymentInput {
   /** When to go back for the balance. */
   follow_up_on?: string | null
   replaces_receipt?: string
+  /** Answers to the organization's own dropdowns: field key -> option picked. */
+  custom_fields?: Record<string, string>
 }
 
 /** A balance (baaki): money a person still owes on a receipt given before all of it came. */
@@ -432,6 +469,10 @@ export interface ReceiptSnapshot {
   balance_total?: string
   currency: string
   mode: PaymentMode
+  /** The organization's own name for the mode, when it set one. */
+  mode_label?: string
+  /** The organization's own dropdowns, with the names they had when the receipt was issued. */
+  custom_fields?: { label: string; value: string }[]
   reference_number: string
   cheque_bank: string
   cheque_date: string | null

@@ -12,6 +12,7 @@ from django.utils import timezone
 
 from apps.audit import services as audit
 from apps.notifications import hooks as notify
+from apps.organizations import form_studio
 
 from .models import Receipt, ReceiptSeries
 
@@ -97,6 +98,10 @@ def build_snapshot(payment) -> dict:
         "balance_total": _money(sum((Decimal(b["amount"]) for b in balance), Decimal("0"))),
         "currency": org.currency,
         "mode": payment.mode,
+        "mode_label": form_studio.mode_label(org, payment.mode),
+        "custom_fields": [
+            {"label": f["label"], "value": f["value"]} for f in form_studio.describe_values(org, payment.custom_fields)
+        ],
         "reference_number": payment.reference_number,
         "cheque_bank": payment.cheque_bank,
         "cheque_date": payment.cheque_date.isoformat() if payment.cheque_date else None,
