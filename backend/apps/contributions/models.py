@@ -30,9 +30,11 @@ class ContributionType(TenantModel):
     end_date = models.DateField(null=True, blank=True)
     description = models.TextField(blank=True)
     is_active = models.BooleanField(default=True)
+    # Lists and the Collect dropdown show lower positions first; the default types come first, Donation leading.
+    position = models.PositiveSmallIntegerField(default=100)
 
     class Meta:
-        ordering = ["name"]
+        ordering = ["position", "name"]
         constraints = [
             models.UniqueConstraint(fields=["organization", "id"], name="ctype_org_id_unique"),
             models.UniqueConstraint(fields=["event", "id"], name="ctype_event_id_unique"),

@@ -127,8 +127,8 @@ export function CollectPage() {
     }
   }
 
-  // New lines start on the monthly type, the most common collection.
-  const defaultType = activeTypes.find((ct) => ct.kind === 'recurring_monthly') ?? activeTypes[0]
+  // New lines start on the first type in the event's order: Donation, for the default types.
+  const defaultType = activeTypes[0]
   const blankLine = (key: number): Line => ({ key, typeId: defaultType?.id ?? '', month: today().slice(0, 7), amount: '' })
   useEffect(() => {
     if (activeTypes.length) setLines((current) => (current.length ? current : [blankLine(1)]))

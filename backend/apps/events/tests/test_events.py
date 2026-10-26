@@ -42,15 +42,13 @@ def test_new_event_gets_default_contribution_types(client_for, make_org):
     event_id = client.post("/api/v1/events/", {"name": "Navratri 2027", "financial_year": str(fy_of(org).pk)}).data[
         "id"
     ]
-    types = {
-        t["name"]: t["kind"] for t in client.get("/api/v1/contribution-types/", {"event": event_id}).data["results"]
-    }
-    assert types == {
-        "Donation": "one_time",
-        "Membership Fee": "one_time",
-        "Monthly Contribution": "recurring_monthly",
-        "Other": "one_time",
-    }
+    types = client.get("/api/v1/contribution-types/", {"event": event_id}).data["results"]
+    assert [(t["name"], t["kind"]) for t in types] == [
+        ("Donation", "one_time"),
+        ("Membership Fee", "one_time"),
+        ("Monthly Contribution", "recurring_monthly"),
+        ("Other", "one_time"),
+    ]
 
 
 def test_default_contribution_types_use_org_language_and_skip_existing(make_org):
@@ -58,11 +56,24 @@ def test_default_contribution_types_use_org_language_and_skip_existing(make_org)
     org.default_language = "mr"
     org.save()
     event = Event.objects.create(organization=org, name="Ganpati", financial_year=fy_of(org), code="G")
+    ContributionType.objects.create(organization=org, event=event, name="Monthly", kind="recurring_monthly")
     ContributionType.objects.create(organization=org, event=event, name="Donation")
     seed_types(event)
     seed_types(event)
-    names = set(ContributionType.objects.filter(event=event).values_list("name", flat=True))
-    assert names == {"Donation", "सभासद शुल्क", "मासिक वर्गणी", "इतर"}
+    names = list(ContributionType.objects.filter(event=event).values_list("name", flat=True))
+    assert names == ["Donation", "सभासद शुल्क", "Monthly", "इतर"]
+
+
+def test_seeded_monthly_contribution_is_hidden_next_to_the_events_own_monthly_type(make_org):
+    org = make_org()
+    event = Event.objects.create(organization=org, name="Ganpati", financial_year=fy_of(org), code="G")
+    ContributionType.objects.create(organization=org, event=event, name="Monthly", kind="recurring_monthly")
+    ContributionType.objects.create(
+        organization=org, event=event, name="Monthly Contribution", kind="recurring_monthly"
+    )
+    seed_types(event)
+    active = list(ContributionType.objects.filter(event=event, is_active=True).values_list("name", flat=True))
+    assert active == ["Donation", "Membership Fee", "Monthly", "Other"]
 
 
 def test_event_templates_listed(client_for, make_user):
