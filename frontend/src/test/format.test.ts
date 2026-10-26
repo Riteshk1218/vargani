@@ -1,4 +1,4 @@
-import { formatMobile, formatMoney, initials, sumMoney, suggestFinancialYear } from '../utils/format'
+import { formatMobile, formatMoney, initials, searchTerm, sumMoney, suggestFinancialYear } from '../utils/format'
 
 describe('format helpers', () => {
   it('formats money from decimal strings with Indian grouping', () => {
@@ -26,5 +26,16 @@ describe('format helpers', () => {
     expect(sumMoney(['0.1', '0.2'])).toBe('0.30')
     expect(sumMoney(['300.5', '200.05', '', 'abc'])).toBe('500.55')
     expect(sumMoney([])).toBe('0.00')
+  })
+})
+
+describe('searchTerm', () => {
+  it('drops spaces and dashes from a typed mobile number', () => {
+    expect(searchTerm(' +91 98678 50909 ')).toBe('+919867850909')
+    expect(searchTerm('98678-50909')).toBe('9867850909')
+  })
+
+  it('leaves names alone', () => {
+    expect(searchTerm('  Tanaji Patil ')).toBe('Tanaji Patil')
   })
 })

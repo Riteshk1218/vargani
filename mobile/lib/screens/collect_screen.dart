@@ -153,7 +153,10 @@ class _CollectScreenState extends State<CollectScreen> {
       setState(() {
         _types = types;
         _loadError = null;
-        if (types.length == 1) _lines.first.typeId = types.first['id'] as String;
+        // Lines start on the first type in the event's order: Donation, for the default types.
+        for (final line in _lines) {
+          line.typeId ??= types.firstOrNull?['id'] as String?;
+        }
       });
     } catch (e) {
       setState(() => _loadError = e);
@@ -190,7 +193,7 @@ class _CollectScreenState extends State<CollectScreen> {
       MaterialPageRoute(
         builder: (ctx) => Scaffold(
           appBar: AppBar(title: Text(AppScope.of(ctx).t('select_person'))),
-          body: PersonSearchList(onPick: (p) => Navigator.pop(ctx, p)),
+          body: PersonSearchList(searchFirst: true, onPick: (p) => Navigator.pop(ctx, p)),
         ),
       ),
     );
@@ -439,7 +442,7 @@ class _CollectScreenState extends State<CollectScreen> {
                     child: TextButton.icon(
                       icon: const Icon(Icons.add),
                       label: Text(t('add_line')),
-                      onPressed: () => setState(() => _lines.add(_Line())),
+                      onPressed: () => setState(() => _lines.add(_Line()..typeId = _types!.first['id'] as String)),
                     ),
                   ),
                 if (_named) ...[

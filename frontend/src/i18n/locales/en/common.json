@@ -280,6 +280,17 @@
     "archiveMessage": "{{name}} will be hidden from lists. Their history is kept.",
     "archived": "Person archived"
   },
+  "personHistory": {
+    "title": "Contribution history",
+    "totalPaid": "Total paid",
+    "stillOwed": "Still owed",
+    "pavtis": "Pavtis",
+    "lastPaid": "Last paid",
+    "event": "Event",
+    "empty": "No contributions yet",
+    "contribution": "Contribution",
+    "collectedBy": "Collected by {{name}}"
+  },
   "users": {
     "title": "Users & Roles",
     "subtitle": "People who can log in, and what each one can do.",

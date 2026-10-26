@@ -16,7 +16,7 @@ import { toApiError } from '../../services/apiClient'
 import { contributionTypeService, dueService, paymentService } from '../../services/finance'
 import { peopleService } from '../../services/people'
 import type { ContributionType, NewPersonInput, Payment, PaymentInput, PaymentMode, Person } from '../../types/api'
-import { formatDate, formatMobile, formatMoney, formatMonth, formatStamp, sumMoney } from '../../utils/format'
+import { formatDate, formatMobile, formatMoney, formatMonth, formatStamp, searchTerm, sumMoney } from '../../utils/format'
 import { todayIso } from '../../utils/payments'
 import { PavtiVisitModal } from '../payments/PavtiVisitModal'
 
@@ -131,8 +131,8 @@ export function CollectPage() {
     }
   }
 
-  // New lines start on the monthly type, the most common collection.
-  const defaultType = activeTypes.find((ct) => ct.kind === 'recurring_monthly') ?? activeTypes[0]
+  // New lines start on the first type in the event's order: Donation, for the default types.
+  const defaultType = activeTypes[0]
   // The admin studio may hide cash; start on the first mode still shown.
   useEffect(() => {
     if (studio.modes.length && !studio.modes.includes(mode)) setMode(studio.modes[0])
@@ -605,11 +605,12 @@ function PersonPicker({ person, onChange, error }: { person: Person | null; onCh
   const { t } = useTranslation()
   const { activeOrgId, can } = useOrg()
   const [search, setSearch] = useState('')
-  const debounced = useDebounced(search)
+  const debounced = searchTerm(useDebounced(search))
+  // Nothing is listed until the collector types: with hundreds of donors a full list is no help.
   const people = useQuery({
     queryKey: ['org', activeOrgId, 'people', 'picker', debounced],
-    queryFn: () => peopleService.list({ search: debounced || undefined, page_size: 8 }),
-    enabled: !person,
+    queryFn: () => peopleService.list({ search: debounced, page_size: 8 }),
+    enabled: !person && debounced !== '',
   })
 
   if (person) {
@@ -644,7 +645,7 @@ function PersonPicker({ person, onChange, error }: { person: Person | null; onCh
         />
         <Search className="pointer-events-none absolute right-3 top-9 size-4 text-slate-400" aria-hidden />
       </div>
-      {people.isLoading ? (
+      {debounced === '' ? null : people.isLoading ? (
         <Spinner />
       ) : (people.data?.results.length ?? 0) === 0 ? (
         <p className="py-3 text-center text-sm text-slate-500">
