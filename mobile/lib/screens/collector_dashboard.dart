@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../util/money.dart';
 import '../widgets/common.dart';
+import 'followups_screen.dart';
 import 'receipt_screen.dart';
 import 'summary_screen.dart';
 
@@ -14,14 +15,25 @@ class CollectorDashboard extends StatelessWidget {
     if (app.eventId == null) return EmptyState(icon: Icons.event_busy, text: app.t('no_events'));
     return AsyncView<Map<String, dynamic>>(
       reloadKey: app.eventId,
-      load: () async => ((await app.api.get('/collectors/me/dashboard/', query: {'event': app.eventId})) as Map)
-          .cast<String, dynamic>(),
+      load: () async {
+        final d = ((await app.api.get('/collectors/me/dashboard/', query: {'event': app.eventId})) as Map)
+            .cast<String, dynamic>();
+        // Pavtis to visit (door-to-door follow-up): overdue and due today.
+        if (app.can('payments.view')) {
+          try {
+            final summary = await app.api.get('/dashboard/summary/', query: {'event': app.eventId});
+            d['follow_ups'] = (summary as Map)['follow_ups'];
+          } catch (_) {}
+        }
+        return d;
+      },
       builder: (context, d, reload) {
         final byMode = (d['by_mode'] as Map?)?.cast<String, dynamic>() ?? {};
         final recent = (d['recent_receipts'] as List? ?? []).cast<Map>();
         return ListView(
           padding: const EdgeInsets.fromLTRB(12, 12, 12, 96),
           children: [
+            if (d['follow_ups'] is Map) FollowUpCards(followUps: d['follow_ups'] as Map, onReturn: reload),
             GridView.count(
               crossAxisCount: 2,
               shrinkWrap: true,

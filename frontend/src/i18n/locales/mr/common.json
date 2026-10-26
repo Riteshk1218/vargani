@@ -926,5 +926,50 @@
     "writeOffMessage": "{{name}} यांच्याकडून {{amount}} आता येणे नाही. याची नोंद ऑडिट लॉगमध्ये होईल.",
     "writtenOff": "बाकी माफ केली",
     "writtenOffReason": "ॲडमिनने माफ केली"
+  },
+  "pavti": {
+    "update": "पावती अपडेट करा",
+    "updateTitle": "त्याच पावतीत बदल करा",
+    "sameHint": "बाकी वर्गणी घेताय किंवा नंतर येणार? त्याच पावतीत बदल करा. नवी पावती बनणार नाही.",
+    "stillOwed": "{{amount}} अजून बाकी",
+    "lastFollowUp": "पुढील भेटीची तारीख {{date}} होती",
+    "receivedNow": "आता मिळालेली रक्कम",
+    "receivedHint": "आज कोणी दिले नसेल तर रिकामे ठेवा.",
+    "paidInFull": "पूर्ण भरले ({{amount}})",
+    "tooMuch": "{{amount}} पर्यंत रक्कम टाका.",
+    "nextFollowUp": "पुढील भेटीची तारीख",
+    "leftAfter": "{{amount}} बाकी राहील",
+    "datePast": "आजची किंवा नंतरची तारीख निवडा.",
+    "willBePaid": "ही पावती भरलेली म्हणून नोंदवली जाईल.",
+    "markPaid": "भरले",
+    "saveReceived": "{{amount}} मिळाले, सेव्ह करा",
+    "saveDate": "भेटीची तारीख सेव्ह करा",
+    "nowPaid": "पावती पूर्ण भरली",
+    "followUpDate": "पुढील भेटीची तारीख (फॉलो-अप)",
+    "followUpHint": "बाकी वर्गणी घ्यायला ज्या दिवशी याल ती तारीख.",
+    "followUpOn": "फॉलो-अप {{date}}",
+    "overdueSince": "{{date}} पासून थकीत",
+    "noFollowUp": "भेटीची तारीख ठरलेली नाही",
+    "overdue": "थकीत",
+    "dueToday": "आज भेट",
+    "owingAll": "अपूर्ण पावत्या",
+    "overdueHint": "भेटीची तारीख उलटून गेली",
+    "dueTodayHint": "आज या घरी जा",
+    "filter": "पावती",
+    "status": {
+      "unpaid": "न भरलेली",
+      "partly_paid": "अंशतः भरलेली",
+      "paid": "भरलेली"
+    },
+    "filters": {
+      "overdue": "थकीत",
+      "today": "आज भेट",
+      "upcoming": "नंतर भेट",
+      "none": "भेटीची तारीख नाही",
+      "owing": "पूर्ण न भरलेल्या",
+      "unpaid": "न भरलेल्या",
+      "partly_paid": "अंशतः भरलेल्या",
+      "paid": "भरलेल्या"
+    }
   }
 }

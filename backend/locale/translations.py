@@ -10,6 +10,12 @@ from pathlib import Path
 import polib
 
 T = {
+    "Follow-up date": ("पुढील भेटीची तारीख", "फॉलो-अप तारीख"),
+    "Nothing is owed on this pavti.": ("या पावतीवर काहीही बाकी नाही.", "इस पावती पर कुछ बकाया नहीं है।"),
+    "The follow-up date cannot be in the past.": (
+        "पुढील भेटीची तारीख मागील असू शकत नाही.",
+        "फॉलो-अप तारीख बीती हुई नहीं हो सकती।",
+    ),
     "Balance due": ("बाकी रक्कम", "बकाया राशि"),
     "Balance due: Rs %(amount)s.": ("बाकी: रु %(amount)s.", "बकाया: रु %(amount)s।"),
     "towards balance": ("बाकीपोटी", "बकाया के लिए"),

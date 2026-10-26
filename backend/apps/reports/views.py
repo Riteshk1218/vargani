@@ -15,10 +15,12 @@ from rest_framework.views import APIView
 from apps.contributions.models import Contribution
 from apps.contributions.selectors import summarize
 from apps.core.permissions import HasOrgPermission
+from apps.core.scoping import scope_money
 from apps.core.tenancy import SCOPE_ALL
 from apps.events.models import Event, EventParticipant
 from apps.expenses.models import Expense
 from apps.organizations.models import FinancialYear, OrganizationMembership
+from apps.payments import followups
 from apps.payments.models import Payment
 from apps.people.models import Person
 
@@ -36,6 +38,7 @@ class DashboardSummaryView(APIView):
     Only real numbers are returned. `financial` is present for roles with dashboard.view_financial and covers
     the selected event, or every event of the current financial year when no event is given. Income is
     confirmed contributions plus recorded other income; expenses are approved expenses (reports/selectors.py).
+    `follow_ups` (roles that see payments) counts pavtis still owing money: overdue, due today and all.
     """
 
     permission_classes = [IsAuthenticated, HasOrgPermission]
@@ -89,7 +92,21 @@ class DashboardSummaryView(APIView):
             }
         if context.has("dashboard.view_financial"):
             data["financial"] = self._financial(org, event if event_id else None, fy)
+        if context.has("payments.view"):
+            data["follow_ups"] = self._follow_ups(request, org, event if event_id else None, fy)
         return Response(data)
+
+    def _follow_ups(self, request, org, event, fy):
+        """Pavtis still owing money: how many are overdue or due for a visit today (door-to-door)."""
+        payments = Payment.objects.for_org(org).filter(event__deleted_at__isnull=True)
+        if event is not None:
+            payments = payments.filter(event=event)
+        elif fy is not None:
+            payments = payments.filter(event__financial_year=fy)
+        else:
+            payments = payments.none()
+        payments = scope_money(payments, request._org_context, "payments.view", request.user, person="payer")
+        return followups.counts(followups.with_pavti_balance(payments), followups.org_today(org))
 
     def _financial(self, org, event, fy):
         events = Event.objects.for_org(org).alive()

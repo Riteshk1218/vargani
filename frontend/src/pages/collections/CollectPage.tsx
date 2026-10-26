@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { CheckCircle2, HandCoins, Plus, ReceiptText, Search, Trash2, UserPlus, UserRound, UserX } from 'lucide-react'
+import { CalendarClock, CheckCircle2, HandCoins, Plus, ReceiptText, Search, Trash2, UserPlus, UserRound, UserX } from 'lucide-react'
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useSearchParams } from 'react-router-dom'
@@ -14,9 +14,10 @@ import { useDebounced } from '../../hooks/useDebounced'
 import { toApiError } from '../../services/apiClient'
 import { contributionTypeService, dueService, paymentService } from '../../services/finance'
 import { peopleService } from '../../services/people'
-import type { ContributionType, Due, NewPersonInput, Payment, PaymentInput, PaymentMode, Person } from '../../types/api'
-import { formatMobile, formatMoney, formatMonth, formatStamp, sumMoney } from '../../utils/format'
-import { MANUAL_MODES } from '../../utils/payments'
+import type { ContributionType, NewPersonInput, Payment, PaymentInput, PaymentMode, Person } from '../../types/api'
+import { formatDate, formatMobile, formatMoney, formatMonth, formatStamp, sumMoney } from '../../utils/format'
+import { MANUAL_MODES, todayIso } from '../../utils/payments'
+import { PavtiVisitModal } from '../payments/PavtiVisitModal'
 
 const MONEY = /^\d+(\.\d{1,2})?$/
 
@@ -25,8 +26,6 @@ interface Line {
   typeId: string
   month: string // YYYY-MM
   amount: string
-  /** Set when this line pays an earlier balance; its type and month come from the balance. */
-  due?: Due
 }
 
 function today() {
@@ -35,18 +34,9 @@ function today() {
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
 }
 
-/** Like the server: the money received is spread over the lines in order. What new lines still lack becomes
- * a balance; what a line paying an old balance lacks just leaves that balance open. */
-function keptBalance(lines: Line[], received: string): string {
-  let left = Math.round(Number(received) * 100)
-  let kept = 0
-  for (const line of lines) {
-    const amount = MONEY.test(line.amount) ? Math.round(Number(line.amount) * 100) : 0
-    const now = Math.min(amount, left)
-    left -= now
-    if (!line.due) kept += amount - now
-  }
-  return (kept / 100).toFixed(2)
+/** What is not received now is kept as a balance on the pavti. */
+function keptBalance(total: string, received: string): string {
+  return (Math.max(0, Math.round(Number(total) * 100) - Math.round(Number(received) * 100)) / 100).toFixed(2)
 }
 
 function newKey() {
@@ -105,19 +95,37 @@ export function CollectPage() {
   // Money that came now; empty means all of it. The rest is kept as a balance (baaki) for the person.
   const [received, setReceived] = useState('')
   const [balanceKept, setBalanceKept] = useState('0.00')
+  // When to go back to this house for the balance.
+  const [followUp, setFollowUp] = useState(todayIso(1))
+  // An earlier pavti of this person with money still owed, opened to update it instead of making a new one.
+  const [visiting, setVisiting] = useState<Payment | null>(null)
+  const [opening, setOpening] = useState<string | null>(null)
   const openDues = useQuery({
     queryKey: ['org', activeOrgId, 'dues', eventId, person?.id],
     queryFn: () => dueService.list({ person: person!.id, event: eventId, open: true, page_size: 50 }),
     enabled: Boolean(person && eventId && payerKind === 'existing'),
   })
-  const collectDue = (due: Due) =>
-    setLines((ls) => {
-      if (ls.some((l) => l.due?.id === due.id)) return ls
-      const line: Line = { key: Math.max(0, ...ls.map((l) => l.key)) + 1, typeId: due.contribution_type, month: (due.period_month ?? '').slice(0, 7), amount: due.remaining, due }
-      // Replace the empty starting line instead of leaving it to fill in.
-      const kept = ls.filter((l) => l.due || l.amount)
-      return [...kept, line]
-    })
+  // One row per pavti: a pavti may keep balances for more than one contribution type.
+  const owedPavtis = useMemo(() => {
+    const byPayment = new Map<string, { payment: string; receipt: string | null; remaining: string; types: string[] }>()
+    for (const due of openDues.data?.results ?? []) {
+      const row = byPayment.get(due.payment) ?? { payment: due.payment, receipt: due.receipt_number, remaining: '0', types: [] }
+      row.remaining = sumMoney([row.remaining, due.remaining])
+      row.types.push(due.period_month ? `${due.contribution_type_name} · ${formatMonth(due.period_month)}` : due.contribution_type_name)
+      byPayment.set(due.payment, row)
+    }
+    return [...byPayment.values()]
+  }, [openDues.data])
+  const openPavti = async (id: string) => {
+    setOpening(id)
+    try {
+      setVisiting(await paymentService.get(id))
+    } catch (error) {
+      notify(toApiError(error).message || t('errors.generic'), 'error')
+    } finally {
+      setOpening(null)
+    }
+  }
 
   // New lines start on the monthly type, the most common collection.
   const defaultType = activeTypes.find((ct) => ct.kind === 'recurring_monthly') ?? activeTypes[0]
@@ -132,7 +140,7 @@ export function CollectPage() {
   const canKeepBalance = named && !(mode === 'cheque' && pending) && !replaces
   const receivedNow = canKeepBalance && received !== '' && MONEY.test(received) ? received : total
   const hasBalance = Number(receivedNow) < Number(total)
-  const balance = keptBalance(lines, receivedNow)
+  const balance = keptBalance(total, receivedNow)
   const updateLine = (key: number, patch: Partial<Line>) => setLines((ls) => ls.map((l) => (l.key === key ? { ...l, ...patch } : l)))
 
   const reset = () => {
@@ -152,6 +160,7 @@ export function CollectPage() {
     setIdempotencyKey(newKey())
     setReceived('')
     setBalanceKept('0.00')
+    setFollowUp(todayIso(1))
     if (params.get('person') || params.get('replaces')) setParams({})
   }
 
@@ -165,6 +174,7 @@ export function CollectPage() {
     })
     if ((mode === 'cheque' || mode === 'bank_transfer') && !reference.trim()) found.reference_number = t('validation.required')
     if (canKeepBalance && received !== '' && (!MONEY.test(received) || Number(received) > Number(total))) found.received = t('collect.receivedTooMuch')
+    if (hasBalance && followUp && followUp < todayIso()) found.follow_up_on = t('pavti.datePast')
     setErrors(found)
     if (Object.keys(found).length) return
 
@@ -180,17 +190,16 @@ export function CollectPage() {
       cheque_bank: mode === 'cheque' ? chequeBank : '',
       cheque_date: mode === 'cheque' && chequeDate ? chequeDate : null,
       notes,
-      lines: lines.map((line) =>
-        line.due
-          ? { due: line.due.id, amount: line.amount }
-          : {
-              contribution_type: line.typeId,
-              amount: line.amount,
-              period_month: typeById(line.typeId)?.kind === 'recurring_monthly' ? `${line.month}-01` : null,
-            },
-      ),
+      lines: lines.map((line) => ({
+        contribution_type: line.typeId,
+        amount: line.amount,
+        period_month: typeById(line.typeId)?.kind === 'recurring_monthly' ? `${line.month}-01` : null,
+      })),
     }
-    if (hasBalance) payload.received = receivedNow
+    if (hasBalance) {
+      payload.received = receivedNow
+      payload.follow_up_on = followUp || null
+    }
     if (replaces) payload.replaces_receipt = replaces
     if (paidOn && paidOn !== today()) payload.paid_at = new Date(`${paidOn}T12:00:00`).toISOString()
 
@@ -238,7 +247,10 @@ export function CollectPage() {
             {done.payer_name} · {formatMoney(done.amount, currency)} · {t(`mode.${done.mode}`)}
           </p>
           {Number(balanceKept) > 0 && (
-            <p className="mt-2 rounded-lg bg-amber-50 p-2 text-sm font-medium text-amber-900">{t('collect.balanceKept', { amount: formatMoney(balanceKept, currency) })}</p>
+            <p className="mt-2 rounded-lg bg-amber-50 p-2 text-sm font-medium text-amber-900">
+              {t('collect.balanceKept', { amount: formatMoney(balanceKept, currency) })}
+              {done.follow_up_on && <span className="block">{t('pavti.followUpOn', { date: formatDate(done.follow_up_on) })}</span>}
+            </p>
           )}
           <p className="mt-1 text-sm text-slate-500" data-testid="collect-stamp">
             {done.event_name} · {t('finance.fy', { label: done.financial_year_label })} · {formatStamp(done.paid_at)}
@@ -297,29 +309,30 @@ export function CollectPage() {
             />
           </Card>
 
-          {payerKind === 'existing' && person && (openDues.data?.results.length ?? 0) > 0 && (
+          {payerKind === 'existing' && person && owedPavtis.length > 0 && (
             <Card className="p-4">
-              <p className="mb-2 flex items-center gap-2 font-semibold text-amber-900">
-                <HandCoins className="size-4" aria-hidden /> {t('collect.openBalances', { amount: formatMoney(sumMoney(openDues.data!.results.map((d) => d.remaining)), currency) })}
+              <p className="flex items-center gap-2 font-semibold text-amber-900">
+                <HandCoins className="size-4" aria-hidden /> {t('collect.openBalances', { amount: formatMoney(sumMoney(owedPavtis.map((p) => p.remaining)), currency) })}
               </p>
+              <p className="mb-2 text-sm text-slate-600">{t('pavti.sameHint')}</p>
               <ul className="divide-y divide-slate-100 rounded-lg ring-1 ring-amber-200">
-                {openDues.data!.results.map((due) => (
-                  <li key={due.id} className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
+                {owedPavtis.map((row) => (
+                  <li key={row.payment} className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
                     <span>
-                      <span className="font-medium">{due.contribution_type_name}</span>
-                      {due.period_month && <span className="text-slate-500"> · {formatMonth(due.period_month)}</span>}
+                      <span className="font-medium">{row.receipt ?? t('payments.noReceipt')}</span>
                       <span className="block text-slate-500">
-                        {[due.receipt_number, t('collect.balanceStill', { amount: formatMoney(due.remaining, currency) })].filter(Boolean).join(' · ')}
+                        {[row.types.join(', '), t('collect.balanceStill', { amount: formatMoney(row.remaining, currency) })].join(' · ')}
                       </span>
                     </span>
-                    <Button size="sm" variant="secondary" disabled={lines.some((l) => l.due?.id === due.id)} onClick={() => collectDue(due)}>
-                      {t('collect.collectBalance')}
+                    <Button size="sm" icon={<CalendarClock className="size-4" />} loading={opening === row.payment} onClick={() => void openPavti(row.payment)}>
+                      {t('pavti.update')}
                     </Button>
                   </li>
                 ))}
               </ul>
             </Card>
           )}
+          {visiting && <PavtiVisitModal payment={visiting} onClose={() => setVisiting(null)} onSaved={() => setVisiting(null)} />}
 
           <Card className="space-y-4 p-4">
             {lines.map((line, index) => {
@@ -327,32 +340,19 @@ export function CollectPage() {
               const range = [ct?.suggested_min, ct?.suggested_max].filter(Boolean).map((v) => formatMoney(v, currency)).join(' – ')
               return (
                 <div key={line.key} className="grid gap-3 border-b border-slate-100 pb-4 last:border-0 last:pb-0 sm:grid-cols-[1fr_9rem_8rem_auto] sm:items-start">
-                  {line.due ? (
-                    <div>
-                      <p className="mb-1.5 text-sm font-medium text-slate-700">{t('collect.type')}</p>
-                      <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900 ring-1 ring-amber-200">
-                        {t('collect.towardsBalance', { type: line.due.contribution_type_name })}
-                        {line.due.period_month ? ` · ${formatMonth(line.due.period_month)}` : ''}
-                      </p>
-                      {errors[`lines.${index}.due`] && <p className="mt-1 text-sm text-red-600">{errors[`lines.${index}.due`]}</p>}
-                    </div>
-                  ) : (
-                    <SelectInput
-                      label={t('collect.type')}
-                      value={line.typeId}
-                      error={errors[`lines.${index}.contribution_type`]}
-                      onChange={(e) => updateLine(line.key, { typeId: e.target.value })}
-                    >
-                      {activeTypes.map((option) => (
-                        <option key={option.id} value={option.id}>
-                          {option.name}
-                        </option>
-                      ))}
-                    </SelectInput>
-                  )}
-                  {line.due ? (
-                    <div className="hidden sm:block" />
-                  ) : ct?.kind === 'recurring_monthly' ? (
+                  <SelectInput
+                    label={t('collect.type')}
+                    value={line.typeId}
+                    error={errors[`lines.${index}.contribution_type`]}
+                    onChange={(e) => updateLine(line.key, { typeId: e.target.value })}
+                  >
+                    {activeTypes.map((option) => (
+                      <option key={option.id} value={option.id}>
+                        {option.name}
+                      </option>
+                    ))}
+                  </SelectInput>
+                  {ct?.kind === 'recurring_monthly' ? (
                     <TextInput
                       label={t('collect.month')}
                       type="month"
@@ -417,6 +417,18 @@ export function CollectPage() {
                   <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900 ring-1 ring-amber-200 sm:mt-6" data-testid="collect-balance">
                     {t('collect.balanceWillBe', { amount: formatMoney(balance, currency) })}
                   </p>
+                )}
+                {hasBalance && (
+                  <TextInput
+                    className="sm:col-span-2"
+                    label={t('pavti.followUpDate')}
+                    type="date"
+                    min={todayIso()}
+                    value={followUp}
+                    hint={t('pavti.followUpHint')}
+                    error={errors.follow_up_on}
+                    onChange={(e) => setFollowUp(e.target.value)}
+                  />
                 )}
               </div>
             )}

@@ -236,6 +236,8 @@ export interface DashboardSummary {
   current_financial_year: { id: string; label: string } | null
   financial: FinancialSummary | null
   event?: { id: string; name: string; status: EventStatus; target_amount: string | null; participants: number | null }
+  /** Pavtis still owing money (door-to-door follow-up), for roles that see payments. */
+  follow_ups?: { overdue: number; due_today: number; owing: number; balance: string }
 }
 
 export interface Fund {
@@ -315,7 +317,24 @@ export interface Payment {
   status_reason: string
   lines: PaymentLine[]
   receipt: ReceiptRef | null
+  /** Still owed on this pavti. */
+  balance_due: string
+  pavti_status: PavtiStatus | null
+  /** When to go back for the money still owed. */
+  follow_up_on: string | null
+  follow_up_state: FollowUpState | null
   created_at: string
+}
+
+export type PavtiStatus = 'unpaid' | 'partly_paid' | 'paid'
+export type FollowUpState = 'overdue' | 'today' | 'upcoming'
+
+/** A later visit to the same pavti: money received now (may be 0) and the next follow-up date. */
+export interface PavtiVisitInput {
+  received?: string
+  mode?: PaymentMode
+  reference_number?: string
+  follow_up_on?: string | null
 }
 
 /** A contributor added while collecting. */
@@ -342,6 +361,8 @@ export interface PaymentInput {
   lines: { contribution_type?: string; amount: string; period_month?: string | null; notes?: string; due?: string }[]
   /** Money that came now, when less than the total: the rest is kept as a balance for the person. */
   received?: string
+  /** When to go back for the balance. */
+  follow_up_on?: string | null
   replaces_receipt?: string
 }
 

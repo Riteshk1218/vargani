@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 import '../api/api_client.dart';
 import '../util/money.dart';
 import '../widgets/common.dart';
+import 'followups_screen.dart';
 import 'people_screen.dart';
 import 'receipt_screen.dart';
 
@@ -14,7 +15,6 @@ class _Line {
   String? typeId;
   final amount = TextEditingController();
   String? month; // YYYY-MM-01
-  Map<String, dynamic>? due; // set when this line pays an earlier balance (baaki)
 }
 
 /// "500.00" -> 50000 paise, so amounts can be compared without floating point.
@@ -55,6 +55,12 @@ class _CollectScreenState extends State<CollectScreen> {
   // Money that came now; empty means all of it. The rest is kept as a balance for the person.
   final _received = TextEditingController();
   List<Map<String, dynamic>> _dues = const [];
+  // When to go back to this house for the balance (YYYY-MM-DD).
+  String? _followUp = () {
+    final d = DateTime.now().add(const Duration(days: 1));
+    return '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+  }();
+  String? _opening; // pavti being opened for an update
   bool _saving = false;
   ApiException? _error;
 
@@ -66,7 +72,7 @@ class _CollectScreenState extends State<CollectScreen> {
     _loadDues();
   }
 
-  /// Balances this person still owes in this event, so the collector can collect the rest.
+  /// Balances this person still owes in this event, so the collector can update that pavti.
   Future<void> _loadDues() async {
     final app = AppScope.read(context);
     final id = _person?['id'];
@@ -82,36 +88,45 @@ class _CollectScreenState extends State<CollectScreen> {
     }
   }
 
-  void _collectDue(Map<String, dynamic> due) {
-    if (_lines.any((l) => l.due?['id'] == due['id'])) return;
-    setState(() {
-      _lines.removeWhere((l) => l.due == null && l.amount.text.trim().isEmpty);
-      _lines.add(
-        _Line()
-          ..due = due
-          ..typeId = due['contribution_type'] as String?
-          ..amount.text = '${due['remaining']}',
+  /// Open balances grouped by pavti: payment id -> (receipt number, still owed in paise).
+  Map<String, ({String? receipt, int paise})> get _owedPavtis {
+    final out = <String, ({String? receipt, int paise})>{};
+    for (final d in _dues) {
+      final id = '${d['payment']}';
+      final before = out[id];
+      out[id] = (
+        receipt: d['receipt_number']?.toString(),
+        paise: (before?.paise ?? 0) + _paise('${d['remaining']}'),
       );
-    });
+    }
+    return out;
+  }
+
+  /// Opens an earlier pavti of this person to add money or move its follow-up date. No new pavti is made.
+  Future<void> _updatePavti(String paymentId) async {
+    final app = AppScope.read(context);
+    setState(() => _opening = paymentId);
+    try {
+      final payment = await app.api.get('/payments/$paymentId/');
+      if (!mounted) return;
+      final saved = await Navigator.push<bool>(
+        context,
+        MaterialPageRoute(builder: (_) => PavtiVisitScreen(payment: payment as Map)),
+      );
+      if (saved == true) _loadDues();
+    } catch (e) {
+      if (mounted) showMessage(context, errorText(context, e), error: true);
+    } finally {
+      if (mounted) setState(() => _opening = null);
+    }
   }
 
   bool get _named => (_payerKind == 'existing' && _person != null) || _payerKind == 'new';
 
   int get _totalPaise => _lines.fold(0, (sum, l) => sum + _paise(normaliseAmount(l.amount.text)));
 
-  /// Like the server: what was received is spread over the lines in order; what new lines still lack
-  /// becomes the balance.
-  int _balancePaise(int received) {
-    var left = received;
-    var kept = 0;
-    for (final l in _lines) {
-      final amount = _paise(normaliseAmount(l.amount.text));
-      final now = amount < left ? amount : left;
-      left -= now;
-      if (l.due == null) kept += amount - now;
-    }
-    return kept;
-  }
+  /// What is not received now is kept as a balance on the pavti.
+  int _balancePaise(int received) => received < _totalPaise ? _totalPaise - received : 0;
 
   /// The received amount typed in, in paise, or null when it was left empty (all of it came).
   int? get _receivedPaise {
@@ -172,11 +187,7 @@ class _CollectScreenState extends State<CollectScreen> {
       ),
     );
     if (p != null) {
-      setState(() {
-        _person = p;
-        _lines.removeWhere((l) => l.due != null);
-        if (_lines.isEmpty) _lines.add(_Line());
-      });
+      setState(() => _person = p);
       _loadDues();
     }
   }
@@ -196,15 +207,11 @@ class _CollectScreenState extends State<CollectScreen> {
         showMessage(context, l.typeId == null ? t('choose_type') : t('invalid_amount'), error: true);
         return;
       }
-      lines.add(
-        l.due != null
-            ? {'due': l.due!['id'], 'amount': amount}
-            : {
-                'contribution_type': l.typeId,
-                'amount': amount,
-                if (_type(l.typeId)?['kind'] == 'recurring_monthly' && l.month != null) 'period_month': l.month,
-              },
-      );
+      lines.add({
+        'contribution_type': l.typeId,
+        'amount': amount,
+        if (_type(l.typeId)?['kind'] == 'recurring_monthly' && l.month != null) 'period_month': l.month,
+      });
     }
     final received = _receivedPaise;
     if (received != null && (received < 0 || received > _totalPaise)) {
@@ -231,6 +238,7 @@ class _CollectScreenState extends State<CollectScreen> {
           'notes': _notes.text.trim(),
           'lines': lines,
           if (received != null && received < _totalPaise) 'received': _fromPaise(received),
+          if (received != null && received < _totalPaise) 'follow_up_on': _followUp,
         },
         {'Idempotency-Key': _idempotencyKey},
       );
@@ -378,19 +386,21 @@ class _CollectScreenState extends State<CollectScreen> {
                             style: Theme.of(context).textTheme.titleSmall,
                           ),
                         ),
-                        for (final d in _dues)
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+                          child: Text(t('same_pavti_hint'), style: Theme.of(context).textTheme.bodySmall),
+                        ),
+                        for (final e in _owedPavtis.entries)
                           ListTile(
                             dense: true,
-                            title: Text('${d['contribution_type_name']}'),
-                            subtitle: Text(
-                              [
-                                d['receipt_number'],
-                                '${formatInr('${d['remaining']}')} ${t('still_owed')}',
-                              ].where((x) => x != null && '$x'.isNotEmpty).join(' · '),
-                            ),
-                            trailing: TextButton(
-                              onPressed: _lines.any((l) => l.due?['id'] == d['id']) ? null : () => _collectDue(d),
-                              child: Text(t('collect_balance')),
+                            title: Text(e.value.receipt ?? t('pavti')),
+                            subtitle: Text('${formatInr(_fromPaise(e.value.paise))} ${t('still_owed')}'),
+                            trailing: FilledButton.tonal(
+                              key: Key('update-pavti-${e.key}'),
+                              onPressed: _opening == null ? () => _updatePavti(e.key) : null,
+                              child: _opening == e.key
+                                  ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                                  : Text(t('update_pavti')),
                             ),
                           ),
                       ],
@@ -424,7 +434,7 @@ class _CollectScreenState extends State<CollectScreen> {
                     ),
                     onChanged: (_) => setState(() {}),
                   ),
-                  if ((_receivedPaise ?? -1) >= 0 && _balancePaise(_receivedPaise!) > 0)
+                  if ((_receivedPaise ?? -1) >= 0 && _balancePaise(_receivedPaise!) > 0) ...[
                     Padding(
                       padding: const EdgeInsets.only(top: 8),
                       child: Text(
@@ -433,6 +443,14 @@ class _CollectScreenState extends State<CollectScreen> {
                         style: TextStyle(color: Colors.amber.shade900, fontWeight: FontWeight.w600),
                       ),
                     ),
+                    const SizedBox(height: 12),
+                    FollowUpDateField(
+                      key: const Key('collect-follow-up'),
+                      value: _followUp,
+                      error: _error?.fieldError('follow_up_on'),
+                      onChanged: (v) => setState(() => _followUp = v),
+                    ),
+                  ],
                 ],
                 const SizedBox(height: 8),
                 Text(t('payment_mode'), style: Theme.of(context).textTheme.titleSmall),
@@ -505,47 +523,6 @@ class _CollectScreenState extends State<CollectScreen> {
       final now = DateTime.now();
       line.month = _monthValue(
         months.firstWhere((m) => m.year == now.year && m.month == now.month, orElse: () => months.first),
-      );
-    }
-    if (line.due != null) {
-      return Card(
-        color: Colors.amber.shade50,
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            children: [
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text('${line.due!['contribution_type_name']} (${t('towards_balance')})'),
-                subtitle: _error?.fieldError('lines.$i.due') != null
-                    ? Text(_error!.fieldError('lines.$i.due')!, style: TextStyle(color: Theme.of(context).colorScheme.error))
-                    : null,
-              ),
-              TextField(
-                key: Key('collect-amount-$i'),
-                controller: line.amount,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(
-                  labelText: t('amount'),
-                  prefixText: '₹ ',
-                  errorText: _error?.fieldError('lines.$i.amount'),
-                  border: const OutlineInputBorder(),
-                ),
-                onChanged: (_) => setState(() {}),
-              ),
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
-                  onPressed: () => setState(() {
-                    _lines.removeAt(i);
-                    if (_lines.isEmpty) _lines.add(_Line());
-                  }),
-                  child: Text(t('remove')),
-                ),
-              ),
-            ],
-          ),
-        ),
       );
     }
     return Card(

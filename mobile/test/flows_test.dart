@@ -125,6 +125,9 @@ void main() {
     await tester.tap(find.byKey(const Key('login-submit')));
     await tester.pumpAndSettle();
     expect(find.text('Wrong login details.'), findsOneWidget);
+    // Let the error message close so it does not cover the Save button later.
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpAndSettle();
 
     await tester.enterText(find.byKey(const Key('login-password')), 'right');
     await tester.tap(find.byKey(const Key('login-submit')));

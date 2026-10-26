@@ -13,6 +13,7 @@ import type {
   Payment,
   PaymentEditInput,
   PaymentInput,
+  PavtiVisitInput,
   PublicReceipt,
   Receipt,
   ReceiptShareLink,
@@ -55,6 +56,8 @@ export const paymentService = {
   adminEdit: (id: string, input: PaymentEditInput) => api.post<Payment>(`/payments/${id}/edit/`, input).then((r) => r.data),
   /** Organization Admin only: the payment leaves every list and total; its receipt is voided. */
   adminDelete: (id: string, reason = '') => api.delete<Payment>(`/payments/${id}/`, { data: { reason } }).then((r) => r.data),
+  /** A later visit to the same pavti: add the money that came now and/or move the follow-up date. */
+  visit: (id: string, input: PavtiVisitInput) => api.post<Payment>(`/payments/${id}/visit/`, input).then((r) => r.data),
   updateNotes: (id: string, notes: string) => api.patch<Payment>(`/payments/${id}/`, { notes }).then((r) => r.data),
   changeStatus: (id: string, action: 'confirm' | 'cancel' | 'fail', reason = '') =>
     api.post<Payment>(`/payments/${id}/${action}/`, { reason }).then((r) => r.data),
