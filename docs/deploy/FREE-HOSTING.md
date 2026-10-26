@@ -137,8 +137,10 @@ Turn on nightly backups (section 5 of `DEPLOYMENT.md`):
 1. Put the code on GitHub (private repository). GitHub's free plan includes build minutes for this.
 2. In the repository: **Settings → Secrets and variables → Actions → Variables → New variable**,
    name `API_BASE`, value `https://ourmandal.duckdns.org`.
-3. **Actions → Mobile app → Run workflow**. After about 10 minutes, open the finished run and download
-   **vargani-android** from *Artifacts*. Inside is `app-release.apk`.
+3. **Actions → Mobile app → Run workflow**. After about 10 minutes the newest APK is at
+   `https://github.com/<you>/<repo>/releases/latest/download/vargani.apk` (every build of `main`
+   is also listed under **Releases**). The run's *Artifacts* still have **vargani-android** with the
+   `.apk` and the Play Store `.aab`.
 4. Send the APK to collectors on WhatsApp or Google Drive. On the phone they tap it and allow
    *Install unknown apps* once.
 
