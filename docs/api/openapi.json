@@ -1719,7 +1719,7 @@
         "/api/v1/dashboard/summary/": {
             "get": {
                 "operationId": "dashboard_summary_retrieve",
-                "description": "Dashboard numbers for the active organization (and event, when given).\n\nOnly real numbers are returned. `financial` is present for roles with dashboard.view_financial and covers\nthe selected event, or every event of the current financial year when no event is given. Income is\nconfirmed contributions plus recorded other income; expenses are approved expenses (reports/selectors.py).",
+                "description": "Dashboard numbers for the active organization (and event, when given).\n\nOnly real numbers are returned. `financial` is present for roles with dashboard.view_financial and covers\nthe selected event, or every event of the current financial year when no event is given. Income is\nconfirmed contributions plus recorded other income; expenses are approved expenses (reports/selectors.py).\n`follow_ups` (roles that see payments) counts pavtis still owing money: overdue, due today and all.",
                 "tags": [
                     "dashboard"
                 ],
@@ -6206,6 +6206,20 @@
                     },
                     {
                         "in": "query",
+                        "name": "follow_up",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "none",
+                                "overdue",
+                                "today",
+                                "upcoming"
+                            ]
+                        },
+                        "description": "Pavtis still owing whose follow-up date has passed (overdue), is today, is later, or is not set\n\n* `overdue` - overdue\n* `today` - today\n* `upcoming` - upcoming\n* `none` - none"
+                    },
+                    {
+                        "in": "query",
                         "name": "mode",
                         "schema": {
                             "type": "string",
@@ -6246,6 +6260,20 @@
                         "schema": {
                             "type": "integer"
                         }
+                    },
+                    {
+                        "in": "query",
+                        "name": "pavti",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "owing",
+                                "paid",
+                                "partly_paid",
+                                "unpaid"
+                            ]
+                        },
+                        "description": "Pavti status: unpaid, partly_paid, owing (either) or paid\n\n* `unpaid` - unpaid\n* `partly_paid` - partly_paid\n* `owing` - owing\n* `paid` - paid"
                     },
                     {
                         "in": "query",
@@ -6684,6 +6712,63 @@
                         "multipart/form-data": {
                             "schema": {
                                 "$ref": "#/components/schemas/PaymentStatusChangeRequest"
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Payment"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/payments/{id}/visit/": {
+            "post": {
+                "operationId": "payments_visit_create",
+                "description": "A later visit to the same pavti (door-to-door follow-up). No new pavti is made.\n\n`received` (may be 0) is added to this pavti towards what is still owed, and `follow_up_on` is the next\nvisit; it is cleared once nothing is owed. Money taken in another mode than the pavti's is noted on its\nline.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "description": "A UUID string identifying this payment.",
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "payments"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PaymentVisitRequest"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PaymentVisitRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PaymentVisitRequest"
                             }
                         }
                     }
@@ -7414,17 +7499,17 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/InputRequest"
+                                "$ref": "#/components/schemas/OrganizationStatusInputRequest"
                             }
                         },
                         "application/x-www-form-urlencoded": {
                             "schema": {
-                                "$ref": "#/components/schemas/InputRequest"
+                                "$ref": "#/components/schemas/OrganizationStatusInputRequest"
                             }
                         },
                         "multipart/form-data": {
                             "schema": {
-                                "$ref": "#/components/schemas/InputRequest"
+                                "$ref": "#/components/schemas/OrganizationStatusInputRequest"
                             }
                         }
                     },
@@ -7625,17 +7710,17 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/InputRequest"
+                                "$ref": "#/components/schemas/UserStatusInputRequest"
                             }
                         },
                         "application/x-www-form-urlencoded": {
                             "schema": {
-                                "$ref": "#/components/schemas/InputRequest"
+                                "$ref": "#/components/schemas/UserStatusInputRequest"
                             }
                         },
                         "multipart/form-data": {
                             "schema": {
-                                "$ref": "#/components/schemas/InputRequest"
+                                "$ref": "#/components/schemas/UserStatusInputRequest"
                             }
                         }
                     },
@@ -10469,25 +10554,6 @@
                     "key_id"
                 ]
             },
-            "InputRequest": {
-                "type": "object",
-                "properties": {
-                    "status": {
-                        "$ref": "#/components/schemas/InputStatusEnum"
-                    }
-                },
-                "required": [
-                    "status"
-                ]
-            },
-            "InputStatusEnum": {
-                "enum": [
-                    "active",
-                    "suspended"
-                ],
-                "type": "string",
-                "description": "* `active` - active\n* `suspended` - suspended"
-            },
             "Invitation": {
                 "type": "object",
                 "properties": {
@@ -10970,6 +11036,11 @@
                     "type"
                 ]
             },
+            "NullEnum": {
+                "enum": [
+                    null
+                ]
+            },
             "Organization": {
                 "type": "object",
                 "properties": {
@@ -11364,6 +11435,25 @@
                 ],
                 "type": "string",
                 "description": "* `active` - Active\n* `suspended` - Suspended\n* `closed` - Closed"
+            },
+            "OrganizationStatusInputRequest": {
+                "type": "object",
+                "properties": {
+                    "status": {
+                        "$ref": "#/components/schemas/OrganizationStatusInputStatusEnum"
+                    }
+                },
+                "required": [
+                    "status"
+                ]
+            },
+            "OrganizationStatusInputStatusEnum": {
+                "enum": [
+                    "active",
+                    "suspended"
+                ],
+                "type": "string",
+                "description": "* `active` - active\n* `suspended` - suspended"
             },
             "OtherIncome": {
                 "type": "object",
@@ -12729,6 +12819,29 @@
                         "nullable": true,
                         "readOnly": true
                     },
+                    "balance_due": {
+                        "type": "string",
+                        "description": "Still owed on this pavti.",
+                        "readOnly": true
+                    },
+                    "pavti_status": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "unpaid, partly_paid or paid (received pavtis only).",
+                        "readOnly": true
+                    },
+                    "follow_up_on": {
+                        "type": "string",
+                        "format": "date",
+                        "readOnly": true,
+                        "nullable": true
+                    },
+                    "follow_up_state": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "overdue, today or upcoming while money is owed and a follow-up date is set.",
+                        "readOnly": true
+                    },
                     "created_at": {
                         "type": "string",
                         "format": "date-time",
@@ -12737,6 +12850,7 @@
                 },
                 "required": [
                     "amount",
+                    "balance_due",
                     "cheque_bank",
                     "cheque_date",
                     "collector_name",
@@ -12745,11 +12859,14 @@
                     "event_name",
                     "financial_year",
                     "financial_year_label",
+                    "follow_up_on",
+                    "follow_up_state",
                     "id",
                     "is_anonymous",
                     "lines",
                     "mode",
                     "paid_at",
+                    "pavti_status",
                     "payer",
                     "payer_mobile",
                     "payer_name",
@@ -12885,6 +13002,11 @@
                         "type": "string",
                         "format": "decimal",
                         "pattern": "^-?\\d{0,10}(?:\\.\\d{0,2})?$",
+                        "nullable": true
+                    },
+                    "follow_up_on": {
+                        "type": "string",
+                        "format": "date",
                         "nullable": true
                     },
                     "replaces_receipt": {
@@ -13028,6 +13150,39 @@
                 ],
                 "type": "string",
                 "description": "* `pending` - Pending\n* `successful` - Successful\n* `failed` - Failed\n* `cancelled` - Cancelled\n* `refunded` - Refunded\n* `deleted` - Deleted"
+            },
+            "PaymentVisitRequest": {
+                "type": "object",
+                "description": "A later visit to the same pavti: money received now (may be 0) and the next follow-up date.",
+                "properties": {
+                    "received": {
+                        "type": "string",
+                        "format": "decimal",
+                        "pattern": "^-?\\d{0,10}(?:\\.\\d{0,2})?$",
+                        "default": "0.00"
+                    },
+                    "mode": {
+                        "nullable": true,
+                        "oneOf": [
+                            {
+                                "$ref": "#/components/schemas/PaymentModeEnum"
+                            },
+                            {
+                                "$ref": "#/components/schemas/NullEnum"
+                            }
+                        ]
+                    },
+                    "reference_number": {
+                        "type": "string",
+                        "default": "",
+                        "maxLength": 60
+                    },
+                    "follow_up_on": {
+                        "type": "string",
+                        "format": "date",
+                        "nullable": true
+                    }
+                }
             },
             "Permission": {
                 "type": "object",
@@ -14054,6 +14209,17 @@
                     "is_platform_admin",
                     "mobile",
                     "mobile_verified_at"
+                ]
+            },
+            "UserStatusInputRequest": {
+                "type": "object",
+                "properties": {
+                    "is_active": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "is_active"
                 ]
             },
             "VerificationInfo": {

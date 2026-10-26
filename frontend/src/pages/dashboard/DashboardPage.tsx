@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { CalendarDays, CalendarPlus, HandCoins, IndianRupee, Receipt, ShieldCheck, UserPlus, Users, Wallet } from 'lucide-react'
+import { AlarmClock, CalendarClock, CalendarDays, CalendarPlus, HandCoins, IndianRupee, Receipt, ShieldCheck, UserPlus, Users, Wallet } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Link, Navigate } from 'react-router-dom'
 import { AnnouncementButton } from '../../components/AnnouncementButton'
@@ -11,7 +11,7 @@ import { useEvents } from '../../context/EventContext'
 import { useOrg } from '../../context/OrgContext'
 import { dashboardService } from '../../services/dashboard'
 import { CollectorDashboard } from './CollectorDashboard'
-import type { FinancialSummary } from '../../types/api'
+import type { DashboardSummary, FinancialSummary } from '../../types/api'
 import { formatMoney, formatMonth, formatStamp } from '../../utils/format'
 
 export function DashboardPage() {
@@ -53,6 +53,8 @@ export function DashboardPage() {
               <StatCard label={t('dashboard.target')} value={formatMoney(activeEvent.target_amount, org.currency)} icon={<IndianRupee className="size-5" />} />
             )}
           </div>
+
+          {summary.data!.follow_ups && <FollowUpCards followUps={summary.data!.follow_ups} currency={org.currency} />}
 
           {!summary.data!.financial && activeEvent && can('collectors.view_performance') && <CollectorDashboard eventId={activeEvent.id} />}
 
@@ -107,6 +109,32 @@ export function DashboardPage() {
           )}
         </div>
       )}
+    </div>
+  )
+}
+
+/** Door-to-door follow-up: pavtis to visit. Each card opens the matching list of pavtis. */
+function FollowUpCards({ followUps, currency }: { followUps: NonNullable<DashboardSummary['follow_ups']>; currency: string }) {
+  const { t } = useTranslation()
+  const cards = [
+    { to: '/app/payments?follow_up=overdue', label: t('pavti.overdue'), value: followUps.overdue, tone: followUps.overdue > 0 ? 'text-red-700' : 'text-slate-900', icon: <AlarmClock className="size-5" />, hint: t('pavti.overdueHint') },
+    { to: '/app/payments?follow_up=today', label: t('pavti.dueToday'), value: followUps.due_today, tone: followUps.due_today > 0 ? 'text-amber-700' : 'text-slate-900', icon: <CalendarClock className="size-5" />, hint: t('pavti.dueTodayHint') },
+    { to: '/app/payments?pavti=owing', label: t('pavti.owingAll'), value: followUps.owing, tone: 'text-slate-900', icon: <HandCoins className="size-5" />, hint: t('pavti.stillOwed', { amount: formatMoney(followUps.balance, currency) }) },
+  ]
+  return (
+    <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
+      {cards.map((card) => (
+        <Link key={card.to} to={card.to} className="block rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500" data-testid={`follow-up-${card.to.split('=')[1]}`}>
+          <Card className="h-full p-5 transition hover:ring-brand-300 hover:shadow-md">
+            <div className="flex items-start justify-between">
+              <p className="text-sm font-medium text-slate-500">{card.label}</p>
+              <span className="text-slate-400">{card.icon}</span>
+            </div>
+            <p className={`mt-2 text-2xl font-semibold ${card.tone}`}>{card.value}</p>
+            <p className="mt-1 text-xs text-slate-500">{card.hint}</p>
+          </Card>
+        </Link>
+      ))}
     </div>
   )
 }

@@ -926,5 +926,50 @@
     "writeOffMessage": "{{name}} will no longer owe {{amount}}. This is recorded in the audit log.",
     "writtenOff": "Balance written off",
     "writtenOffReason": "Written off by admin"
+  },
+  "pavti": {
+    "update": "Update pavti",
+    "updateTitle": "Update the same pavti",
+    "sameHint": "Collecting the rest or coming back later? Update the same pavti. No new pavti is made.",
+    "stillOwed": "{{amount}} still owed",
+    "lastFollowUp": "Follow-up date was {{date}}",
+    "receivedNow": "Money received now",
+    "receivedHint": "Leave empty if nobody paid today.",
+    "paidInFull": "Paid in full ({{amount}})",
+    "tooMuch": "Enter an amount up to {{amount}}.",
+    "nextFollowUp": "Next follow-up date",
+    "leftAfter": "{{amount}} will still be owed",
+    "datePast": "Choose today or a later date.",
+    "willBePaid": "This pavti will be marked paid.",
+    "markPaid": "Mark paid",
+    "saveReceived": "Save {{amount}} received",
+    "saveDate": "Save follow-up date",
+    "nowPaid": "Pavti is now paid",
+    "followUpDate": "Follow-up date (next visit)",
+    "followUpHint": "The day you will come back for the balance.",
+    "followUpOn": "Follow-up {{date}}",
+    "overdueSince": "Overdue since {{date}}",
+    "noFollowUp": "No follow-up date set",
+    "overdue": "Overdue",
+    "dueToday": "Due today",
+    "owingAll": "Pavtis not fully paid",
+    "overdueHint": "Follow-up date has passed",
+    "dueTodayHint": "Visit these houses today",
+    "filter": "Pavti",
+    "status": {
+      "unpaid": "Unpaid",
+      "partly_paid": "Partly paid",
+      "paid": "Paid"
+    },
+    "filters": {
+      "overdue": "Overdue",
+      "today": "Due today",
+      "upcoming": "Follow-up later",
+      "none": "No follow-up date",
+      "owing": "Not fully paid",
+      "unpaid": "Unpaid",
+      "partly_paid": "Partly paid",
+      "paid": "Paid"
+    }
   }
 }

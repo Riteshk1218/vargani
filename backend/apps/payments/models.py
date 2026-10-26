@@ -55,6 +55,8 @@ class Payment(TenantModel):
     gateway_payload = models.JSONField(null=True, blank=True)
     idempotency_key = models.CharField(max_length=100, null=True, blank=True)
     notes = models.CharField(max_length=500, blank=True)
+    # When the collectors go back for the money still owed on this pavti (door-to-door follow-up).
+    follow_up_on = models.DateField(null=True, blank=True)
     status_reason = models.CharField(max_length=300, blank=True)
     status_changed_at = models.DateTimeField(null=True, blank=True)
 
@@ -80,6 +82,7 @@ class Payment(TenantModel):
             models.Index(fields=["organization", "event", "status", "paid_at"], name="payment_org_event_idx"),
             models.Index(fields=["organization", "collector", "paid_at"], name="payment_org_collector_idx"),
             models.Index(fields=["organization", "event", "mode"], name="payment_org_mode_idx"),
+            models.Index(fields=["organization", "event", "follow_up_on"], name="payment_org_follow_up_idx"),
         ]
 
     def __str__(self):

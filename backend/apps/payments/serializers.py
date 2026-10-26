@@ -10,6 +10,7 @@ from apps.events.models import Event
 from apps.people.models import Person
 from apps.receipts.models import Receipt
 
+from . import followups
 from .models import Payment, PaymentMode
 
 MONEY = {"max_digits": 12, "decimal_places": 2}
@@ -82,6 +83,8 @@ class PaymentCreateSerializer(PayerChoiceMixin, serializers.Serializer):
     lines = PaymentLineInputSerializer(many=True, allow_empty=False, max_length=36)
     # Money that came now, when less than the total; the rest is kept as a balance for the person.
     received = serializers.DecimalField(**MONEY, min_value=Decimal("0"), required=False, allow_null=True)
+    # When to go back for the balance (door-to-door follow-up). Kept only when a balance is kept.
+    follow_up_on = serializers.DateField(required=False, allow_null=True, default=None)
     replaces_receipt = TenantPrimaryKeyRelatedField(queryset=Receipt.objects.all(), required=False, allow_null=True)
 
     def validate_reference_number(self, value):
@@ -124,6 +127,9 @@ class PaymentSerializer(serializers.ModelSerializer):
     collector_name = serializers.SerializerMethodField()
     lines = PaymentLineSerializer(many=True, read_only=True)
     receipt = serializers.SerializerMethodField()
+    balance_due = serializers.SerializerMethodField()
+    pavti_status = serializers.SerializerMethodField()
+    follow_up_state = serializers.SerializerMethodField()
 
     class Meta:
         model = Payment
@@ -149,6 +155,10 @@ class PaymentSerializer(serializers.ModelSerializer):
             "status_reason",
             "lines",
             "receipt",
+            "balance_due",
+            "pavti_status",
+            "follow_up_on",
+            "follow_up_state",
             "created_at",
         ]
         read_only_fields = [f for f in fields if f != "notes"]
@@ -158,6 +168,20 @@ class PaymentSerializer(serializers.ModelSerializer):
 
     def get_collector_name(self, obj) -> str | None:
         return obj.collector.user.full_name if obj.collector else None
+
+    def get_balance_due(self, obj) -> str:
+        """Still owed on this pavti."""
+        return f"{max(getattr(obj, 'balance_due', None) or Decimal('0'), Decimal('0')):.2f}"
+
+    def get_pavti_status(self, obj) -> str | None:
+        """unpaid, partly_paid or paid (received pavtis only)."""
+        return followups.pavti_status(obj)
+
+    def get_follow_up_state(self, obj) -> str | None:
+        """overdue, today or upcoming while money is owed and a follow-up date is set."""
+        if "today" not in self.context:
+            self.context["today"] = followups.org_today(obj.organization)
+        return followups.follow_up_state(obj, self.context["today"])
 
     def get_receipt(self, obj) -> dict | None:
         receipts = sorted(obj.receipts.all(), key=lambda r: (r.status != Receipt.Status.ISSUED, -r.sequence))
@@ -178,6 +202,15 @@ class PaymentAdminEditSerializer(PayerChoiceMixin, serializers.Serializer):
     cheque_date = serializers.DateField(required=False, allow_null=True)
     notes = serializers.CharField(max_length=500, required=False, allow_blank=True)
     lines = PaymentLineInputSerializer(many=True, allow_empty=False, max_length=36, required=False)
+
+
+class PaymentVisitSerializer(serializers.Serializer):
+    """A later visit to the same pavti: money received now (may be 0) and the next follow-up date."""
+
+    received = serializers.DecimalField(**MONEY, min_value=Decimal("0"), required=False, default=Decimal("0"))
+    mode = serializers.ChoiceField(choices=PaymentMode.choices, required=False, allow_null=True, default=None)
+    reference_number = serializers.CharField(max_length=60, required=False, allow_blank=True, default="")
+    follow_up_on = serializers.DateField(required=False, allow_null=True, default=None)
 
 
 class PaymentDeleteSerializer(serializers.Serializer):

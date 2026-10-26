@@ -207,6 +207,7 @@ def record_payment(
     new_person=None,
     assign_new_person=False,
     received=None,
+    follow_up_on=None,
     request=None,
     actor=None,
 ) -> tuple[Payment, bool]:
@@ -217,7 +218,8 @@ def record_payment(
 
     `received` is the money that came now when it is less than the total: the rest is saved as a balance
     (`Due`) for the named person and shown on the receipt, and it is paid off later by lines with `due` set.
-    It may be zero, when the receipt is given and all the money comes later.
+    It may be zero, when the receipt is given and all the money comes later. `follow_up_on` is the date to go
+    back for the rest; it is kept only when a balance is kept (payments/followups.py).
 
     Returns (payment, created). A repeated idempotency key returns the original payment unchanged, so a
     collector on a flaky mobile network can safely retry.
@@ -253,6 +255,10 @@ def record_payment(
     paid_lines, unpaid_lines = _split_received(lines, received)
     if not paid_lines and not unpaid_lines:
         raise ValidationError({"received": [_("Nothing would be recorded.")]})
+    if not unpaid_lines:
+        follow_up_on = None
+    elif follow_up_on is not None and follow_up_on < _org_today(org, timezone.now()):
+        raise ValidationError({"follow_up_on": [_("The follow-up date cannot be in the past.")]})
     line_status = Contribution.Status.CONFIRMED if status == Payment.Status.SUCCESSFUL else Contribution.Status.PENDING
     contributed_on = _org_today(org, paid_at)
 
@@ -284,6 +290,7 @@ def record_payment(
                 idempotency_key=idempotency_key or None,
                 gateway=gateway,
                 notes=notes,
+                follow_up_on=follow_up_on,
                 created_by=actor,
                 updated_by=actor,
             )

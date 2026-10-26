@@ -926,5 +926,50 @@
     "writeOffMessage": "{{name}} से अब {{amount}} नहीं लेना है. इसकी नोंद ऑडिट लॉग में होगी.",
     "writtenOff": "बकाया माफ़ किया",
     "writtenOffReason": "एडमिन ने माफ़ किया"
+  },
+  "pavti": {
+    "update": "पावती अपडेट करें",
+    "updateTitle": "उसी पावती को अपडेट करें",
+    "sameHint": "बाकी रकम ले रहे हैं या बाद में आएंगे? उसी पावती को अपडेट करें। नई पावती नहीं बनेगी।",
+    "stillOwed": "{{amount}} अभी बकाया",
+    "lastFollowUp": "फॉलो-अप तारीख {{date}} थी",
+    "receivedNow": "अभी मिली रकम",
+    "receivedHint": "आज किसी ने नहीं दिया तो खाली छोड़ें।",
+    "paidInFull": "पूरा भुगतान ({{amount}})",
+    "tooMuch": "{{amount}} तक की रकम डालें।",
+    "nextFollowUp": "अगली फॉलो-अप तारीख",
+    "leftAfter": "{{amount}} बकाया रहेगा",
+    "datePast": "आज या बाद की तारीख चुनें।",
+    "willBePaid": "यह पावती भुगतान हुई के रूप में दर्ज होगी।",
+    "markPaid": "भुगतान हुआ",
+    "saveReceived": "{{amount}} मिले, सेव करें",
+    "saveDate": "फॉलो-अप तारीख सेव करें",
+    "nowPaid": "पावती का पूरा भुगतान हो गया",
+    "followUpDate": "फॉलो-अप तारीख (अगली भेंट)",
+    "followUpHint": "जिस दिन बाकी रकम लेने आएंगे।",
+    "followUpOn": "फॉलो-अप {{date}}",
+    "overdueSince": "{{date}} से बाकी",
+    "noFollowUp": "फॉलो-अप तारीख नहीं है",
+    "overdue": "तारीख निकल गई",
+    "dueToday": "आज जाना है",
+    "owingAll": "अधूरी पावतियाँ",
+    "overdueHint": "फॉलो-अप तारीख निकल चुकी है",
+    "dueTodayHint": "आज इन घरों में जाएं",
+    "filter": "पावती",
+    "status": {
+      "unpaid": "भुगतान नहीं",
+      "partly_paid": "आंशिक भुगतान",
+      "paid": "भुगतान हुआ"
+    },
+    "filters": {
+      "overdue": "तारीख निकल गई",
+      "today": "आज जाना है",
+      "upcoming": "बाद में फॉलो-अप",
+      "none": "फॉलो-अप तारीख नहीं",
+      "owing": "पूरा भुगतान नहीं",
+      "unpaid": "भुगतान नहीं",
+      "partly_paid": "आंशिक भुगतान",
+      "paid": "भुगतान हुआ"
+    }
   }
 }

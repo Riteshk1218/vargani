@@ -13,7 +13,7 @@ from apps.core.scoping import scope_money
 from apps.core.tenancy import SCOPE_ALL
 from apps.core.viewsets import TenantModelViewSet
 
-from . import admin_edit, services
+from . import admin_edit, followups, services
 from .models import Payment
 from .serializers import (
     PaymentAdminEditSerializer,
@@ -22,12 +22,29 @@ from .serializers import (
     PaymentNotesSerializer,
     PaymentSerializer,
     PaymentStatusChangeSerializer,
+    PaymentVisitSerializer,
 )
 
 
 class PaymentFilter(django_filters.FilterSet):
     date_from = django_filters.DateFilter(field_name="paid_at", lookup_expr="date__gte")
     date_to = django_filters.DateFilter(field_name="paid_at", lookup_expr="date__lte")
+    pavti = django_filters.ChoiceFilter(
+        method="filter_pavti",
+        choices=[(v, v) for v in ("unpaid", "partly_paid", "owing", "paid")],
+        label="Pavti status: unpaid, partly_paid, owing (either) or paid",
+    )
+    follow_up = django_filters.ChoiceFilter(
+        method="filter_follow_up",
+        choices=[(v, v) for v in ("overdue", "today", "upcoming", "none")],
+        label="Pavtis still owing whose follow-up date has passed (overdue), is today, is later, or is not set",
+    )
+
+    def filter_pavti(self, queryset, name, value):
+        return followups.filter_pavti(queryset, value)
+
+    def filter_follow_up(self, queryset, name, value):
+        return followups.filter_follow_up(queryset, value, followups.org_today(self.request._org_context.organization))
 
     class Meta:
         model = Payment
@@ -57,11 +74,13 @@ class PaymentViewSet(ListDownloadMixin, TenantModelViewSet):
         Col("collector_name", gettext_noop("Collected by")),
         Col("status", gettext_noop("Status"), "status"),
         Col("amount", gettext_noop("Amount"), "money"),
+        Col("balance_due", gettext_noop("Still owed"), "money"),
+        Col("follow_up_on", gettext_noop("Follow-up date"), "date"),
     ]
     serializer_class = PaymentSerializer
     filterset_class = PaymentFilter
     search_fields = ["payer__full_name", "payer__mobile", "reference_number", "receipts__receipt_number"]
-    ordering_fields = ["paid_at", "amount", "created_at"]
+    ordering_fields = ["paid_at", "amount", "created_at", "follow_up_on", "balance_due"]
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
     required_permissions = {
         "list": "payments.view",
@@ -69,6 +88,7 @@ class PaymentViewSet(ListDownloadMixin, TenantModelViewSet):
         "create": "payments.create",
         "partial_update": "payments.create",
         "confirm": "payments.create",
+        "visit": "payments.create",
         "cancel": "payments.cancel_pending",
         "fail": "payments.cancel_pending",
         "admin_edit": "records.admin_edit",
@@ -82,12 +102,14 @@ class PaymentViewSet(ListDownloadMixin, TenantModelViewSet):
             return PaymentNotesSerializer
         if self.action in ("confirm", "cancel", "fail"):
             return PaymentStatusChangeSerializer
+        if self.action == "visit":
+            return PaymentVisitSerializer
         return PaymentSerializer
 
     def get_base_queryset(self):
-        return (
+        return followups.with_pavti_balance(
             Payment.objects.for_org(self.organization)
-            .select_related("event", "payer", "collector__user")
+            .select_related("event", "payer", "collector__user", "organization")
             .prefetch_related("lines__contribution_type", "lines__fund", "receipts")
             .distinct()
         )
@@ -142,6 +164,7 @@ class PaymentViewSet(ListDownloadMixin, TenantModelViewSet):
             notes=data["notes"],
             lines=[services.LineInput(**line) for line in data["lines"]],
             received=data.get("received"),
+            follow_up_on=data.get("follow_up_on"),
             collector=self.membership,
             idempotency_key=key,
             replaces_receipt=replaces,
@@ -181,6 +204,33 @@ class PaymentViewSet(ListDownloadMixin, TenantModelViewSet):
     def fail(self, request, pk=None):
         """Pending → failed (e.g. a bounced cheque)."""
         return self._status_action(request, services.fail_payment)
+
+    @extend_schema(request=PaymentVisitSerializer, responses=PaymentSerializer)
+    @action(detail=True, methods=["post"])
+    def visit(self, request, pk=None):
+        """A later visit to the same pavti (door-to-door follow-up). No new pavti is made.
+
+        `received` (may be 0) is added to this pavti towards what is still owed, and `follow_up_on` is the next
+        visit; it is cleared once nothing is owed. Money taken in another mode than the pavti's is noted on its
+        line.
+        """
+        payment = self.get_object()
+        if payment.payer_id:
+            self._check_can_collect(payment.payer, payment.event)
+        serializer = PaymentVisitSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        payment = followups.record_visit(
+            payment,
+            received=data["received"],
+            mode=data["mode"],
+            reference_number=data["reference_number"],
+            follow_up_on=data["follow_up_on"],
+            collector=self.membership,
+            request=request,
+            actor=request.user,
+        )
+        return self._detail(payment)
 
     @extend_schema(request=PaymentAdminEditSerializer, responses=PaymentSerializer)
     @action(detail=True, methods=["post"], url_path="edit")
