@@ -8,6 +8,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.audit import services as audit
+from apps.contributions.defaults import seed_types
 from apps.core.admin_override import ADMIN_EDIT
 from apps.core.downloads import Col, ListDownloadMixin
 from apps.core.exceptions import EventRequired, InvalidStateTransition
@@ -56,6 +57,10 @@ class EventViewSet(ListDownloadMixin, TenantModelViewSet):
 
     def get_base_queryset(self):
         return Event.objects.for_org(self.organization).alive().select_related("financial_year")
+
+    def perform_create(self, serializer):
+        super().perform_create(serializer)
+        seed_types(serializer.instance, user=self.request.user)
 
     def destroy(self, request, *args, **kwargs):
         """Organization Admin: delete an event. It disappears from every list and summary; its records stay."""
