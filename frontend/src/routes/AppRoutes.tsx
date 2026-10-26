@@ -26,6 +26,7 @@ import { CreateOrganizationPage } from '../pages/onboarding/CreateOrganizationPa
 import { PaymentsPage } from '../pages/payments/PaymentsPage'
 import { PlatformPage } from '../pages/platform/PlatformPage'
 import { PeoplePage } from '../pages/people/PeoplePage'
+import { PersonDetailPage } from '../pages/people/PersonDetailPage'
 import { PublicReceiptPage } from '../pages/receipts/PublicReceiptPage'
 import { ReceiptPage } from '../pages/receipts/ReceiptPage'
 import { ReceiptsPage } from '../pages/receipts/ReceiptsPage'
@@ -78,6 +79,7 @@ export function AppRoutes() {
             <Route path="events" element={<RequirePermission permission="events.view"><EventsPage /></RequirePermission>} />
             <Route path="events/:id" element={<RequirePermission permission="events.view"><EventDetailPage /></RequirePermission>} />
             <Route path="people" element={<RequirePermission permission="people.view"><PeoplePage /></RequirePermission>} />
+            <Route path="people/:id" element={<RequirePermission permission="people.view"><PersonDetailPage /></RequirePermission>} />
             <Route path="users" element={<RequirePermission permission="members.view"><UsersPage /></RequirePermission>} />
             <Route path="settings" element={<RequirePermission permission="organization.manage"><SettingsPage /></RequirePermission>} />
             <Route path="profile" element={<ProfilePage />} />

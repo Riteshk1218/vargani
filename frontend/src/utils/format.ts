@@ -27,6 +27,12 @@ export function formatMobile(value: string | null | undefined): string {
   return match ? `+91 ${match[1]} ${match[2]}` : value
 }
 
+/** A typed mobile number like "98678 50909" is stored as "+919867850909": drop spaces and dashes so it matches. */
+export function searchTerm(value: string): string {
+  const trimmed = value.trim()
+  return /^[+\d\s-]+$/.test(trimmed) ? trimmed.replace(/[\s-]/g, '') : trimmed
+}
+
 export function initials(name: string): string {
   return name
     .split(/\s+/)

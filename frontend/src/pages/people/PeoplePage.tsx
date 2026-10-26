@@ -1,8 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Archive, KeyRound, Pencil, Search, UserPlus } from 'lucide-react'
+import { Archive, ChevronRight, KeyRound, Pencil, Search, UserPlus } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Button } from '../../components/ui/Button'
 import { Badge, Card, PageHeader } from '../../components/ui/Card'
 import { SelectInput, TextInput } from '../../components/ui/Field'
@@ -15,7 +15,7 @@ import { useApiErrors } from '../../hooks/useApiErrors'
 import { useDebounced } from '../../hooks/useDebounced'
 import { peopleService } from '../../services/people'
 import type { Person, PersonType } from '../../types/api'
-import { formatMobile } from '../../utils/format'
+import { formatMobile, searchTerm } from '../../utils/format'
 import { LinkLoginModal } from './LinkLoginModal'
 import { PERSON_TYPES, PersonFormModal } from './PersonFormModal'
 import { DownloadMenu } from '../../components/DownloadMenu'
@@ -32,7 +32,8 @@ export function PeoplePage() {
   const [page, setPage] = useState(1)
   const [editing, setEditing] = useState<Person | null>(null)
   const [archiving, setArchiving] = useState<Person | null>(null)
-  const debouncedSearch = useDebounced(search)
+  const debouncedSearch = searchTerm(useDebounced(search))
+  const navigate = useNavigate()
   const creating = params.get('new') === '1'
   const canManage = can('people.manage')
   const canLink = canManage && can('members.view')
@@ -114,15 +115,17 @@ export function PeoplePage() {
                     <th className="hidden px-4 py-2 font-medium sm:table-cell">{t('people.mobile')}</th>
                     <th className="hidden px-4 py-2 font-medium md:table-cell">{t('people.area')}</th>
                     <th className="hidden px-4 py-2 font-medium lg:table-cell">{t('people.types')}</th>
-                    {canManage && <th className="px-4 py-2" />}
+                    <th className="px-4 py-2" />
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {people.data!.results.map((person) => (
-                    <tr key={person.id}>
+                    <tr key={person.id} className="cursor-pointer hover:bg-slate-50" onClick={() => navigate(`/app/people/${person.id}`)}>
                       <td className="px-4 py-3">
                         <p className="font-medium text-slate-900">
-                          {person.full_name}
+                          <Link to={`/app/people/${person.id}`} className="hover:underline" onClick={(e) => e.stopPropagation()}>
+                            {person.full_name}
+                          </Link>
                           {person.linked_user && (
                             <span className="ml-2 align-middle">
                               <Badge tone="green">{t('linkLogin.badge')}</Badge>
@@ -140,8 +143,8 @@ export function PeoplePage() {
                           ))}
                         </div>
                       </td>
-                      {canManage && (
-                        <td className="whitespace-nowrap px-4 py-3 text-right">
+                      {canManage ? (
+                        <td className="whitespace-nowrap px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                           <Button variant="ghost" size="sm" aria-label={t('common.edit')} onClick={() => setEditing(person)}>
                             <Pencil className="size-4" />
                           </Button>
@@ -153,6 +156,10 @@ export function PeoplePage() {
                           <Button variant="ghost" size="sm" aria-label={t('people.archive')} onClick={() => setArchiving(person)}>
                             <Archive className="size-4" />
                           </Button>
+                        </td>
+                      ) : (
+                        <td className="px-4 py-3 text-right text-slate-400">
+                          <ChevronRight className="inline size-4" aria-hidden />
                         </td>
                       )}
                     </tr>
