@@ -61,7 +61,19 @@ def test_default_contribution_types_use_org_language_and_skip_existing(make_org)
     seed_types(event)
     seed_types(event)
     names = list(ContributionType.objects.filter(event=event).values_list("name", flat=True))
-    assert names == ["Donation", "सभासद शुल्क", "मासिक वर्गणी", "इतर", "Monthly"]
+    assert names == ["Donation", "सभासद शुल्क", "Monthly", "इतर"]
+
+
+def test_seeded_monthly_contribution_is_hidden_next_to_the_events_own_monthly_type(make_org):
+    org = make_org()
+    event = Event.objects.create(organization=org, name="Ganpati", financial_year=fy_of(org), code="G")
+    ContributionType.objects.create(organization=org, event=event, name="Monthly", kind="recurring_monthly")
+    ContributionType.objects.create(
+        organization=org, event=event, name="Monthly Contribution", kind="recurring_monthly"
+    )
+    seed_types(event)
+    active = list(ContributionType.objects.filter(event=event, is_active=True).values_list("name", flat=True))
+    assert active == ["Donation", "Membership Fee", "Monthly", "Other"]
 
 
 def test_event_templates_listed(client_for, make_user):
