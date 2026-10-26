@@ -207,12 +207,12 @@ class PlatformOrganizationListView(PlatformView, ListAPIView):
 
 
 class PlatformOrganizationStatusView(PlatformView, APIView):
-    class InputSerializer(serializers.Serializer):
+    class OrganizationStatusInputSerializer(serializers.Serializer):
         status = serializers.ChoiceField(choices=[Organization.Status.ACTIVE, Organization.Status.SUSPENDED])
 
-    @extend_schema(request=InputSerializer, responses=PlatformOrganizationSerializer)
+    @extend_schema(request=OrganizationStatusInputSerializer, responses=PlatformOrganizationSerializer)
     def post(self, request, org_id):
-        serializer = self.InputSerializer(data=request.data)
+        serializer = self.OrganizationStatusInputSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         with transaction.atomic():
             org = get_object_or_404(Organization.objects.select_for_update(), pk=org_id)
@@ -283,15 +283,15 @@ class PlatformUserPasswordView(PlatformView, APIView):
 class PlatformUserStatusView(PlatformView, APIView):
     """Block or unblock a login on the whole platform."""
 
-    class InputSerializer(serializers.Serializer):
+    class UserStatusInputSerializer(serializers.Serializer):
         is_active = serializers.BooleanField()
 
-    @extend_schema(request=InputSerializer, responses=PlatformUserSerializer)
+    @extend_schema(request=UserStatusInputSerializer, responses=PlatformUserSerializer)
     def post(self, request, user_id):
         from apps.accounts.services import revoke_all_tokens
 
         user = _platform_user(request, user_id)
-        serializer = self.InputSerializer(data=request.data)
+        serializer = self.UserStatusInputSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         with transaction.atomic():
             before = model_to_dict(user, fields=["is_active"])

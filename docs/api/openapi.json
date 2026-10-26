@@ -7499,17 +7499,17 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/InputRequest"
+                                "$ref": "#/components/schemas/OrganizationStatusInputRequest"
                             }
                         },
                         "application/x-www-form-urlencoded": {
                             "schema": {
-                                "$ref": "#/components/schemas/InputRequest"
+                                "$ref": "#/components/schemas/OrganizationStatusInputRequest"
                             }
                         },
                         "multipart/form-data": {
                             "schema": {
-                                "$ref": "#/components/schemas/InputRequest"
+                                "$ref": "#/components/schemas/OrganizationStatusInputRequest"
                             }
                         }
                     },
@@ -7710,17 +7710,17 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/InputRequest"
+                                "$ref": "#/components/schemas/UserStatusInputRequest"
                             }
                         },
                         "application/x-www-form-urlencoded": {
                             "schema": {
-                                "$ref": "#/components/schemas/InputRequest"
+                                "$ref": "#/components/schemas/UserStatusInputRequest"
                             }
                         },
                         "multipart/form-data": {
                             "schema": {
-                                "$ref": "#/components/schemas/InputRequest"
+                                "$ref": "#/components/schemas/UserStatusInputRequest"
                             }
                         }
                     },
@@ -10554,25 +10554,6 @@
                     "key_id"
                 ]
             },
-            "InputRequest": {
-                "type": "object",
-                "properties": {
-                    "status": {
-                        "$ref": "#/components/schemas/InputStatusEnum"
-                    }
-                },
-                "required": [
-                    "status"
-                ]
-            },
-            "InputStatusEnum": {
-                "enum": [
-                    "active",
-                    "suspended"
-                ],
-                "type": "string",
-                "description": "* `active` - active\n* `suspended` - suspended"
-            },
             "Invitation": {
                 "type": "object",
                 "properties": {
@@ -11454,6 +11435,25 @@
                 ],
                 "type": "string",
                 "description": "* `active` - Active\n* `suspended` - Suspended\n* `closed` - Closed"
+            },
+            "OrganizationStatusInputRequest": {
+                "type": "object",
+                "properties": {
+                    "status": {
+                        "$ref": "#/components/schemas/OrganizationStatusInputStatusEnum"
+                    }
+                },
+                "required": [
+                    "status"
+                ]
+            },
+            "OrganizationStatusInputStatusEnum": {
+                "enum": [
+                    "active",
+                    "suspended"
+                ],
+                "type": "string",
+                "description": "* `active` - active\n* `suspended` - suspended"
             },
             "OtherIncome": {
                 "type": "object",
@@ -14209,6 +14209,17 @@
                     "is_platform_admin",
                     "mobile",
                     "mobile_verified_at"
+                ]
+            },
+            "UserStatusInputRequest": {
+                "type": "object",
+                "properties": {
+                    "is_active": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "is_active"
                 ]
             },
             "VerificationInfo": {
