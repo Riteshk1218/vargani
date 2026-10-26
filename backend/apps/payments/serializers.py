@@ -1,12 +1,14 @@
 from decimal import Decimal
 
 from django.utils.translation import gettext_lazy as _
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from apps.accounts.serializers import MobileField
 from apps.contributions.models import Contribution, ContributionType, Due
 from apps.core.fields import TenantPrimaryKeyRelatedField
 from apps.events.models import Event
+from apps.organizations import form_studio
 from apps.people.models import Person
 from apps.receipts.models import Receipt
 
@@ -86,6 +88,10 @@ class PaymentCreateSerializer(PayerChoiceMixin, serializers.Serializer):
     # When to go back for the balance (door-to-door follow-up). Kept only when a balance is kept.
     follow_up_on = serializers.DateField(required=False, allow_null=True, default=None)
     replaces_receipt = TenantPrimaryKeyRelatedField(queryset=Receipt.objects.all(), required=False, allow_null=True)
+    # Answers to the organization's own dropdowns (admin studio): field key -> option picked.
+    custom_fields = serializers.DictField(
+        child=serializers.CharField(max_length=60, allow_blank=True), required=False, default=dict
+    )
 
     def validate_reference_number(self, value):
         return value.strip()
@@ -118,6 +124,12 @@ class ReceiptRefSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
+class CustomFieldValueSerializer(serializers.Serializer):
+    key = serializers.CharField()
+    label = serializers.CharField()
+    value = serializers.CharField()
+
+
 class PaymentSerializer(serializers.ModelSerializer):
     event_name = serializers.CharField(source="event.name", read_only=True)
     payer_name = serializers.CharField(read_only=True)
@@ -130,6 +142,7 @@ class PaymentSerializer(serializers.ModelSerializer):
     balance_due = serializers.SerializerMethodField()
     pavti_status = serializers.SerializerMethodField()
     follow_up_state = serializers.SerializerMethodField()
+    custom_fields = serializers.SerializerMethodField()
 
     class Meta:
         model = Payment
@@ -159,6 +172,7 @@ class PaymentSerializer(serializers.ModelSerializer):
             "pavti_status",
             "follow_up_on",
             "follow_up_state",
+            "custom_fields",
             "created_at",
         ]
         read_only_fields = [f for f in fields if f != "notes"]
@@ -182,6 +196,11 @@ class PaymentSerializer(serializers.ModelSerializer):
         if "today" not in self.context:
             self.context["today"] = followups.org_today(obj.organization)
         return followups.follow_up_state(obj, self.context["today"])
+
+    @extend_schema_field(CustomFieldValueSerializer(many=True))
+    def get_custom_fields(self, obj) -> list[dict]:
+        """The organization's own dropdowns answered on this collection, with their current names."""
+        return form_studio.describe_values(obj.organization, obj.custom_fields)
 
     def get_receipt(self, obj) -> dict | None:
         receipts = sorted(obj.receipts.all(), key=lambda r: (r.status != Receipt.Status.ISSUED, -r.sequence))

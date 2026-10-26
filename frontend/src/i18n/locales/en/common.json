@@ -21,7 +21,8 @@
     "reports": "Reports",
     "audit": "Audit log",
     "my": "My contributions",
-    "finance": "Financial summary"
+    "finance": "Financial summary",
+    "studio": "Admin studio"
   },
   "topbar": {
     "switchOrganization": "Switch organization",
@@ -489,7 +490,8 @@
     "openBalances": "Balance due: {{amount}}",
     "balanceStill": "{{amount}} still owed",
     "collectBalance": "Collect",
-    "towardsBalance": "{{type}} (balance)"
+    "towardsBalance": "{{type}} (balance)",
+    "choose": "Choose…"
   },
   "payments": {
     "title": "Payments",
@@ -971,5 +973,42 @@
       "partly_paid": "Partly paid",
       "paid": "Paid"
     }
+  },
+  "studio": {
+    "title": "Admin studio",
+    "subtitle": "Change the Collect form for everyone in {{name}}, on the web and in the app. No update needed.",
+    "typesTitle": "Contribution type dropdown",
+    "typesHelp": "The options in “Contribution type” for {{event}}. Add, rename or archive them here. Each event has its own list.",
+    "typesNoEvent": "Choose an event at the top to change its contribution types.",
+    "fieldsTitle": "Your own dropdowns",
+    "fieldsHelp": "Extra questions asked on every collection, like Ward, Building or Gotra. The answer is printed on the receipt.",
+    "addField": "Add dropdown",
+    "noFields": "No extra dropdowns yet. Add one to ask something more when collecting.",
+    "fieldName": "Dropdown name",
+    "fieldNamePlaceholder": "e.g. Ward",
+    "options": "Options",
+    "optionN": "Option {{n}}",
+    "optionPlaceholder": "e.g. Ward 1",
+    "addOption": "Add option",
+    "removeOption": "Remove option",
+    "moveUp": "Move up",
+    "moveDown": "Move down",
+    "required": "Must be filled",
+    "showOnCollect": "Show on Collect",
+    "newField": "New: saved when you press Save.",
+    "hidden": "Hidden",
+    "fieldsNote": "A dropdown you no longer need can be hidden. Older receipts keep showing what was picked.",
+    "modesTitle": "Payment mode dropdown",
+    "modesHelp": "Give a mode your own name, or hide modes your collectors never use.",
+    "renameMode": "New name for {{mode}}",
+    "show": "Show",
+    "labelsTitle": "Field names",
+    "labelsHelp": "Type a new name to use instead of the standard one. Leave empty to keep it.",
+    "renameField": "New name for {{field}}",
+    "keepStandard": "Keep the standard name",
+    "unsaved": "You have changes that are not saved.",
+    "undo": "Undo changes",
+    "save": "Save",
+    "saved": "Saved. Collect shows the new form now."
   }
 }

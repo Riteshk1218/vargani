@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-26 17:35+0000\n"
+"POT-Creation-Date: 2026-10-26 18:27+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -54,8 +54,8 @@ msgstr "तुमचा पडताळणी कोड"
 msgid "The code is invalid or has expired."
 msgstr "कोड चुकीचा आहे किंवा त्याची मुदत संपली आहे."
 
-#: apps/accounts/serializers.py:63 apps/organizations/serializers.py:192
-#: apps/organizations/serializers.py:226
+#: apps/accounts/serializers.py:63 apps/organizations/serializers.py:213
+#: apps/organizations/serializers.py:247
 msgid "Enter an email address or a mobile number."
 msgstr "ईमेल पत्ता किंवा मोबाइल नंबर टाका."
 
@@ -94,7 +94,7 @@ msgstr "बदलांची नोंद"
 
 #: apps/audit/views.py:28 apps/contributions/views.py:87
 #: apps/contributions/views.py:165 apps/expenses/views.py:67
-#: apps/expenses/views.py:236 apps/payments/views.py:68
+#: apps/expenses/views.py:236 apps/payments/views.py:69
 #: apps/receipts/views.py:64 apps/reports/registry.py:199
 #: apps/reports/registry.py:358 apps/reports/registry.py:450
 #: apps/reports/registry.py:490 apps/reports/registry.py:524
@@ -184,7 +184,7 @@ msgid "Contributions"
 msgstr "वर्गणी"
 
 #: apps/contributions/views.py:84 apps/contributions/views.py:160
-#: apps/organizations/views.py:197 apps/payments/views.py:69
+#: apps/organizations/views.py:222 apps/payments/views.py:70
 #: apps/people/views.py:44 apps/receipts/views.py:65
 #: apps/reports/registry.py:121 apps/reports/registry.py:200
 #: apps/reports/registry.py:359 apps/reports/registry.py:394
@@ -210,24 +210,24 @@ msgid "Fund"
 msgstr "निधी"
 
 #: apps/contributions/views.py:89 apps/expenses/views.py:72
-#: apps/expenses/views.py:240 apps/payments/views.py:72
-#: apps/receipts/templates/receipts/receipt_pdf.html:77
+#: apps/expenses/views.py:240 apps/payments/views.py:73
+#: apps/receipts/templates/receipts/receipt_pdf.html:78
 #: apps/receipts/views.py:66 apps/reports/registry.py:205
 #: apps/reports/registry.py:296 apps/reports/registry.py:360
 #: apps/reports/registry.py:494 apps/reports/registry.py:527
 msgid "Payment mode"
 msgstr "पेमेंट पद्धत"
 
-#: apps/contributions/views.py:90 apps/payments/views.py:74
-#: apps/receipts/templates/receipts/receipt_pdf.html:78
+#: apps/contributions/views.py:90 apps/payments/views.py:75
+#: apps/receipts/templates/receipts/receipt_pdf.html:79
 #: apps/reports/registry.py:207 apps/reports/registry.py:361
 #: apps/reports/registry.py:451
 msgid "Collected by"
 msgstr "वसूल करणारे"
 
-#: apps/contributions/views.py:91 apps/events/views.py:37
+#: apps/contributions/views.py:91 apps/events/views.py:38
 #: apps/expenses/views.py:74 apps/expenses/views.py:242
-#: apps/organizations/views.py:201 apps/payments/views.py:75
+#: apps/organizations/views.py:226 apps/payments/views.py:76
 #: apps/receipts/views.py:67 apps/reports/registry.py:128
 #: apps/reports/registry.py:154 apps/reports/registry.py:362
 #: apps/reports/registry.py:496 apps/reports/registry.py:593
@@ -235,9 +235,9 @@ msgid "Status"
 msgstr "स्थिती"
 
 #: apps/contributions/views.py:92 apps/expenses/views.py:76
-#: apps/expenses/views.py:243 apps/payments/views.py:76
-#: apps/receipts/templates/receipts/receipt_pdf.html:55
-#: apps/receipts/templates/receipts/receipt_pdf.html:66
+#: apps/expenses/views.py:243 apps/payments/views.py:77
+#: apps/receipts/templates/receipts/receipt_pdf.html:56
+#: apps/receipts/templates/receipts/receipt_pdf.html:67
 #: apps/receipts/views.py:69 apps/reports/registry.py:208
 #: apps/reports/registry.py:233 apps/reports/registry.py:298
 #: apps/reports/registry.py:327 apps/reports/registry.py:364
@@ -246,15 +246,15 @@ msgid "Amount"
 msgstr "रक्कम"
 
 #: apps/contributions/views.py:158 apps/contributions/views.py:166
-#: apps/receipts/templates/receipts/receipt_pdf.html:66
-#: apps/receipts/templates/receipts/receipt_pdf.html:72
+#: apps/receipts/templates/receipts/receipt_pdf.html:67
+#: apps/receipts/templates/receipts/receipt_pdf.html:73
 #: apps/reports/registry.py:443 apps/reports/registry.py:452
 #: apps/reports/registry.py:706
 msgid "Balance due"
 msgstr "बाकी रक्कम"
 
-#: apps/contributions/views.py:161 apps/organizations/views.py:199
-#: apps/payments/views.py:70 apps/people/views.py:45
+#: apps/contributions/views.py:161 apps/organizations/views.py:224
+#: apps/payments/views.py:71 apps/people/views.py:45
 #: apps/receipts/templates/receipts/receipt_pdf.html:51
 #: apps/reports/registry.py:122 apps/reports/registry.py:201
 #: apps/reports/registry.py:395 apps/reports/registry.py:446
@@ -272,7 +272,7 @@ msgstr "पावती"
 msgid "Paid"
 msgstr "भरले"
 
-#: apps/contributions/views.py:168 apps/payments/views.py:77
+#: apps/contributions/views.py:168 apps/payments/views.py:78
 #: apps/reports/registry.py:454
 msgid "Still owed"
 msgstr "अजून बाकी"
@@ -414,32 +414,32 @@ msgstr "सानुकूल"
 msgid "Start empty and choose the modules yourself."
 msgstr "रिकाम्यापासून सुरू करा आणि विभाग स्वतः निवडा."
 
-#: apps/events/views.py:31 apps/reports/registry.py:150
+#: apps/events/views.py:32 apps/reports/registry.py:150
 #: apps/reports/registry.py:662
 msgid "Events"
 msgstr "कार्यक्रम"
 
-#: apps/events/views.py:33 apps/expenses/views.py:68 apps/payments/views.py:71
+#: apps/events/views.py:34 apps/expenses/views.py:68 apps/payments/views.py:72
 #: apps/receipts/templates/receipts/receipt_pdf.html:47
 #: apps/reports/registry.py:152 apps/reports/registry.py:270
 #: apps/reports/registry.py:592
 msgid "Event"
 msgstr "कार्यक्रम"
 
-#: apps/events/views.py:34
+#: apps/events/views.py:35
 #: apps/receipts/templates/receipts/receipt_pdf.html:48
 msgid "Financial year"
 msgstr "आर्थिक वर्ष"
 
-#: apps/events/views.py:35 apps/reports/registry.py:155
+#: apps/events/views.py:36 apps/reports/registry.py:155
 msgid "Starts"
 msgstr "सुरुवात"
 
-#: apps/events/views.py:36 apps/reports/registry.py:156
+#: apps/events/views.py:37 apps/reports/registry.py:156
 msgid "Ends"
 msgstr "शेवट"
 
-#: apps/events/views.py:38 apps/reports/registry.py:158
+#: apps/events/views.py:39 apps/reports/registry.py:158
 #: apps/reports/registry.py:271 apps/reports/registry.py:594
 msgid "Target"
 msgstr "लक्ष्य"
@@ -500,7 +500,7 @@ msgid "Description"
 msgstr "वर्णन"
 
 #: apps/expenses/views.py:73 apps/expenses/views.py:241
-#: apps/payments/views.py:73 apps/reports/registry.py:495
+#: apps/payments/views.py:74 apps/reports/registry.py:495
 #: apps/reports/registry.py:528
 msgid "Reference"
 msgstr "संदर्भ"
@@ -656,6 +656,59 @@ msgstr ""
 "%(event)s साठी तुमचे ₹%(amount)s चे ऑनलाइन पेमेंट पूर्ण झाले नाही. पैसे "
 "कापले गेले असल्यास तुमची बँक ते परत करेल."
 
+#: apps/organizations/form_studio.py:61 apps/organizations/form_studio.py:74
+#: apps/organizations/form_studio.py:80 apps/organizations/form_studio.py:93
+#: apps/organizations/form_studio.py:110 apps/organizations/form_studio.py:118
+#: apps/organizations/form_studio.py:126 apps/organizations/form_studio.py:132
+#: apps/organizations/form_studio.py:166 apps/organizations/services.py:101
+msgid "Invalid value."
+msgstr "चुकीचे मूल्य."
+
+#: apps/organizations/form_studio.py:65
+#, python-format
+msgid "Keep it to %(n)s characters."
+msgstr "%(n)s अक्षरांपर्यंतच ठेवा."
+
+#: apps/organizations/form_studio.py:67 apps/organizations/form_studio.py:182
+#: apps/payments/serializers.py:35
+#| msgid "This person is archived."
+msgid "This field is required."
+msgstr "हे भरणे आवश्यक आहे."
+
+#: apps/organizations/form_studio.py:84 apps/organizations/form_studio.py:122
+#: apps/organizations/form_studio.py:173
+#| msgid "Unknown setting."
+msgid "Unknown field."
+msgstr "अज्ञात रकाना."
+
+#: apps/organizations/form_studio.py:97
+#| msgid "Payment mode"
+msgid "Unknown payment mode."
+msgstr "अज्ञात पेमेंट पद्धत."
+
+#: apps/organizations/form_studio.py:104
+msgid "Keep at least one payment mode."
+msgstr "किमान एक पेमेंट पद्धत ठेवा."
+
+#: apps/organizations/form_studio.py:113
+#, python-format
+msgid "At most %(n)s dropdowns."
+msgstr "जास्तीत जास्त %(n)s ड्रॉपडाउन."
+
+#: apps/organizations/form_studio.py:140
+#| msgid "Add at least one contribution."
+msgid "Add at least one option."
+msgstr "किमान एक पर्याय जोडा."
+
+#: apps/organizations/form_studio.py:142
+#, python-format
+msgid "At most %(n)s options."
+msgstr "जास्तीत जास्त %(n)s पर्याय."
+
+#: apps/organizations/form_studio.py:177
+msgid "Choose one of the options."
+msgstr "दिलेल्यांपैकी एक पर्याय निवडा."
+
 #: apps/organizations/platform.py:111 apps/organizations/serializers.py:49
 msgid "Enter the organization name."
 msgstr "संस्थेचे नाव टाका."
@@ -668,33 +721,29 @@ msgstr "बंद संस्था बदलता येत नाही."
 msgid "Change your own password and details from My profile."
 msgstr "तुमचा स्वतःचा पासवर्ड आणि माहिती माझी प्रोफाइलमधून बदला."
 
-#: apps/organizations/serializers.py:66 apps/organizations/serializers.py:103
+#: apps/organizations/serializers.py:66 apps/organizations/serializers.py:124
 msgid "End date must be after the start date."
 msgstr "शेवटची तारीख सुरुवातीच्या तारखेनंतर हवी."
 
-#: apps/organizations/serializers.py:101
+#: apps/organizations/serializers.py:122
 msgid "A closed financial year cannot be edited."
 msgstr "बंद आर्थिक वर्ष बदलता येत नाही."
 
-#: apps/organizations/serializers.py:108
+#: apps/organizations/serializers.py:129
 msgid "A financial year with this label already exists."
 msgstr "या नावाचे आर्थिक वर्ष आधीच आहे."
 
-#: apps/organizations/serializers.py:110
+#: apps/organizations/serializers.py:131
 msgid "This financial year overlaps another financial year."
 msgstr "हे आर्थिक वर्ष दुसऱ्या आर्थिक वर्षाशी जुळते."
 
-#: apps/organizations/serializers.py:219
+#: apps/organizations/serializers.py:240
 msgid "Enter the name."
 msgstr "नाव टाका."
 
 #: apps/organizations/services.py:99
 msgid "Unknown setting."
 msgstr "अज्ञात सेटिंग."
-
-#: apps/organizations/services.py:101
-msgid "Invalid value."
-msgstr "चुकीचे मूल्य."
 
 #: apps/organizations/services.py:115
 msgid "Upload a PNG, JPG, JPEG or WEBP image."
@@ -762,16 +811,16 @@ msgstr ""
 "ही व्यक्ती दुसऱ्या संस्थेतही Vargani वापरते. ते 'पासवर्ड विसरलात' वापरून तो "
 "बदलू शकतात."
 
-#: apps/organizations/views.py:195
+#: apps/organizations/views.py:220
 msgid "Users"
 msgstr "वापरकर्ते"
 
-#: apps/organizations/views.py:198 apps/people/views.py:46
+#: apps/organizations/views.py:223 apps/people/views.py:46
 #: apps/reports/registry.py:123
 msgid "Email"
 msgstr "ईमेल"
 
-#: apps/organizations/views.py:200 apps/reports/registry.py:636
+#: apps/organizations/views.py:225 apps/reports/registry.py:636
 msgid "Role"
 msgstr "भूमिका"
 
@@ -812,7 +861,7 @@ msgid "Deleted by admin"
 msgstr "प्रशासकाने हटवले"
 
 #: apps/payments/followups.py:149 apps/payments/services.py:51
-#: apps/payments/services.py:408
+#: apps/payments/services.py:413
 msgid "This event is not active. New collections are not allowed."
 msgstr "हा कार्यक्रम सक्रिय नाही. नवीन वसुली करता येणार नाही."
 
@@ -824,28 +873,21 @@ msgstr "या पावतीवर काहीही बाकी नाह�
 msgid "This is more than the balance still owed."
 msgstr "हे बाकी रकमेपेक्षा जास्त आहे."
 
-#: apps/payments/followups.py:166 apps/payments/services.py:261
-#| msgid "The date cannot be in the future."
+#: apps/payments/followups.py:166 apps/payments/services.py:265
 msgid "The follow-up date cannot be in the past."
 msgstr "पुढील भेटीची तारीख मागील असू शकत नाही."
 
-#: apps/payments/models.py:95 apps/receipts/rendering.py:116
+#: apps/payments/models.py:97 apps/receipts/rendering.py:116
 #: apps/receipts/templates/receipts/receipt_pdf.html:50
 #: apps/reports/registry.py:185
 msgid "Anonymous"
 msgstr "अनामिक"
 
-#: apps/payments/serializers.py:33
-#, fuzzy
-#| msgid "This person is archived."
-msgid "This field is required."
-msgstr "ही व्यक्ती संग्रहित केली आहे."
-
-#: apps/payments/serializers.py:49 apps/people/serializers.py:59
+#: apps/payments/serializers.py:51 apps/people/serializers.py:59
 msgid "Enter the person's name."
 msgstr "व्यक्तीचे नाव टाका."
 
-#: apps/payments/serializers.py:62
+#: apps/payments/serializers.py:64
 msgid "Choose an existing person or add a new one, not both."
 msgstr "आधीची व्यक्ती निवडा किंवा नवीन जोडा, दोन्ही नाही."
 
@@ -893,36 +935,36 @@ msgstr "ही पावती आधीच दुरुस्त केली �
 msgid "A correction must be a received payment."
 msgstr "दुरुस्ती ही मिळालेले पेमेंट असावी."
 
-#: apps/payments/services.py:249
+#: apps/payments/services.py:253
 msgid "The amount received must be between zero and the total."
 msgstr "मिळालेली रक्कम शून्य ते एकूण रकमेच्या दरम्यान हवी."
 
-#: apps/payments/services.py:252
+#: apps/payments/services.py:256
 msgid "Choose the person to keep a balance for them."
 msgstr "बाकी ठेवण्यासाठी व्यक्ती निवडा."
 
-#: apps/payments/services.py:254
+#: apps/payments/services.py:258
 msgid "A balance can be kept only on a received collection."
 msgstr "बाकी फक्त मिळालेल्या वसुलीवरच ठेवता येते."
 
-#: apps/payments/services.py:257
+#: apps/payments/services.py:261
 msgid "Nothing would be recorded."
 msgstr "काहीही नोंदवले जाणार नाही."
 
-#: apps/payments/views.py:66 apps/reports/registry.py:231
+#: apps/payments/views.py:67 apps/reports/registry.py:231
 #: apps/reports/registry.py:297 apps/reports/registry.py:325
 msgid "Payments"
 msgstr "पेमेंट्स"
 
-#: apps/payments/views.py:78
+#: apps/payments/views.py:79
 msgid "Follow-up date"
 msgstr "पुढील भेटीची तारीख"
 
-#: apps/payments/views.py:126
+#: apps/payments/views.py:127
 msgid "You cannot add new people."
 msgstr "तुम्ही नवीन व्यक्ती जोडू शकत नाही."
 
-#: apps/payments/views.py:135
+#: apps/payments/views.py:136
 msgid "This person is not assigned to you for this event."
 msgstr "ही व्यक्ती या कार्यक्रमासाठी तुम्हाला सोपवलेली नाही."
 
@@ -1056,37 +1098,37 @@ msgstr "यांच्याकडून मिळाले"
 msgid "Address"
 msgstr "पत्ता"
 
-#: apps/receipts/templates/receipts/receipt_pdf.html:55
+#: apps/receipts/templates/receipts/receipt_pdf.html:56
 msgid "Details"
 msgstr "तपशील"
 
-#: apps/receipts/templates/receipts/receipt_pdf.html:58
+#: apps/receipts/templates/receipts/receipt_pdf.html:59
 msgid "towards balance"
 msgstr "बाकीपोटी"
 
-#: apps/receipts/templates/receipts/receipt_pdf.html:60
+#: apps/receipts/templates/receipts/receipt_pdf.html:61
 msgid "Nothing received yet"
 msgstr "अजून काही मिळाले नाही"
 
-#: apps/receipts/templates/receipts/receipt_pdf.html:62
+#: apps/receipts/templates/receipts/receipt_pdf.html:63
 msgid "Received"
 msgstr "मिळाले"
 
-#: apps/receipts/templates/receipts/receipt_pdf.html:62
+#: apps/receipts/templates/receipts/receipt_pdf.html:63
 #: apps/reports/registry.py:274
 msgid "Total"
 msgstr "एकूण"
 
-#: apps/receipts/templates/receipts/receipt_pdf.html:79
+#: apps/receipts/templates/receipts/receipt_pdf.html:80
 #: apps/receipts/views.py:68 apps/reports/registry.py:363
 msgid "Void reason"
 msgstr "रद्द करण्याचे कारण"
 
-#: apps/receipts/templates/receipts/receipt_pdf.html:82
+#: apps/receipts/templates/receipts/receipt_pdf.html:83
 msgid "Thank you for your contribution."
 msgstr "तुमच्या योगदानाबद्दल धन्यवाद."
 
-#: apps/receipts/templates/receipts/receipt_pdf.html:83
+#: apps/receipts/templates/receipts/receipt_pdf.html:84
 msgid "Authorised signatory"
 msgstr "अधिकृत स्वाक्षरी"
 

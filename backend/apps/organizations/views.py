@@ -15,10 +15,11 @@ from apps.core.downloads import Col, ListDownloadMixin
 from apps.core.tenancy import get_org_context
 from apps.core.viewsets import TenantModelViewSet, TenantReadOnlyViewSet, TenantScopedMixin
 
-from . import services
+from . import form_studio, services
 from .models import FinancialYear, Invitation, Organization, OrganizationMembership, Permission, Role
 from .serializers import (
     FinancialYearSerializer,
+    FormStudioSerializer,
     InvitationAcceptSerializer,
     InvitationSerializer,
     LogoUploadSerializer,
@@ -59,6 +60,7 @@ class OrganizationViewSet(TenantScopedMixin, mixins.RetrieveModelMixin, viewsets
         "partial_update": "organization.manage",
         "logo": "organization.manage",
         "org_settings": ("organization.view",),
+        "studio": ("organization.view",),
     }
     filter_backends = []
     pagination_class = None
@@ -72,7 +74,7 @@ class OrganizationViewSet(TenantScopedMixin, mixins.RetrieveModelMixin, viewsets
         return self.kwargs.get("pk")
 
     def get_required_permissions(self):
-        if self.action == "org_settings" and self.request.method != "GET":
+        if self.action in ("org_settings", "studio") and self.request.method != "GET":
             return "organization.manage"
         return super().get_required_permissions()
 
@@ -142,6 +144,28 @@ class OrganizationViewSet(TenantScopedMixin, mixins.RetrieveModelMixin, viewsets
             organization=org,
             action=audit.UPDATE,
             entity_type="organizations.organization.settings",
+            entity_id=org.pk,
+            before=current,
+            after=updated,
+        )
+        return Response(updated)
+
+    @extend_schema(request=FormStudioSerializer, responses=FormStudioSerializer)
+    @action(detail=True, methods=["get", "put"], url_path="form-studio")
+    def studio(self, request, pk=None):
+        """Admin studio: field names, payment mode dropdown and the organization's own dropdowns on Collect."""
+        org = self.organization
+        current = form_studio.get_config(org)
+        if request.method == "GET":
+            return Response(current)
+        updated = form_studio.validate_config(request.data, previous=current)
+        org.settings = {**(org.settings or {}), form_studio.SETTINGS_KEY: updated}
+        org.save(update_fields=["settings", "updated_at"])
+        audit.record(
+            request=request,
+            organization=org,
+            action=audit.UPDATE,
+            entity_type="organizations.organization.form_studio",
             entity_id=org.pk,
             before=current,
             after=updated,
@@ -394,5 +418,6 @@ class MyOrganizationDetailView(APIView):
                 "permissions": context.permissions,
                 "current_financial_year": FinancialYearSerializer(current_fy).data if current_fy else None,
                 "member_portal_enabled": bool(context.organization.settings.get("member_portal_enabled")),
+                "form_studio": form_studio.get_config(context.organization),
             }
         )

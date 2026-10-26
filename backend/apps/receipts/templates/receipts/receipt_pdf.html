@@ -50,6 +50,7 @@ footer { display: flex; justify-content: space-between; align-items: flex-end; m
   <dt>{% trans "Received from" %}</dt><dd><strong>{% if s.person.anonymous %}{% trans "Anonymous" %}{% else %}{{ s.person.name }}{% endif %}</strong></dd>
   {% if s.person.mobile %}<dt>{% trans "Mobile" %}</dt><dd>{{ s.person.mobile }}</dd>{% endif %}
   {% if s.person.address %}<dt>{% trans "Address" %}</dt><dd>{{ s.person.address }}</dd>{% endif %}
+  {% for field in s.custom_fields %}<dt>{{ field.label }}</dt><dd>{{ field.value }}</dd>{% endfor %}
 </dl>
 <table>
   <thead><tr><th>{% trans "Details" %}</th><th class="amount">{% trans "Amount" %}</th></tr></thead>

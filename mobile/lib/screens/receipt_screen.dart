@@ -130,8 +130,15 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                       row(t('mobile'), person['mobile']),
                       row(t('event'), event['name']),
                       row(t('financial_year'), s['financial_year']),
+                      for (final f in (s['custom_fields'] as List? ?? const []).cast<Map>())
+                        row('${f['label']}', f['value']),
                       row(t('date_time'), formatStamp('${s['paid_at'] ?? r['issued_at']}')),
-                      row(t('payment_mode'), modeLabel(app, '${s['mode'] ?? r['mode']}')),
+                      row(
+                        t('payment_mode'),
+                        s['mode_label']?.toString().isNotEmpty == true
+                            ? s['mode_label']
+                            : modeLabel(app, '${s['mode'] ?? r['mode']}'),
+                      ),
                       row(t('reference'), s['reference_number']),
                       row(t('collected_by'), s['collector']),
                       const Divider(height: 24),

@@ -1,4 +1,4 @@
-import { BarChart3, HandHeart, Scale, CalendarDays, HandCoins, History, PiggyBank, Receipt, LayoutDashboard, ListChecks, ReceiptText, Settings, ShieldAlert, ShieldCheck, Users, UsersRound, Wallet, type LucideIcon } from 'lucide-react'
+import { BarChart3, HandHeart, Scale, CalendarDays, HandCoins, History, PiggyBank, Receipt, LayoutDashboard, ListChecks, ReceiptText, Settings, ShieldAlert, ShieldCheck, SlidersHorizontal, Users, UsersRound, Wallet, type LucideIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { NavLink } from 'react-router-dom'
 import { useOrg } from '../../context/OrgContext'
@@ -32,6 +32,7 @@ const NAV: NavItem[] = [
   { to: '/app/events', label: 'nav.events', icon: CalendarDays, permission: 'events.view' },
   { to: '/app/people', label: 'nav.people', icon: Users, permission: 'people.view' },
   { to: '/app/users', label: 'nav.users', icon: ShieldCheck, permission: 'members.view' },
+  { to: '/app/studio', label: 'nav.studio', icon: SlidersHorizontal, permission: 'organization.manage' },
   { to: '/app/settings', label: 'nav.settings', icon: Settings, permission: 'organization.manage' },
 ]
 

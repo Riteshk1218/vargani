@@ -170,7 +170,7 @@ function FundModal({ eventId, fund, open, onClose }: { eventId: string; fund: Fu
   )
 }
 
-function ContributionTypesCard({ eventId }: { eventId: string }) {
+export function ContributionTypesCard({ eventId }: { eventId: string }) {
   const { t } = useTranslation()
   const { can, detail } = useOrg()
   const keys = useEventMoneyKeys(eventId)

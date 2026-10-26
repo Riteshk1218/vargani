@@ -31,6 +31,7 @@ import { ReceiptPage } from '../pages/receipts/ReceiptPage'
 import { ReceiptsPage } from '../pages/receipts/ReceiptsPage'
 import { ProfilePage } from '../pages/settings/ProfilePage'
 import { SettingsPage } from '../pages/settings/SettingsPage'
+import { AdminStudioPage } from '../pages/studio/AdminStudioPage'
 import { UsersPage } from '../pages/users/UsersPage'
 import { RedirectIfAuthenticated, RequireAuth, RequireOrganization, RequirePermission } from './guards'
 
@@ -80,6 +81,7 @@ export function AppRoutes() {
             <Route path="people" element={<RequirePermission permission="people.view"><PeoplePage /></RequirePermission>} />
             <Route path="users" element={<RequirePermission permission="members.view"><UsersPage /></RequirePermission>} />
             <Route path="settings" element={<RequirePermission permission="organization.manage"><SettingsPage /></RequirePermission>} />
+            <Route path="studio" element={<RequirePermission permission="organization.manage"><AdminStudioPage /></RequirePermission>} />
             <Route path="profile" element={<ProfilePage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Route>

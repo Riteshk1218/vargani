@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
 import '../api/api_client.dart';
+import '../state/app_state.dart';
 import '../util/money.dart';
 import '../widgets/common.dart';
 import 'followups_screen.dart';
@@ -50,6 +51,8 @@ class _CollectScreenState extends State<CollectScreen> {
   Object? _loadError;
   final List<_Line> _lines = [_Line()];
   String _mode = 'cash';
+  // Answers to the organization's own dropdowns (admin studio): field key -> option.
+  final Map<String, String> _custom = {};
   final _reference = TextEditingController();
   final _notes = TextEditingController();
   // Money that came now; empty means all of it. The rest is kept as a balance for the person.
@@ -68,6 +71,8 @@ class _CollectScreenState extends State<CollectScreen> {
   void initState() {
     super.initState();
     _person = widget.person;
+    final modes = _modes(AppScope.read(context));
+    if (modes.isNotEmpty && !modes.contains(_mode)) _mode = modes.first;
     _loadTypes();
     _loadDues();
   }
@@ -94,10 +99,7 @@ class _CollectScreenState extends State<CollectScreen> {
     for (final d in _dues) {
       final id = '${d['payment']}';
       final before = out[id];
-      out[id] = (
-        receipt: d['receipt_number']?.toString(),
-        paise: (before?.paise ?? 0) + _paise('${d['remaining']}'),
-      );
+      out[id] = (receipt: d['receipt_number']?.toString(), paise: (before?.paise ?? 0) + _paise('${d['remaining']}'));
     }
     return out;
   }
@@ -120,6 +122,12 @@ class _CollectScreenState extends State<CollectScreen> {
       if (mounted) setState(() => _opening = null);
     }
   }
+
+  /// Modes the admin studio still shows.
+  List<String> _modes(AppState app) => [
+    for (final m in collectionModes)
+      if (!app.modeHidden(m)) m,
+  ];
 
   bool get _named => (_payerKind == 'existing' && _person != null) || _payerKind == 'new';
 
@@ -213,6 +221,12 @@ class _CollectScreenState extends State<CollectScreen> {
         if (_type(l.typeId)?['kind'] == 'recurring_monthly' && l.month != null) 'period_month': l.month,
       });
     }
+    for (final f in app.customFields) {
+      if (f['required'] == true && (_custom[f['key']] ?? '').isEmpty) {
+        showMessage(context, t('fill_field', {'field': '${f['label']}'}), error: true);
+        return;
+      }
+    }
     final received = _receivedPaise;
     if (received != null && (received < 0 || received > _totalPaise)) {
       showMessage(context, t('received_too_much'), error: true);
@@ -237,6 +251,10 @@ class _CollectScreenState extends State<CollectScreen> {
           'reference_number': _reference.text.trim(),
           'notes': _notes.text.trim(),
           'lines': lines,
+          'custom_fields': {
+            for (final f in app.customFields)
+              if ((_custom[f['key']] ?? '').isNotEmpty) '${f['key']}': _custom[f['key']],
+          },
           if (received != null && received < _totalPaise) 'received': _fromPaise(received),
           if (received != null && received < _totalPaise) 'follow_up_on': _followUp,
         },
@@ -286,7 +304,10 @@ class _CollectScreenState extends State<CollectScreen> {
               padding: const EdgeInsets.all(16),
               children: [
                 if (widget.person == null) ...[
-                  Text('${t('payer')} (${t('optional')})', style: Theme.of(context).textTheme.titleSmall),
+                  Text(
+                    '${app.fieldLabel('payer', t('payer'))} (${t('optional')})',
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
                   const SizedBox(height: 8),
                   SegmentedButton<String>(
                     key: const Key('payer-kind'),
@@ -399,7 +420,11 @@ class _CollectScreenState extends State<CollectScreen> {
                               key: Key('update-pavti-${e.key}'),
                               onPressed: _opening == null ? () => _updatePavti(e.key) : null,
                               child: _opening == e.key
-                                  ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                                  ? const SizedBox(
+                                      height: 16,
+                                      width: 16,
+                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                    )
                                   : Text(t('update_pavti')),
                             ),
                           ),
@@ -424,7 +449,7 @@ class _CollectScreenState extends State<CollectScreen> {
                     controller: _received,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     decoration: InputDecoration(
-                      labelText: t('received_now'),
+                      labelText: app.fieldLabel('received', t('received_now')),
                       prefixText: '₹ ',
                       hintText: _fromPaise(_totalPaise),
                       helperText: t('received_hint'),
@@ -453,13 +478,13 @@ class _CollectScreenState extends State<CollectScreen> {
                   ],
                 ],
                 const SizedBox(height: 8),
-                Text(t('payment_mode'), style: Theme.of(context).textTheme.titleSmall),
+                Text(app.fieldLabel('mode', t('payment_mode')), style: Theme.of(context).textTheme.titleSmall),
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
                   children: [
-                    for (final m in collectionModes)
+                    for (final m in _modes(app))
                       ChoiceChip(
                         key: Key('mode-$m'),
                         label: Text(modeLabel(app, m)),
@@ -478,17 +503,43 @@ class _CollectScreenState extends State<CollectScreen> {
                       key: const Key('collect-reference'),
                       controller: _reference,
                       decoration: InputDecoration(
-                        labelText: t('reference'),
+                        labelText: app.fieldLabel(_mode == 'cheque' ? 'cheque_number' : 'reference', t('reference')),
                         helperText: t('reference_required'),
                         errorText: _error?.fieldError('reference_number'),
                         border: const OutlineInputBorder(),
                       ),
                     ),
                   ),
+                for (final f in app.customFields)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: DropdownButtonFormField<String>(
+                      key: Key('collect-custom-${f['key']}'),
+                      initialValue: _custom[f['key']],
+                      isExpanded: true,
+                      decoration: InputDecoration(
+                        labelText: f['required'] == true ? '${f['label']} *' : '${f['label']} (${t('optional')})',
+                        errorText: _error?.fieldError('custom_fields.${f['key']}'),
+                        border: const OutlineInputBorder(),
+                      ),
+                      hint: Text(t('choose')),
+                      items: [
+                        for (final o in (f['options'] as List? ?? const []))
+                          DropdownMenuItem(
+                            value: '$o',
+                            child: Text('$o', overflow: TextOverflow.ellipsis),
+                          ),
+                      ],
+                      onChanged: (v) => setState(() => _custom['${f['key']}'] = v ?? ''),
+                    ),
+                  ),
                 TextField(
                   controller: _notes,
                   maxLength: 500,
-                  decoration: InputDecoration(labelText: t('notes'), border: const OutlineInputBorder()),
+                  decoration: InputDecoration(
+                    labelText: app.fieldLabel('notes', t('notes')),
+                    border: const OutlineInputBorder(),
+                  ),
                 ),
                 Text(t('time_auto'), style: Theme.of(context).textTheme.bodySmall),
                 const SizedBox(height: 8),
@@ -535,7 +586,7 @@ class _CollectScreenState extends State<CollectScreen> {
               initialValue: line.typeId,
               isExpanded: true,
               decoration: InputDecoration(
-                labelText: t('contribution_type'),
+                labelText: app.fieldLabel('contribution_type', t('contribution_type')),
                 errorText: _error?.fieldError('lines.$i.contribution_type'),
                 border: const OutlineInputBorder(),
               ),
@@ -560,7 +611,7 @@ class _CollectScreenState extends State<CollectScreen> {
               controller: line.amount,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               decoration: InputDecoration(
-                labelText: t('amount'),
+                labelText: app.fieldLabel('amount', t('amount')),
                 prefixText: '₹ ',
                 helperText: hint,
                 errorText:
@@ -577,7 +628,7 @@ class _CollectScreenState extends State<CollectScreen> {
               DropdownButtonFormField<String>(
                 initialValue: line.month,
                 decoration: InputDecoration(
-                  labelText: t('month'),
+                  labelText: app.fieldLabel('month', t('month')),
                   errorText: _error?.fieldError('lines.$i.period_month'),
                   border: const OutlineInputBorder(),
                 ),

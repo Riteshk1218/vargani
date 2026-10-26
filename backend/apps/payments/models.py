@@ -57,6 +57,8 @@ class Payment(TenantModel):
     notes = models.CharField(max_length=500, blank=True)
     # When the collectors go back for the money still owed on this pavti (door-to-door follow-up).
     follow_up_on = models.DateField(null=True, blank=True)
+    # Answers to the organization's own dropdowns (admin studio): field key -> option picked.
+    custom_fields = models.JSONField(default=dict, blank=True)
     status_reason = models.CharField(max_length=300, blank=True)
     status_changed_at = models.DateTimeField(null=True, blank=True)
 

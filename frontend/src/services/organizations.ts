@@ -1,5 +1,6 @@
 import type {
   FinancialYear,
+  FormStudio,
   Invitation,
   InvitationPreview,
   LoginDetailsInput,
@@ -35,6 +36,9 @@ export const organizationService = {
   settings: (orgId: string) => api.get<OrganizationSettings>(`/organizations/${orgId}/settings/`).then((r) => r.data),
   updateSettings: (orgId: string, input: Partial<OrganizationSettings>) =>
     api.patch<OrganizationSettings>(`/organizations/${orgId}/settings/`, input).then((r) => r.data),
+  formStudio: (orgId: string) => api.get<FormStudio>(`/organizations/${orgId}/form-studio/`).then((r) => r.data),
+  saveFormStudio: (orgId: string, input: FormStudio) =>
+    api.put<FormStudio>(`/organizations/${orgId}/form-studio/`, input).then((r) => r.data),
 }
 
 export const financialYearService = {

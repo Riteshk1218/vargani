@@ -81,6 +81,12 @@ export function ReceiptView({ receipt }: { receipt: Pick<Receipt, 'language' | '
             <dd>{s.person.address}</dd>
           </div>
         )}
+        {s.custom_fields?.map((field, index) => (
+          <div key={index} className="flex gap-2">
+            <dt className="w-36 shrink-0 text-slate-500">{field.label}</dt>
+            <dd>{field.value}</dd>
+          </div>
+        ))}
       </dl>
 
       <table className="mt-4 w-full text-sm">
@@ -149,7 +155,7 @@ export function ReceiptView({ receipt }: { receipt: Pick<Receipt, 'language' | '
         <div className="flex gap-2">
           <dt className="w-36 shrink-0 text-slate-500">{t('collect.mode')}</dt>
           <dd>
-            {t(`mode.${s.mode}`)}
+            {s.mode_label || t(`mode.${s.mode}`)}
             {s.reference_number && ` · ${s.reference_number}`}
             {s.cheque_bank && ` · ${s.cheque_bank}`}
           </dd>

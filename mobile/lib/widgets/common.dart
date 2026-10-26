@@ -172,14 +172,16 @@ class StatusChip extends StatelessWidget {
   }
 }
 
-String modeLabel(AppState app, String? mode) => switch (mode) {
-  'cash' => app.t('cash'),
-  'upi' => app.t('upi'),
-  'bank_transfer' => app.t('bank_transfer'),
-  'cheque' => app.t('cheque'),
-  'online' || 'gateway' => app.t('online'),
-  _ => app.t('other'),
-};
+String modeLabel(AppState app, String? mode) =>
+    app.customModeLabel('$mode') ??
+    switch (mode) {
+      'cash' => app.t('cash'),
+      'upi' => app.t('upi'),
+      'bank_transfer' => app.t('bank_transfer'),
+      'cheque' => app.t('cheque'),
+      'online' || 'gateway' => app.t('online'),
+      _ => app.t('other'),
+    };
 
 /// Event switcher shown in the app bar.
 class EventSwitcher extends StatelessWidget {
