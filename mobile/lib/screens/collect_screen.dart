@@ -185,7 +185,7 @@ class _CollectScreenState extends State<CollectScreen> {
       MaterialPageRoute(
         builder: (ctx) => Scaffold(
           appBar: AppBar(title: Text(AppScope.of(ctx).t('select_person'))),
-          body: PersonSearchList(onPick: (p) => Navigator.pop(ctx, p)),
+          body: PersonSearchList(searchFirst: true, onPick: (p) => Navigator.pop(ctx, p)),
         ),
       ),
     );

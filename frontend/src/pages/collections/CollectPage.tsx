@@ -15,7 +15,7 @@ import { toApiError } from '../../services/apiClient'
 import { contributionTypeService, dueService, paymentService } from '../../services/finance'
 import { peopleService } from '../../services/people'
 import type { ContributionType, NewPersonInput, Payment, PaymentInput, PaymentMode, Person } from '../../types/api'
-import { formatDate, formatMobile, formatMoney, formatMonth, formatStamp, sumMoney } from '../../utils/format'
+import { formatDate, formatMobile, formatMoney, formatMonth, formatStamp, searchTerm, sumMoney } from '../../utils/format'
 import { MANUAL_MODES, todayIso } from '../../utils/payments'
 import { PavtiVisitModal } from '../payments/PavtiVisitModal'
 
@@ -574,11 +574,12 @@ function PersonPicker({ person, onChange, error }: { person: Person | null; onCh
   const { t } = useTranslation()
   const { activeOrgId, can } = useOrg()
   const [search, setSearch] = useState('')
-  const debounced = useDebounced(search)
+  const debounced = searchTerm(useDebounced(search))
+  // Nothing is listed until the collector types: with hundreds of donors a full list is no help.
   const people = useQuery({
     queryKey: ['org', activeOrgId, 'people', 'picker', debounced],
-    queryFn: () => peopleService.list({ search: debounced || undefined, page_size: 8 }),
-    enabled: !person,
+    queryFn: () => peopleService.list({ search: debounced, page_size: 8 }),
+    enabled: !person && debounced !== '',
   })
 
   if (person) {
@@ -613,7 +614,7 @@ function PersonPicker({ person, onChange, error }: { person: Person | null; onCh
         />
         <Search className="pointer-events-none absolute right-3 top-9 size-4 text-slate-400" aria-hidden />
       </div>
-      {people.isLoading ? (
+      {debounced === '' ? null : people.isLoading ? (
         <Spinner />
       ) : (people.data?.results.length ?? 0) === 0 ? (
         <p className="py-3 text-center text-sm text-slate-500">

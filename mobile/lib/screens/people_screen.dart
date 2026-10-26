@@ -20,8 +20,11 @@ class PeopleScreen extends StatelessWidget {
 }
 
 class PersonSearchList extends StatefulWidget {
-  const PersonSearchList({super.key, required this.onPick});
+  const PersonSearchList({super.key, required this.onPick, this.searchFirst = false});
   final void Function(Map<String, dynamic> person) onPick;
+
+  /// List nobody until something is typed (picking a contributor from hundreds of donors).
+  final bool searchFirst;
 
   @override
   State<PersonSearchList> createState() => _PersonSearchListState();
@@ -39,7 +42,7 @@ class _PersonSearchListState extends State<PersonSearchList> {
   @override
   void initState() {
     super.initState();
-    _load(reset: true);
+    if (!widget.searchFirst) _load(reset: true);
   }
 
   @override
@@ -48,9 +51,25 @@ class _PersonSearchListState extends State<PersonSearchList> {
     super.dispose();
   }
 
+  /// A typed mobile number like "98678 50909" is stored as "+919867850909": drop spaces and dashes.
+  String get _term {
+    final text = _search.text.trim();
+    return RegExp(r'^[+\d\s-]+$').hasMatch(text) ? text.replaceAll(RegExp(r'[\s-]'), '') : text;
+  }
+
+  bool get _waitingForSearch => widget.searchFirst && _term.isEmpty;
+
   Future<void> _load({bool reset = false}) async {
     if (reset) {
       _page = 1;
+    }
+    if (_waitingForSearch) {
+      setState(() {
+        _items.clear();
+        _hasMore = false;
+        _error = null;
+      });
+      return;
     }
     setState(() {
       _loading = true;
@@ -58,7 +77,7 @@ class _PersonSearchListState extends State<PersonSearchList> {
     });
     try {
       final data = await AppScope.read(context).api.get('/people/', query: {
-        'search': _search.text.trim(),
+        'search': _term,
         'page': '$_page',
       });
       if (!mounted) return;
@@ -84,6 +103,7 @@ class _PersonSearchListState extends State<PersonSearchList> {
         child: TextField(
           key: const Key('people-search'),
           controller: _search,
+          autofocus: widget.searchFirst,
           decoration: InputDecoration(
             prefixIcon: const Icon(Icons.search),
             hintText: app.t('search_people'),
@@ -105,7 +125,9 @@ class _PersonSearchListState extends State<PersonSearchList> {
                   Text(errorText(context, _error!), textAlign: TextAlign.center),
                   Center(child: TextButton(onPressed: () => _load(reset: true), child: Text(app.t('retry')))),
                 ])
-              : _items.isEmpty && !_loading
+              : _waitingForSearch
+                  ? EmptyState(icon: Icons.search, text: app.t('search_people'))
+                  : _items.isEmpty && !_loading
                   ? EmptyState(icon: Icons.person_search, text: app.t('no_people'))
                   : ListView.builder(
                       padding: const EdgeInsets.only(bottom: 96),
