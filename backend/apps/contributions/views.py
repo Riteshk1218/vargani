@@ -8,6 +8,7 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework.response import Response
 
+from apps.core.dates import OrgDayFilter
 from apps.core.downloads import Col, ListDownloadMixin
 from apps.core.exceptions import BusinessRuleViolation, EventRequired
 from apps.core.scoping import scope_money
@@ -90,11 +91,13 @@ class ContributionViewSet(ListDownloadMixin, TenantReadOnlyViewSet):
         Col("collector_name", gettext_noop("Collected by")),
         Col("status", gettext_noop("Status"), "status"),
         Col("amount", gettext_noop("Amount"), "money"),
+        Col("created_at", gettext_noop("Created at"), "datetime"),
+        Col("created_by_name", gettext_noop("Created by")),
     ]
     serializer_class = ContributionSerializer
     filterset_class = ContributionFilter
     search_fields = ["person__full_name", "person__mobile"]
-    ordering_fields = ["contributed_on", "amount", "period_month", "created_at"]
+    ordering_fields = ["contributed_on", "amount", "period_month", "created_at", "person__full_name"]
     required_permissions = {
         "list": "contributions.view",
         "retrieve": "contributions.view",
@@ -103,7 +106,7 @@ class ContributionViewSet(ListDownloadMixin, TenantReadOnlyViewSet):
 
     def get_base_queryset(self):
         return Contribution.objects.for_org(self.organization).select_related(
-            "person", "contribution_type", "fund", "payment", "collector__user"
+            "person", "contribution_type", "fund", "payment", "collector__user", "created_by"
         )
 
     def scope_queryset(self, queryset):
@@ -136,6 +139,8 @@ class ContributionViewSet(ListDownloadMixin, TenantReadOnlyViewSet):
 
 class DueFilter(django_filters.FilterSet):
     open = django_filters.BooleanFilter(method="filter_open", label="Only balances still owed")
+    date_from = OrgDayFilter(field_name="created_at")
+    date_to = OrgDayFilter(field_name="created_at", end=True)
 
     class Meta:
         model = Due
@@ -166,12 +171,13 @@ class DueViewSet(ListDownloadMixin, TenantReadOnlyViewSet):
         Col("amount", gettext_noop("Balance due"), "money"),
         Col("paid", gettext_noop("Paid"), "money"),
         Col("remaining", gettext_noop("Still owed"), "money"),
+        Col("created_by_name", gettext_noop("Created by")),
     ]
     serializer_class = DueSerializer
     http_method_names = ["get", "post", "head", "options"]
     filterset_class = DueFilter
     search_fields = ["person__full_name", "person__mobile"]
-    ordering_fields = ["created_at", "amount", "remaining", "period_month"]
+    ordering_fields = ["created_at", "amount", "remaining", "period_month", "person__full_name"]
     required_permissions = {
         "list": "contributions.view",
         "retrieve": "contributions.view",
@@ -188,7 +194,7 @@ class DueViewSet(ListDownloadMixin, TenantReadOnlyViewSet):
         )[:1]
         return selectors.with_balance(
             Due.objects.for_org(self.organization)
-            .select_related("person", "contribution_type", "collector__user")
+            .select_related("person", "contribution_type", "collector__user", "created_by")
             .annotate(receipt_number=Subquery(receipts))
         )
 

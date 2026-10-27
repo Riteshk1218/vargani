@@ -7,6 +7,7 @@ from rest_framework import serializers
 from apps.accounts.serializers import MobileField
 from apps.contributions.models import Contribution, ContributionType, Due
 from apps.core.fields import TenantPrimaryKeyRelatedField
+from apps.core.serializers import CreatedByMixin
 from apps.events.models import Event
 from apps.organizations import form_studio
 from apps.people.models import Person
@@ -130,7 +131,7 @@ class CustomFieldValueSerializer(serializers.Serializer):
     value = serializers.CharField()
 
 
-class PaymentSerializer(serializers.ModelSerializer):
+class PaymentSerializer(CreatedByMixin, serializers.ModelSerializer):
     event_name = serializers.CharField(source="event.name", read_only=True)
     payer_name = serializers.CharField(read_only=True)
     payer_mobile = serializers.CharField(source="payer.mobile", read_only=True, default="")
@@ -174,6 +175,7 @@ class PaymentSerializer(serializers.ModelSerializer):
             "follow_up_state",
             "custom_fields",
             "created_at",
+            "created_by_name",
         ]
         read_only_fields = [f for f in fields if f != "notes"]
 

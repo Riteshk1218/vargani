@@ -2,11 +2,12 @@ from decimal import Decimal
 
 from django.core.files.storage import default_storage
 from django.http import FileResponse
+from django.utils.dateparse import parse_date
 from django.utils.translation import gettext as _
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
 from rest_framework import serializers, status
-from rest_framework.exceptions import NotFound
+from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle, UserRateThrottle
@@ -14,6 +15,7 @@ from rest_framework.views import APIView
 
 from apps.contributions.models import Contribution
 from apps.contributions.selectors import summarize
+from apps.core.dates import filter_days
 from apps.core.permissions import HasOrgPermission
 from apps.core.scoping import scope_money
 from apps.core.tenancy import SCOPE_ALL
@@ -39,6 +41,9 @@ class DashboardSummaryView(APIView):
     the selected event, or every event of the current financial year when no event is given. Income is
     confirmed contributions plus recorded other income; expenses are approved expenses (reports/selectors.py).
     `follow_ups` (roles that see payments) counts pavtis still owing money: overdue, due today and all.
+
+    `date_from` / `date_to` (YYYY-MM-DD, either or both) narrow the money and pavti numbers to those days in
+    the organization's time zone: what was collected, spent and received, and the pavtis given on those days.
     """
 
     permission_classes = [IsAuthenticated, HasOrgPermission]
@@ -90,13 +95,30 @@ class DashboardSummaryView(APIView):
                 if context.scope("events.view") == SCOPE_ALL
                 else None,
             }
+        days = self._days(request)
+        data["dates"] = {
+            "from": days[0].isoformat() if days[0] else None,
+            "to": days[1].isoformat() if days[1] else None,
+        }
         if context.has("dashboard.view_financial"):
-            data["financial"] = self._financial(org, event if event_id else None, fy)
+            data["financial"] = self._financial(org, event if event_id else None, fy, days)
         if context.has("payments.view"):
-            data["follow_ups"] = self._follow_ups(request, org, event if event_id else None, fy)
+            data["follow_ups"] = self._follow_ups(request, org, event if event_id else None, fy, days)
         return Response(data)
 
-    def _follow_ups(self, request, org, event, fy):
+    def _days(self, request):
+        days = []
+        for key in ("date_from", "date_to"):
+            raw = request.query_params.get(key)
+            value = parse_date(raw) if raw else None
+            if raw and value is None:
+                raise ValidationError({key: [_("Enter a valid date.")]})
+            days.append(value)
+        if days[0] and days[1] and days[0] > days[1]:
+            raise ValidationError({"date_to": [_("The end date cannot be before the start date.")]})
+        return tuple(days)
+
+    def _follow_ups(self, request, org, event, fy, days=(None, None)):
         """Pavtis still owing money: how many are overdue or due for a visit today (door-to-door)."""
         payments = Payment.objects.for_org(org).filter(event__deleted_at__isnull=True)
         if event is not None:
@@ -105,10 +127,11 @@ class DashboardSummaryView(APIView):
             payments = payments.filter(event__financial_year=fy)
         else:
             payments = payments.none()
+        payments = filter_days(payments, "paid_at", org, *days)
         payments = scope_money(payments, request._org_context, "payments.view", request.user, person="payer")
         return followups.counts(followups.with_pavti_balance(payments), followups.org_today(org))
 
-    def _financial(self, org, event, fy):
+    def _financial(self, org, event, fy, days=(None, None)):
         events = Event.objects.for_org(org).alive()
         if event is not None:
             events = events.filter(pk=event.pk)
@@ -116,28 +139,31 @@ class DashboardSummaryView(APIView):
             events = events.filter(financial_year=fy)
         else:
             events = events.none()
-        lines = Contribution.objects.for_org(org).filter(event__in=events)
-        payments = Payment.objects.for_org(org).filter(event__in=events)
+        lines = filter_days(Contribution.objects.for_org(org).filter(event__in=events), "contributed_on", org, *days)
+        payments = filter_days(Payment.objects.for_org(org).filter(event__in=events), "paid_at", org, *days)
         data = summarize(lines, payments)
         targets = [e.target_amount for e in events if e.target_amount is not None]
         data["target_amount"] = f"{sum(targets):.2f}" if targets else None
         data["pending_payments"] = payments.filter(status=Payment.Status.PENDING).count()
-        totals = sel.finance_totals(org, events)
+        totals = sel.finance_totals(org, events, days)
         data["other_income"] = sel.money(totals["other_income"])
         data["income"] = sel.money(totals["income"])
         data["expenses"] = sel.money(totals["expenses"])
         data["balance"] = sel.money(totals["balance"])
         data["expenses_by_category"] = [
             {"id": str(r["category"]), "name": r["category__name"], "total": sel.money(r["total"])}
-            for r in sel.expenses_by_category(org, events)
+            for r in sel.expenses_by_category(org, events, days)
         ]
         data["expenses_by_month"] = [
             {"month": r["month"].strftime("%Y-%m"), "total": sel.money(r["total"])}
-            for r in sel.expenses_by_month(org, events)
+            for r in sel.expenses_by_month(org, events, days)
         ]
-        data["pending_expenses"] = (
-            Expense.objects.for_org(org).filter(event__in=events, status=Expense.Status.SUBMITTED).count()
-        )
+        data["pending_expenses"] = filter_days(
+            Expense.objects.for_org(org).filter(event__in=events, status=Expense.Status.SUBMITTED),
+            "expense_date",
+            org,
+            *days,
+        ).count()
         data["recent_payments"] = [
             {
                 "id": str(p.pk),

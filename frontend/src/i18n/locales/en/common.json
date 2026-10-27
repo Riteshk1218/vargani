@@ -202,7 +202,9 @@
     "contributorsCount": "{{count}} contributors",
     "expensesByCategory": "Expenses by category",
     "incomeVsExpense": "Income and expenses",
-    "noExpenses": "No approved expenses yet"
+    "noExpenses": "No approved expenses yet",
+    "dateFilter": "Day",
+    "dateFilterHint": "Money, payments and pavtis below are for the chosen days only. Tap a card to see the list."
   },
   "events": {
     "title": "Events",
@@ -989,7 +991,9 @@
       "unpaid": "Unpaid",
       "partly_paid": "Partly paid",
       "paid": "Paid"
-    }
+    },
+    "paidAll": "Fully paid",
+    "paidAllHint": "Pavtis with nothing left to pay"
   },
   "studio": {
     "title": "Admin studio",
@@ -1027,5 +1031,26 @@
     "undo": "Undo changes",
     "save": "Save",
     "saved": "Saved. Collect shows the new form now."
+  },
+  "list": {
+    "from": "From",
+    "to": "To",
+    "today": "Today",
+    "allDates": "All dates",
+    "sortBy": "Sort by",
+    "ascending": "Ascending (A→Z, oldest / smallest first)",
+    "descending": "Descending (Z→A, newest / largest first)",
+    "ascendingShort": "Asc",
+    "descendingShort": "Desc",
+    "created": "Created {{date}}",
+    "by": "by {{name}}",
+    "createdAt": "Created at",
+    "createdBy": "Created by",
+    "addedOn": "Added",
+    "forMonth": "For month",
+    "startDate": "Start date",
+    "endDate": "End date",
+    "name": "Name",
+    "paidTo": "Paid to"
   }
 }

@@ -15,10 +15,11 @@ import { useApiErrors } from '../../hooks/useApiErrors'
 import { useDebounced } from '../../hooks/useDebounced'
 import { peopleService } from '../../services/people'
 import type { Person, PersonType } from '../../types/api'
-import { formatMobile, searchTerm } from '../../utils/format'
+import { formatMobile, formatStamp, searchTerm } from '../../utils/format'
 import { LinkLoginModal } from './LinkLoginModal'
 import { PERSON_TYPES, PersonFormModal } from './PersonFormModal'
 import { DownloadMenu } from '../../components/DownloadMenu'
+import { CreatedMeta, ListTools, useListTools } from '../../components/ListTools'
 
 export function PeoplePage() {
   const { t } = useTranslation()
@@ -30,6 +31,7 @@ export function PeoplePage() {
   const [search, setSearch] = useState('')
   const [type, setType] = useState<PersonType | ''>('')
   const [page, setPage] = useState(1)
+  const tools = useListTools('full_name', () => setPage(1))
   const [editing, setEditing] = useState<Person | null>(null)
   const [archiving, setArchiving] = useState<Person | null>(null)
   const debouncedSearch = searchTerm(useDebounced(search))
@@ -40,8 +42,8 @@ export function PeoplePage() {
   const [linking, setLinking] = useState<Person | null>(null)
 
   const people = useQuery({
-    queryKey: ['org', activeOrgId, 'people', 'list', debouncedSearch, type, page],
-    queryFn: () => peopleService.list({ search: debouncedSearch || undefined, person_type: type || undefined, page }),
+    queryKey: ['org', activeOrgId, 'people', 'list', debouncedSearch, type, tools.query, page],
+    queryFn: () => peopleService.list({ search: debouncedSearch || undefined, person_type: type || undefined, ...tools.query, page }),
   })
   const archive = useMutation({
     mutationFn: (id: string) => peopleService.archive(id),
@@ -52,7 +54,7 @@ export function PeoplePage() {
     },
     onError,
   })
-  const filtersActive = Boolean(debouncedSearch || type)
+  const filtersActive = Boolean(debouncedSearch || type || tools.filtered)
 
   return (
     <div>
@@ -61,9 +63,9 @@ export function PeoplePage() {
         description={t('people.subtitle')}
         actions={
           <>
-            <DownloadMenu path="/people/" params={{ search: debouncedSearch, person_type: type }} />
+            <DownloadMenu path="/people/" params={{ search: debouncedSearch, person_type: type, ...tools.query }} />
             {canManage && (
-              <Button icon={<UserPlus className="size-4" />} onClick={() => setParams({ new: '1' })}>
+              <Button icon={<UserPlus className="size-4" />} onClick={() => setParams((prev) => (prev.set('new', '1'), prev))}>
                 {t('people.add')}
               </Button>
             )}
@@ -90,6 +92,15 @@ export function PeoplePage() {
             ))}
           </SelectInput>
         </div>
+        <ListTools
+          tools={tools}
+          dateLabel={t('list.addedOn')}
+          sortOptions={[
+            { field: 'full_name', label: t('people.fullName') },
+            { field: 'created_at', label: t('list.createdAt') },
+            { field: 'area', label: t('people.area') },
+          ]}
+        />
         {people.isLoading ? (
           <SkeletonRows />
         ) : people.isError ? (
@@ -115,6 +126,8 @@ export function PeoplePage() {
                     <th className="hidden px-4 py-2 font-medium sm:table-cell">{t('people.mobile')}</th>
                     <th className="hidden px-4 py-2 font-medium md:table-cell">{t('people.area')}</th>
                     <th className="hidden px-4 py-2 font-medium lg:table-cell">{t('people.types')}</th>
+                    <th className="hidden px-4 py-2 font-medium xl:table-cell">{t('list.createdAt')}</th>
+                    <th className="hidden px-4 py-2 font-medium xl:table-cell">{t('list.createdBy')}</th>
                     <th className="px-4 py-2" />
                   </tr>
                 </thead>
@@ -133,6 +146,7 @@ export function PeoplePage() {
                           )}
                         </p>
                         <p className="text-xs text-slate-500 sm:hidden">{formatMobile(person.mobile)}</p>
+                        <CreatedMeta at={person.created_at} by={person.created_by_name} className="text-xs text-slate-500 xl:hidden" />
                       </td>
                       <td className="hidden px-4 py-3 text-slate-600 sm:table-cell">{formatMobile(person.mobile)}</td>
                       <td className="hidden px-4 py-3 text-slate-600 md:table-cell">{[person.unit, person.building, person.area].filter(Boolean).join(', ')}</td>
@@ -143,6 +157,8 @@ export function PeoplePage() {
                           ))}
                         </div>
                       </td>
+                      <td className="hidden whitespace-nowrap px-4 py-3 text-slate-600 xl:table-cell">{formatStamp(person.created_at)}</td>
+                      <td className="hidden px-4 py-3 text-slate-600 xl:table-cell">{person.created_by_name ?? '—'}</td>
                       {canManage ? (
                         <td className="whitespace-nowrap px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                           <Button variant="ghost" size="sm" aria-label={t('common.edit')} onClick={() => setEditing(person)}>
@@ -176,7 +192,7 @@ export function PeoplePage() {
         person={editing}
         onClose={() => {
           setEditing(null)
-          if (creating) setParams({})
+          if (creating) setParams((prev) => (prev.delete('new'), prev))
         }}
       />
       <LinkLoginModal person={linking} onClose={() => setLinking(null)} />

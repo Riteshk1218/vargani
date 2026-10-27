@@ -12,6 +12,7 @@ from django.db.models import Count, Sum
 from django.db.models.functions import TruncMonth
 
 from apps.contributions.models import Contribution
+from apps.core.dates import filter_days
 from apps.expenses.models import Expense, OtherIncome
 
 ZERO = Decimal("0.00")
@@ -21,26 +22,36 @@ def money(value) -> str:
     return f"{(value or ZERO):.2f}"
 
 
-def confirmed_lines(org, events):
-    return Contribution.objects.for_org(org).filter(event__in=events, status=Contribution.Status.CONFIRMED)
+def confirmed_lines(org, events, days=None):
+    lines = Contribution.objects.for_org(org).filter(event__in=events, status=Contribution.Status.CONFIRMED)
+    return _on_days(lines, "contributed_on", org, days)
 
 
-def approved_expenses(org, events):
-    return Expense.objects.for_org(org).filter(event__in=events, status=Expense.Status.APPROVED)
+def approved_expenses(org, events, days=None):
+    expenses = Expense.objects.for_org(org).filter(event__in=events, status=Expense.Status.APPROVED)
+    return _on_days(expenses, "expense_date", org, days)
 
 
-def recorded_income(org, events):
-    return OtherIncome.objects.for_org(org).filter(event__in=events, status=OtherIncome.Status.RECORDED)
+def recorded_income(org, events, days=None):
+    income = OtherIncome.objects.for_org(org).filter(event__in=events, status=OtherIncome.Status.RECORDED)
+    return _on_days(income, "received_on", org, days)
+
+
+def _on_days(qs, field, org, days):
+    """`days` is an optional (date_from, date_to) pair; either end may be None."""
+    if not days:
+        return qs
+    return filter_days(qs, field, org, *days)
 
 
 def _total(qs) -> Decimal:
     return qs.aggregate(total=Sum("amount"))["total"] or ZERO
 
 
-def finance_totals(org, events) -> dict:
-    contributions = _total(confirmed_lines(org, events))
-    other_income = _total(recorded_income(org, events))
-    expenses = _total(approved_expenses(org, events))
+def finance_totals(org, events, days=None) -> dict:
+    contributions = _total(confirmed_lines(org, events, days))
+    other_income = _total(recorded_income(org, events, days))
+    expenses = _total(approved_expenses(org, events, days))
     income = contributions + other_income
     return {
         "contributions": contributions,
@@ -51,18 +62,18 @@ def finance_totals(org, events) -> dict:
     }
 
 
-def expenses_by_category(org, events):
+def expenses_by_category(org, events, days=None):
     return list(
-        approved_expenses(org, events)
+        approved_expenses(org, events, days)
         .values("category", "category__name")
         .annotate(total=Sum("amount"), count=Count("id"))
         .order_by("-total")
     )
 
 
-def expenses_by_month(org, events):
+def expenses_by_month(org, events, days=None):
     return list(
-        approved_expenses(org, events)
+        approved_expenses(org, events, days)
         .annotate(month=TruncMonth("expense_date"))
         .values("month")
         .annotate(total=Sum("amount"))

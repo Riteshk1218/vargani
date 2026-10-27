@@ -1,3 +1,4 @@
+import django_filters
 from django.forms.models import model_to_dict
 from django.utils.translation import gettext_noop
 from drf_spectacular.types import OpenApiTypes
@@ -10,6 +11,7 @@ from rest_framework.views import APIView
 from apps.audit import services as audit
 from apps.contributions.defaults import seed_types
 from apps.core.admin_override import ADMIN_EDIT
+from apps.core.dates import OrgDayFilter
 from apps.core.downloads import Col, ListDownloadMixin
 from apps.core.exceptions import EventRequired, InvalidStateTransition
 from apps.core.tenancy import SCOPE_ALL
@@ -27,6 +29,15 @@ TRANSITIONS = {
 }
 
 
+class EventFilter(django_filters.FilterSet):
+    date_from = OrgDayFilter(field_name="created_at")
+    date_to = OrgDayFilter(field_name="created_at", end=True)
+
+    class Meta:
+        model = Event
+        fields = ["financial_year", "status", "template"]
+
+
 class EventViewSet(ListDownloadMixin, TenantModelViewSet):
     queryset = Event.objects.all()
     download_title = gettext_noop("Events")
@@ -37,11 +48,13 @@ class EventViewSet(ListDownloadMixin, TenantModelViewSet):
         Col("end_date", gettext_noop("Ends"), "date"),
         Col("status", gettext_noop("Status"), "status"),
         Col("target_amount", gettext_noop("Target"), "money"),
+        Col("created_at", gettext_noop("Created at"), "datetime"),
+        Col("created_by_name", gettext_noop("Created by")),
     ]
     serializer_class = EventSerializer
-    filterset_fields = ["financial_year", "status", "template"]
+    filterset_class = EventFilter
     search_fields = ["name", "code"]
-    ordering_fields = ["start_date", "name", "created_at"]
+    ordering_fields = ["start_date", "end_date", "name", "created_at", "target_amount"]
     required_permissions = {
         "list": "events.view",
         "retrieve": "events.view",
@@ -56,7 +69,7 @@ class EventViewSet(ListDownloadMixin, TenantModelViewSet):
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
 
     def get_base_queryset(self):
-        return Event.objects.for_org(self.organization).alive().select_related("financial_year")
+        return Event.objects.for_org(self.organization).alive().select_related("financial_year", "created_by")
 
     def perform_create(self, serializer):
         super().perform_create(serializer)

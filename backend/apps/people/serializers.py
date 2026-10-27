@@ -2,11 +2,12 @@ from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
 from apps.accounts.serializers import MobileField
+from apps.core.serializers import CreatedByMixin
 
 from .models import Person, PersonType
 
 
-class PersonSerializer(serializers.ModelSerializer):
+class PersonSerializer(CreatedByMixin, serializers.ModelSerializer):
     mobile = MobileField(required=False, allow_blank=True, allow_null=True)
     alt_mobile = MobileField(required=False, allow_blank=True, allow_null=True)
     person_types = serializers.ListField(child=serializers.ChoiceField(choices=PersonType.choices), required=False)
@@ -35,6 +36,7 @@ class PersonSerializer(serializers.ModelSerializer):
             "linked_user",
             "linked_user_name",
             "created_at",
+            "created_by_name",
             "updated_at",
         ]
         read_only_fields = [
@@ -44,6 +46,7 @@ class PersonSerializer(serializers.ModelSerializer):
             "linked_user",
             "linked_user_name",
             "created_at",
+            "created_by_name",
             "updated_at",
         ]
 

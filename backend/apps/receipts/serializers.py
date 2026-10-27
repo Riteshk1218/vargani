@@ -1,10 +1,12 @@
 from django.core.files.storage import default_storage
 from rest_framework import serializers
 
+from apps.core.serializers import CreatedByMixin
+
 from .models import Receipt, ReceiptVoidRequest
 
 
-class ReceiptSerializer(serializers.ModelSerializer):
+class ReceiptSerializer(CreatedByMixin, serializers.ModelSerializer):
     payer = serializers.UUIDField(source="payment.payer_id", read_only=True)
     payer_name = serializers.CharField(source="payment.payer_name", read_only=True)
     amount = serializers.DecimalField(source="payment.amount", max_digits=12, decimal_places=2, read_only=True)
@@ -48,6 +50,8 @@ class ReceiptSerializer(serializers.ModelSerializer):
             "pending_void_request",
             "snapshot",
             "logo_url",
+            "created_at",
+            "created_by_name",
         ]
         read_only_fields = fields
 

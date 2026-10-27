@@ -4,6 +4,7 @@ import '../api/api_client.dart';
 import '../state/app_state.dart';
 import '../util/money.dart';
 import '../widgets/common.dart';
+import '../widgets/list_tools.dart';
 import 'collect_screen.dart' show collectionModes, modesNeedingReference;
 
 /// Door-to-door follow-up: one pavti per house, updated on every later visit instead of making a new one.
@@ -180,65 +181,94 @@ class FollowUpCards extends StatelessWidget {
 }
 
 /// Pavtis to follow up: `overdue`, `today` or `owing` (all not fully paid).
-class PavtiListScreen extends StatelessWidget {
+class PavtiListScreen extends StatefulWidget {
   const PavtiListScreen({super.key, required this.filter, required this.title});
   final String filter;
   final String title;
 
   @override
+  State<PavtiListScreen> createState() => _PavtiListScreenState();
+}
+
+class _PavtiListScreenState extends State<PavtiListScreen> {
+  ListQuery _query = const ListQuery(ordering: 'follow_up_on');
+
+  @override
   Widget build(BuildContext context) {
     final app = AppScope.of(context);
     final t = app.t;
+    final filter = widget.filter;
     return Scaffold(
-      appBar: AppBar(title: Text(title)),
-      body: AsyncView<List<Map<String, dynamic>>>(
-        reloadKey: app.eventId,
-        load: () async => resultsOf(
-          await app.api.get(
-            '/payments/',
-            query: {
-              'event': app.eventId,
-              if (filter == 'owing') 'pavti': 'owing' else 'follow_up': filter,
-              'ordering': 'follow_up_on',
-              'page_size': '100',
-            },
-          ),
-        ),
-        builder: (context, rows, reload) {
-          if (rows.isEmpty) return EmptyState(icon: Icons.check_circle_outline, text: t('no_follow_ups'));
-          return ListView(
-            padding: const EdgeInsets.all(12),
-            children: [
-              for (final p in rows)
-                Card(
-                  child: ListTile(
-                    title: Text('${p['payer_name']}'),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          [
-                            (p['receipt'] as Map?)?['receipt_number'],
-                            p['payer_mobile'],
-                          ].where((x) => x != null && '$x'.isNotEmpty).join(' · '),
-                        ),
-                        const SizedBox(height: 4),
-                        PavtiChips(p),
-                      ],
-                    ),
-                    trailing: Text(formatInr('${p['balance_due']}'), style: Theme.of(context).textTheme.titleSmall),
-                    onTap: () async {
-                      final saved = await Navigator.push<bool>(
-                        context,
-                        MaterialPageRoute(builder: (_) => PavtiVisitScreen(payment: p)),
-                      );
-                      if (saved == true) reload();
-                    },
-                  ),
-                ),
+      appBar: AppBar(title: Text(widget.title)),
+      body: Column(
+        children: [
+          ListToolsBar(
+            value: _query,
+            onChanged: (q) => setState(() => _query = q),
+            sortOptions: const [
+              SortOption('follow_up_on', 'follow_up_date'),
+              SortOption('balance_due', 'still_owed'),
+              SortOption('paid_at', 'list_date'),
+              SortOption('created_at', 'list_created_at'),
+              SortOption('payer__full_name', 'list_name'),
             ],
-          );
-        },
+          ),
+          Expanded(
+            child: AsyncView<List<Map<String, dynamic>>>(
+              reloadKey: '${app.eventId}-${_query.key}',
+              load: () async => resultsOf(
+                await app.api.get(
+                  '/payments/',
+                  query: {
+                    'event': app.eventId,
+                    if (filter == 'owing') 'pavti': 'owing' else 'follow_up': filter,
+                    ..._query.query,
+                    'page_size': '100',
+                  },
+                ),
+              ),
+              builder: (context, rows, reload) {
+                if (rows.isEmpty) return EmptyState(icon: Icons.check_circle_outline, text: t('no_follow_ups'));
+                return ListView(
+                  padding: const EdgeInsets.all(12),
+                  children: [
+                    for (final p in rows)
+                      Card(
+                        child: ListTile(
+                          title: Text('${p['payer_name']}'),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                [
+                                  (p['receipt'] as Map?)?['receipt_number'],
+                                  p['payer_mobile'],
+                                ].where((x) => x != null && '$x'.isNotEmpty).join(' · '),
+                              ),
+                              CreatedLine(p),
+                              const SizedBox(height: 4),
+                              PavtiChips(p),
+                            ],
+                          ),
+                          trailing: Text(
+                            formatInr('${p['balance_due']}'),
+                            style: Theme.of(context).textTheme.titleSmall,
+                          ),
+                          onTap: () async {
+                            final saved = await Navigator.push<bool>(
+                              context,
+                              MaterialPageRoute(builder: (_) => PavtiVisitScreen(payment: p)),
+                            );
+                            if (saved == true) reload();
+                          },
+                        ),
+                      ),
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { Link } from 'react-router-dom'
 import { cn } from '../../utils/cn'
 
 export function Card({ children, className }: { children: ReactNode; className?: string }) {
@@ -17,16 +18,23 @@ export function PageHeader({ title, description, actions }: { title: string; des
   )
 }
 
-export function StatCard({ label, value, hint, icon }: { label: string; value: ReactNode; hint?: string; icon?: ReactNode }) {
-  return (
-    <Card className="p-5">
+/** A number tile. With `to` the whole tile opens that list (e.g. the payments behind "Collected"). */
+export function StatCard({ label, value, hint, icon, to, tone = 'text-slate-900', testId }: { label: string; value: ReactNode; hint?: string; icon?: ReactNode; to?: string; tone?: string; testId?: string }) {
+  const body = (
+    <Card className={cn('h-full p-5', to && 'transition hover:shadow-md hover:ring-brand-300')}>
       <div className="flex items-start justify-between">
         <p className="text-sm font-medium text-slate-500">{label}</p>
         {icon && <span className="text-slate-400">{icon}</span>}
       </div>
-      <p className="mt-2 text-2xl font-semibold text-slate-900">{value}</p>
+      <p className={cn('mt-2 text-2xl font-semibold', tone)}>{value}</p>
       {hint && <p className="mt-1 text-xs text-slate-500">{hint}</p>}
     </Card>
+  )
+  if (!to) return body
+  return (
+    <Link to={to} className="block rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500" data-testid={testId}>
+      {body}
+    </Link>
   )
 }
 
