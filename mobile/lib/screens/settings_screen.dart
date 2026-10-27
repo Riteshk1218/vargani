@@ -29,7 +29,7 @@ class SettingsScreen extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(18),
-          gradient: LinearGradient(colors: [scheme.primary, Color.lerp(scheme.primary, scheme.tertiary, 0.45)!]),
+          gradient: LinearGradient(colors: [scheme.primary, Color.lerp(scheme.primary, Colors.black, 0.3)!]),
           boxShadow: [BoxShadow(color: scheme.primary.withValues(alpha: 0.3), blurRadius: 12, offset: const Offset(0, 4))],
         ),
         child: Row(children: [
@@ -93,7 +93,7 @@ class SettingsScreen extends StatelessWidget {
         child: ThemeSwatches(
           value: app.userThemeColor,
           orgColor: app.orgThemeColor,
-          orgLabel: t('org_color'),
+          orgLabel: t('color_org'),
           label: (c) => t('color_$c'),
           onChanged: (c) => save(() => app.setThemeColor(c)),
         ),

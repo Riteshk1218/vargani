@@ -152,7 +152,7 @@ class ThemeSwatches extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 SizedBox(
-                  width: 64,
+                  width: 72,
                   child: Text(
                     name,
                     textAlign: TextAlign.center,
