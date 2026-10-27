@@ -23,7 +23,7 @@ export function Popover({ trigger, children, align = 'left', label }: { trigger:
         {trigger(open)}
       </button>
       {open && (
-        <div role="menu" className={cn('absolute z-40 mt-2 w-72 rounded-xl bg-white p-1 shadow-lg ring-1 ring-slate-200', align === 'right' ? 'right-0' : 'left-0')}>
+        <div role="menu" className={cn('absolute z-40 mt-2 w-72 animate-pop-in rounded-xl bg-white p-1 shadow-lg ring-1 ring-slate-200', align === 'right' ? 'right-0' : 'left-0')}>
           {children(() => setOpen(false))}
         </div>
       )}

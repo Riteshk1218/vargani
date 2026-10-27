@@ -6,10 +6,10 @@ import { cn } from '../../utils/cn'
 import { FinancialYearsPanel } from './FinancialYearsPanel'
 import { LogoUploader } from './LogoUploader'
 import { OrganizationProfileForm } from './OrganizationProfileForm'
-import { OrganizationSettingsPanel } from './OrganizationSettingsPanel'
+import { OrganizationSettingsPanel, OrganizationThemePanel } from './OrganizationSettingsPanel'
 import { PaymentGatewayPanel } from './PaymentGatewayPanel'
 
-const TABS = ['profile', 'logo', 'financialYears', 'preferences', 'onlinePayments'] as const
+const TABS = ['profile', 'logo', 'appearance', 'financialYears', 'preferences', 'onlinePayments'] as const
 
 export function SettingsPage() {
   const { t } = useTranslation()
@@ -27,7 +27,7 @@ export function SettingsPage() {
             role="tab"
             aria-selected={tab === key}
             onClick={() => setTab(key)}
-            className={cn('whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium', tab === key ? 'bg-white shadow-sm' : 'text-slate-600 hover:text-slate-900')}
+            className={cn('whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium', 'transition-all', tab === key ? 'bg-white text-brand-800 shadow-sm' : 'text-slate-600 hover:bg-white/60 hover:text-slate-900')}
           >
             {t(`settings.tabs.${key}`)}
           </button>
@@ -36,6 +36,7 @@ export function SettingsPage() {
       <Card className="p-5">
         {tab === 'profile' && <OrganizationProfileForm organization={organization} />}
         {tab === 'logo' && <LogoUploader organization={organization} />}
+        {tab === 'appearance' && <OrganizationThemePanel />}
         {tab === 'financialYears' && <FinancialYearsPanel />}
         {tab === 'preferences' && <OrganizationSettingsPanel />}
         {tab === 'onlinePayments' && <PaymentGatewayPanel />}

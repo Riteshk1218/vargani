@@ -51,12 +51,14 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
               onClick={onNavigate}
               className={({ isActive }) =>
                 cn(
-                  'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium',
-                  isActive ? 'bg-brand-50 text-brand-800' : 'text-slate-700 hover:bg-slate-100',
+                  'group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-150',
+                  isActive
+                    ? 'bg-gradient-to-r from-brand-100 to-brand-50 text-brand-800 shadow-sm before:absolute before:inset-y-1.5 before:left-0 before:w-1 before:rounded-full before:bg-brand-600'
+                    : 'text-slate-700 hover:translate-x-0.5 hover:bg-slate-100 hover:text-slate-900',
                 )
               }
             >
-              <item.icon className="size-4" aria-hidden />
+              <item.icon className="size-4 text-brand-600 transition-transform group-hover:scale-110" aria-hidden />
               {t(item.label)}
             </NavLink>
           </li>

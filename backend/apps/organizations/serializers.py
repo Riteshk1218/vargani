@@ -2,7 +2,7 @@ from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
-from apps.accounts.models import Language
+from apps.accounts.models import Language, ThemeColor
 from apps.accounts.serializers import MobileField, UsernameField
 
 from . import services
@@ -79,6 +79,7 @@ class OrganizationSettingsSerializer(serializers.Serializer):
     require_expense_approval = serializers.BooleanField(required=False)
     member_portal_enabled = serializers.BooleanField(required=False)
     auto_reminders = serializers.BooleanField(required=False)
+    theme_color = serializers.ChoiceField(choices=ThemeColor.choices, required=False)
 
 
 class FormStudioModeSerializer(serializers.Serializer):

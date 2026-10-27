@@ -35,14 +35,14 @@ export function Modal({ open, title, onClose, children, footer, size = 'md' }: M
 
   if (!open) return null
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40 p-0 sm:items-center sm:p-4" onMouseDown={onClose}>
+    <div className="fixed inset-0 z-50 flex animate-fade-in items-end justify-center bg-slate-900/40 p-0 backdrop-blur-sm sm:items-center sm:p-4" onMouseDown={onClose}>
       <div
         ref={panelRef}
         role="dialog"
         aria-modal="true"
         aria-label={title}
         onMouseDown={(event) => event.stopPropagation()}
-        className={cn('flex max-h-[92vh] w-full flex-col rounded-t-2xl bg-white shadow-xl sm:rounded-2xl', size === 'lg' ? 'sm:max-w-2xl' : 'sm:max-w-lg')}
+        className={cn('flex max-h-[92vh] w-full animate-pop-in flex-col rounded-t-2xl bg-white shadow-xl sm:rounded-2xl', size === 'lg' ? 'sm:max-w-2xl' : 'sm:max-w-lg')}
       >
         <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
           <h2 className="text-base font-semibold">{title}</h2>

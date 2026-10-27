@@ -1,7 +1,7 @@
 import { Menu, X } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Outlet } from 'react-router-dom'
+import { Outlet, useLocation } from 'react-router-dom'
 import { EventSwitcher } from '../components/layout/EventSwitcher'
 import { LanguageSelector } from '../components/layout/LanguageSelector'
 import { NotificationBell } from '../components/layout/NotificationBell'
@@ -16,18 +16,21 @@ export function AppLayout() {
   const { t } = useTranslation()
   const { detail, detailLoading } = useOrg()
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const { pathname } = useLocation()
   if (detailLoading || !detail) return <FullPageSpinner />
   const fy = detail.current_financial_year
   return (
     <EventProvider>
       <div className="flex h-full">
-        <aside className="hidden w-64 shrink-0 border-r border-slate-200 bg-white lg:block print:hidden">
+        <aside className="hidden w-64 shrink-0 border-r border-slate-200 bg-white/90 backdrop-blur lg:block print:hidden">
+          <div className="h-1 bg-gradient-to-r from-brand-700 via-brand-500 to-brand-300" aria-hidden />
           <Sidebar />
         </aside>
         {drawerOpen && (
           <div className="fixed inset-0 z-40 lg:hidden">
-            <div className="absolute inset-0 bg-slate-900/40" onClick={() => setDrawerOpen(false)} />
-            <aside className="absolute inset-y-0 left-0 w-72 bg-white shadow-xl">
+            <div className="absolute inset-0 animate-fade-in bg-slate-900/40 backdrop-blur-sm" onClick={() => setDrawerOpen(false)} />
+            <aside className="absolute inset-y-0 left-0 w-72 animate-pop-in overflow-y-auto bg-white shadow-xl">
+              <div className="h-1 bg-gradient-to-r from-brand-700 via-brand-500 to-brand-300" aria-hidden />
               <button type="button" className="absolute right-3 top-3 rounded-md p-1 text-slate-500" onClick={() => setDrawerOpen(false)} aria-label={t('common.close')}>
                 <X className="size-5" />
               </button>
@@ -55,7 +58,7 @@ export function AppLayout() {
             </div>
           </header>
           <main className="flex-1 overflow-y-auto px-4 py-6 sm:px-6 lg:px-8">
-            <div className="mx-auto max-w-6xl">
+            <div key={pathname} className="mx-auto max-w-6xl animate-fade-in">
               <Outlet />
             </div>
           </main>

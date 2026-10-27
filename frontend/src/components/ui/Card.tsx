@@ -3,14 +3,15 @@ import { Link } from 'react-router-dom'
 import { cn } from '../../utils/cn'
 
 export function Card({ children, className }: { children: ReactNode; className?: string }) {
-  return <div className={cn('rounded-xl bg-white shadow-sm ring-1 ring-slate-200', className)}>{children}</div>
+  return <div className={cn('rounded-xl bg-white shadow-sm ring-1 ring-slate-200/80', className)}>{children}</div>
 }
 
 export function PageHeader({ title, description, actions }: { title: string; description?: string; actions?: ReactNode }) {
   return (
     <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
       <div>
-        <h1 className="text-xl font-semibold text-slate-900 sm:text-2xl">{title}</h1>
+        <h1 className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">{title}</h1>
+        <span className="mt-1.5 block h-1 w-10 rounded-full bg-gradient-to-r from-brand-500 to-brand-300" aria-hidden />
         {description && <p className="mt-1 text-sm text-slate-500">{description}</p>}
       </div>
       {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
@@ -21,10 +22,11 @@ export function PageHeader({ title, description, actions }: { title: string; des
 /** A number tile. With `to` the whole tile opens that list (e.g. the payments behind "Collected"). */
 export function StatCard({ label, value, hint, icon, to, tone = 'text-slate-900', testId }: { label: string; value: ReactNode; hint?: string; icon?: ReactNode; to?: string; tone?: string; testId?: string }) {
   const body = (
-    <Card className={cn('h-full p-5', to && 'transition hover:shadow-md hover:ring-brand-300')}>
-      <div className="flex items-start justify-between">
+    <Card className={cn('group relative h-full overflow-hidden p-5 transition duration-200', to && 'hover:-translate-y-0.5 hover:shadow-lg hover:shadow-brand-700/10 hover:ring-brand-300')}>
+      <span className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-brand-500 to-brand-300 opacity-0 transition-opacity group-hover:opacity-100" aria-hidden />
+      <div className="flex items-start justify-between gap-2">
         <p className="text-sm font-medium text-slate-500">{label}</p>
-        {icon && <span className="text-slate-400">{icon}</span>}
+        {icon && <span className="rounded-lg bg-brand-50 p-2 text-brand-700 transition-colors group-hover:bg-brand-100">{icon}</span>}
       </div>
       <p className={cn('mt-2 text-2xl font-semibold', tone)}>{value}</p>
       {hint && <p className="mt-1 text-xs text-slate-500">{hint}</p>}

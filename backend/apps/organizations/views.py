@@ -427,6 +427,7 @@ class MyOrganizationDetailView(APIView):
         context = get_org_context(request, org_id)
         membership = get_object_or_404(OrganizationMembership, pk=context.membership.pk)
         current_fy = FinancialYear.objects.for_org(context.organization).filter(is_current=True).first()
+        org_settings = context.organization.settings or {}
         return Response(
             {
                 "organization": OrganizationSerializer(context.organization, context={"request": request}).data,
@@ -435,6 +436,7 @@ class MyOrganizationDetailView(APIView):
                 "permissions": context.permissions,
                 "current_financial_year": FinancialYearSerializer(current_fy).data if current_fy else None,
                 "member_portal_enabled": bool(context.organization.settings.get("member_portal_enabled")),
+                "theme_color": org_settings.get("theme_color", services.DEFAULT_SETTINGS["theme_color"]),
                 "form_studio": form_studio.get_config(context.organization),
             }
         )

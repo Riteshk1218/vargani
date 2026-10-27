@@ -53,12 +53,13 @@ class UserSerializer(serializers.ModelSerializer):
             "mobile",
             "username",
             "preferred_language",
+            "theme_color",
             "email_verified_at",
             "mobile_verified_at",
             "is_platform_admin",
             "date_joined",
         ]
-        read_only_fields = [f for f in fields if f not in ("full_name", "preferred_language")]
+        read_only_fields = [f for f in fields if f not in ("full_name", "preferred_language", "theme_color")]
 
 
 class RegisterSerializer(serializers.Serializer):
