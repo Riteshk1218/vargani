@@ -22,7 +22,7 @@ export function ProfilePage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title={t('profile.title')} description={user.email ?? formatMobile(user.mobile)} />
+      <PageHeader title={t('profile.title')} description={user.username ?? user.email ?? formatMobile(user.mobile)} />
       <Card className="space-y-4 p-5">
         <form
           className="flex flex-col gap-3 sm:flex-row sm:items-end"

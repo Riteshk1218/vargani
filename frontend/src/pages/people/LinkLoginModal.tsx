@@ -66,7 +66,7 @@ export function LinkLoginModal({ person, onClose }: { person: Person | null; onC
                 <option value="">{t('common.choose')}</option>
                 {active.map((m) => (
                   <option key={m.id} value={m.user.id}>
-                    {m.user.full_name} · {m.user.mobile ?? m.user.email} · {m.role.name}
+                    {m.user.full_name} · {m.user.username ?? m.user.mobile ?? m.user.email} · {m.role.name}
                   </option>
                 ))}
               </SelectInput>

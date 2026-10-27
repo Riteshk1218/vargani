@@ -90,7 +90,13 @@ class PlatformOrganizationSerializer(serializers.ModelSerializer):
 
     def get_admins(self, obj) -> list[dict]:
         return [
-            {"id": str(m.user.pk), "full_name": m.user.full_name, "email": m.user.email, "mobile": m.user.mobile}
+            {
+                "id": str(m.user.pk),
+                "full_name": m.user.full_name,
+                "username": m.user.username,
+                "email": m.user.email,
+                "mobile": m.user.mobile,
+            }
             for m in getattr(obj, "admin_memberships", [])
         ]
 
@@ -121,6 +127,7 @@ class PlatformUserSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "full_name",
+            "username",
             "email",
             "mobile",
             "is_active",
@@ -183,7 +190,11 @@ class PlatformOrganizationListView(PlatformView, ListAPIView):
         data = serializer.validated_data
         with transaction.atomic():
             user, created = services.create_login(
-                full_name=data["full_name"], email=data["email"], mobile=data["mobile"], password=data["password"]
+                full_name=data["full_name"],
+                email=data["email"],
+                mobile=data["mobile"],
+                username=data["username"],
+                password=data["password"],
             )
             org = services.create_organization(
                 user=user,
@@ -236,7 +247,7 @@ class PlatformOrganizationStatusView(PlatformView, APIView):
 
 class PlatformUserListView(PlatformView, ListAPIView):
     serializer_class = PlatformUserSerializer
-    search_fields = ["full_name", "email", "mobile", "memberships__organization__name"]
+    search_fields = ["full_name", "username", "email", "mobile", "memberships__organization__name"]
     filterset_fields = ["is_active"]
 
     def get_queryset(self):

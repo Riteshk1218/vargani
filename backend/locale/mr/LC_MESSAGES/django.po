@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-26 18:27+0000\n"
+"POT-Creation-Date: 2026-10-27 15:20+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,6 +17,14 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: apps/accounts/models.py:30
+msgid ""
+"A username has 3 to 30 letters, numbers, dots, dashes or underscores and "
+"starts with a letter."
+msgstr ""
+"युजरनेममध्ये 3 ते 30 अक्षरे, अंक, बिंदू (.), डॅश (-) किंवा अंडरस्कोर (_) "
+"असावेत आणि सुरुवात अक्षराने व्हावी."
 
 #: apps/accounts/otp.py:24
 msgid ""
@@ -49,13 +57,12 @@ msgid "Your verification code"
 msgstr "तुमचा पडताळणी कोड"
 
 #: apps/accounts/otp.py:112 apps/accounts/views.py:69
-#: apps/accounts/views.py:181 apps/portal/auth_views.py:73
+#: apps/accounts/views.py:182 apps/portal/auth_views.py:73
 #: apps/portal/auth_views.py:78
 msgid "The code is invalid or has expired."
 msgstr "कोड चुकीचा आहे किंवा त्याची मुदत संपली आहे."
 
-#: apps/accounts/serializers.py:63 apps/organizations/serializers.py:213
-#: apps/organizations/serializers.py:247
+#: apps/accounts/serializers.py:77 apps/organizations/serializers.py:214
 msgid "Enter an email address or a mobile number."
 msgstr "ईमेल पत्ता किंवा मोबाइल नंबर टाका."
 
@@ -79,11 +86,11 @@ msgstr "रिफ्रेश टोकन आवश्यक आहे."
 msgid "If an account exists, a reset code has been sent."
 msgstr "खाते अस्तित्वात असल्यास, रीसेट कोड पाठवला आहे."
 
-#: apps/accounts/views.py:188
+#: apps/accounts/views.py:189
 msgid "Your password has been reset. Please log in."
 msgstr "तुमचा पासवर्ड रीसेट झाला आहे. कृपया लॉग इन करा."
 
-#: apps/accounts/views.py:200
+#: apps/accounts/views.py:201
 msgid "Your current password is incorrect."
 msgstr "तुमचा सध्याचा पासवर्ड चुकीचा आहे."
 
@@ -184,7 +191,7 @@ msgid "Contributions"
 msgstr "वर्गणी"
 
 #: apps/contributions/views.py:84 apps/contributions/views.py:160
-#: apps/organizations/views.py:222 apps/payments/views.py:70
+#: apps/organizations/views.py:223 apps/payments/views.py:70
 #: apps/people/views.py:44 apps/receipts/views.py:65
 #: apps/reports/registry.py:121 apps/reports/registry.py:200
 #: apps/reports/registry.py:359 apps/reports/registry.py:394
@@ -227,7 +234,7 @@ msgstr "वसूल करणारे"
 
 #: apps/contributions/views.py:91 apps/events/views.py:38
 #: apps/expenses/views.py:74 apps/expenses/views.py:242
-#: apps/organizations/views.py:226 apps/payments/views.py:76
+#: apps/organizations/views.py:227 apps/payments/views.py:76
 #: apps/receipts/views.py:67 apps/reports/registry.py:128
 #: apps/reports/registry.py:154 apps/reports/registry.py:362
 #: apps/reports/registry.py:496 apps/reports/registry.py:593
@@ -253,7 +260,7 @@ msgstr "रक्कम"
 msgid "Balance due"
 msgstr "बाकी रक्कम"
 
-#: apps/contributions/views.py:161 apps/organizations/views.py:224
+#: apps/contributions/views.py:161 apps/organizations/views.py:225
 #: apps/payments/views.py:71 apps/people/views.py:45
 #: apps/receipts/templates/receipts/receipt_pdf.html:51
 #: apps/reports/registry.py:122 apps/reports/registry.py:201
@@ -671,18 +678,15 @@ msgstr "%(n)s अक्षरांपर्यंतच ठेवा."
 
 #: apps/organizations/form_studio.py:67 apps/organizations/form_studio.py:182
 #: apps/payments/serializers.py:35
-#| msgid "This person is archived."
 msgid "This field is required."
 msgstr "हे भरणे आवश्यक आहे."
 
 #: apps/organizations/form_studio.py:84 apps/organizations/form_studio.py:122
 #: apps/organizations/form_studio.py:173
-#| msgid "Unknown setting."
 msgid "Unknown field."
 msgstr "अज्ञात रकाना."
 
 #: apps/organizations/form_studio.py:97
-#| msgid "Payment mode"
 msgid "Unknown payment mode."
 msgstr "अज्ञात पेमेंट पद्धत."
 
@@ -696,7 +700,6 @@ msgid "At most %(n)s dropdowns."
 msgstr "जास्तीत जास्त %(n)s ड्रॉपडाउन."
 
 #: apps/organizations/form_studio.py:140
-#| msgid "Add at least one contribution."
 msgid "Add at least one option."
 msgstr "किमान एक पर्याय जोडा."
 
@@ -709,15 +712,15 @@ msgstr "जास्तीत जास्त %(n)s पर्याय."
 msgid "Choose one of the options."
 msgstr "दिलेल्यांपैकी एक पर्याय निवडा."
 
-#: apps/organizations/platform.py:111 apps/organizations/serializers.py:49
+#: apps/organizations/platform.py:117 apps/organizations/serializers.py:49
 msgid "Enter the organization name."
 msgstr "संस्थेचे नाव टाका."
 
-#: apps/organizations/platform.py:220
+#: apps/organizations/platform.py:231
 msgid "A closed organization cannot be changed."
 msgstr "बंद संस्था बदलता येत नाही."
 
-#: apps/organizations/platform.py:255
+#: apps/organizations/platform.py:266
 msgid "Change your own password and details from My profile."
 msgstr "तुमचा स्वतःचा पासवर्ड आणि माहिती माझी प्रोफाइलमधून बदला."
 
@@ -737,9 +740,14 @@ msgstr "या नावाचे आर्थिक वर्ष आधीच �
 msgid "This financial year overlaps another financial year."
 msgstr "हे आर्थिक वर्ष दुसऱ्या आर्थिक वर्षाशी जुळते."
 
-#: apps/organizations/serializers.py:240
+#: apps/organizations/serializers.py:244
 msgid "Enter the name."
 msgstr "नाव टाका."
+
+#: apps/organizations/serializers.py:252
+#| msgid "Enter an email address or a mobile number."
+msgid "Enter a username, an email address or a mobile number."
+msgstr "युजरनेम, ईमेल पत्ता किंवा मोबाइल नंबर टाका."
 
 #: apps/organizations/services.py:99
 msgid "Unknown setting."
@@ -761,7 +769,7 @@ msgstr "प्रतिमा खूप लहान आहे. किमान 
 msgid "A closed financial year cannot be made current."
 msgstr "बंद आर्थिक वर्ष चालू करता येत नाही."
 
-#: apps/organizations/services.py:279 apps/organizations/services.py:496
+#: apps/organizations/services.py:279 apps/organizations/services.py:529
 msgid "This person already has access to the organization."
 msgstr "या व्यक्तीला संस्थेत आधीच प्रवेश आहे."
 
@@ -799,11 +807,16 @@ msgstr "संस्थेत किमान एक सक्रिय सं�
 msgid "This email and this mobile number belong to two different accounts."
 msgstr "हा ईमेल आणि हा मोबाईल नंबर दोन वेगवेगळ्या खात्यांचे आहेत."
 
-#: apps/organizations/services.py:543
+#: apps/organizations/services.py:479 apps/organizations/services.py:492
+#| msgid "This login is already linked to another person here."
+msgid "This username is already taken. Choose another one."
+msgstr "हे युजरनेम आधीच वापरात आहे. दुसरे निवडा."
+
+#: apps/organizations/services.py:588
 msgid "Change your own password from My profile."
 msgstr "तुमचा स्वतःचा पासवर्ड माझी प्रोफाइलमधून बदला."
 
-#: apps/organizations/services.py:546
+#: apps/organizations/services.py:591
 msgid ""
 "This person also uses Vargani with another organization. They can reset it "
 "with Forgot password."
@@ -811,18 +824,22 @@ msgstr ""
 "ही व्यक्ती दुसऱ्या संस्थेतही Vargani वापरते. ते 'पासवर्ड विसरलात' वापरून तो "
 "बदलू शकतात."
 
-#: apps/organizations/views.py:220
+#: apps/organizations/views.py:221
 msgid "Users"
 msgstr "वापरकर्ते"
 
-#: apps/organizations/views.py:223 apps/people/views.py:46
+#: apps/organizations/views.py:224 apps/people/views.py:46
 #: apps/reports/registry.py:123
 msgid "Email"
 msgstr "ईमेल"
 
-#: apps/organizations/views.py:225 apps/reports/registry.py:636
+#: apps/organizations/views.py:226 apps/reports/registry.py:636
 msgid "Role"
 msgstr "भूमिका"
+
+#: apps/organizations/views.py:255
+msgid "You cannot delete your own access."
+msgstr "तुम्ही स्वतःचा प्रवेश हटवू शकत नाही."
 
 #: apps/payments/admin_edit.py:66 apps/payments/followups.py:177
 #: apps/payments/services.py:61

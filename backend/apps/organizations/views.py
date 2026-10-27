@@ -1,5 +1,6 @@
 from django.forms.models import model_to_dict
 from django.shortcuts import get_object_or_404
+from django.utils.translation import gettext as _
 from django.utils.translation import gettext_noop
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
@@ -12,6 +13,7 @@ from rest_framework.views import APIView
 
 from apps.audit import services as audit
 from apps.core.downloads import Col, ListDownloadMixin
+from apps.core.exceptions import BusinessRuleViolation
 from apps.core.tenancy import get_org_context
 from apps.core.viewsets import TenantModelViewSet, TenantReadOnlyViewSet, TenantScopedMixin
 
@@ -227,18 +229,32 @@ class MemberViewSet(
     serializer_class = MemberSerializer
     http_method_names = ["get", "post", "patch", "head", "options"]
     filterset_fields = ["status"]
-    search_fields = ["user__full_name", "user__email", "user__mobile"]
+    search_fields = ["user__full_name", "user__username", "user__email", "user__mobile"]
     ordering_fields = ["joined_at"]
     required_permissions = {
         "list": "members.view",
         "retrieve": "members.view",
         "create": "members.manage",
         "partial_update": "members.manage",
+        "remove": "members.manage",
         "set_password": "members.manage",
     }
 
     def get_base_queryset(self):
-        return OrganizationMembership.objects.filter(organization=self.organization).select_related("user", "role")
+        rows = OrganizationMembership.objects.filter(organization=self.organization).select_related("user", "role")
+        if self.request.query_params.get("status") != OrganizationMembership.Status.REMOVED:
+            rows = rows.exclude(status=OrganizationMembership.Status.REMOVED)  # deleted users stay out of sight
+        return rows
+
+    @extend_schema(request=None, responses={204: None})
+    @action(detail=True, methods=["post"])
+    def remove(self, request, pk=None):
+        """Delete a user's access (kept as "removed" for the records and the audit log)."""
+        membership = self.get_object()
+        if membership.user_id == request.user.pk:
+            raise BusinessRuleViolation(_("You cannot delete your own access."))
+        services.remove_member(membership, request)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     def partial_update(self, request, pk=None):
         membership = self.get_object()
@@ -264,6 +280,7 @@ class MemberViewSet(
             full_name=data["full_name"],
             email=data["email"],
             mobile=data["mobile"],
+            username=data["username"],
             password=data["password"],
             request=request,
         )

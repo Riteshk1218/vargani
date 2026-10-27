@@ -15,6 +15,8 @@ export interface ApiErrorBody {
 export interface User {
   id: string
   full_name: string
+  /** Set by an organization admin for logins without an email or mobile number. */
+  username: string | null
   email: string | null
   mobile: string | null
   preferred_language: Language
@@ -209,7 +211,7 @@ export interface Person {
 
 export interface Member {
   id: string
-  user: { id: string; full_name: string; email: string | null; mobile: string | null }
+  user: { id: string; full_name: string; username: string | null; email: string | null; mobile: string | null }
   role: RoleSummary
   status: 'active' | 'suspended' | 'removed'
   can_download: boolean | null
@@ -829,13 +831,14 @@ export interface PlatformOrganization {
   people_count: number
   events_count: number
   receipts_count: number
-  admins: { id: string; full_name: string; email: string | null; mobile: string | null }[]
+  admins: { id: string; full_name: string; username: string | null; email: string | null; mobile: string | null }[]
   new_login?: boolean
 }
 
 export interface PlatformUser {
   id: string
   full_name: string
+  username: string | null
   email: string | null
   mobile: string | null
   is_active: boolean
@@ -848,6 +851,7 @@ export interface PlatformUser {
 
 export interface LoginDetailsInput {
   full_name: string
+  username?: string
   email?: string
   mobile?: string
   password: string
