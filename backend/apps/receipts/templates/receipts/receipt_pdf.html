@@ -24,7 +24,9 @@ dl { display: grid; grid-template-columns: 90pt 1fr; margin: 6pt 0 0; row-gap: 1
 dt { color: #475569; } dd { margin: 0; }
 footer { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 14pt; }
 .thanks { font-style: italic; color: #9a3412; }
-.sign { border-top: 0.75pt solid #64748b; padding-top: 2pt; font-size: 8pt; color: #475569; }
+.sign { text-align: center; min-width: 120pt; }
+.sign .name { font-weight: 600; font-size: 9.5pt; color: #0f172a; padding-bottom: 2pt; }
+.sign .label { border-top: 0.75pt solid #64748b; padding-top: 2pt; font-size: 8pt; color: #475569; }
 .void { position: fixed; top: 40%; left: 25%; transform: rotate(-15deg); font-size: 48pt; font-weight: 700; color: rgba(220, 38, 38, 0.35); border: 4pt solid rgba(220, 38, 38, 0.35); padding: 4pt 18pt; }
 </style>
 </head>
@@ -81,7 +83,7 @@ footer { display: flex; justify-content: space-between; align-items: flex-end; m
 </dl>
 <footer>
   <span class="thanks">{% if s.thank_you_message %}{{ s.thank_you_message }}{% else %}{% trans "Thank you for your contribution." %}{% endif %}</span>
-  <span class="sign">{% trans "Authorised signatory" %}</span>
+  <span class="sign">{% if signatory %}<div class="name">{{ signatory }}</div>{% endif %}<div class="label">{% trans "Authorised signatory" %}</div></span>
 </footer>
 </body>
 </html>

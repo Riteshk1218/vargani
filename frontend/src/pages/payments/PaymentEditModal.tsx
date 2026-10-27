@@ -19,6 +19,8 @@ const MONEY = /^\d+(\.\d{1,2})?$/
 
 interface Line {
   key: number
+  /** The saved line's id (lines added here have none). */
+  id?: string
   typeId: string
   month: string
   amount: string
@@ -31,7 +33,8 @@ function toLocalInput(iso: string) {
   return local.toISOString().slice(0, 16)
 }
 
-/** Organization Admin: change anything about a recorded collection. The receipt keeps its number. */
+/** Organization Admin: change anything about a recorded collection. The receipt keeps its number.
+ * A pavti that keeps a balance can only have its line amounts corrected; the balance moves to match. */
 export function PaymentEditModal({ payment, onClose, onSaved }: { payment: Payment; onClose: () => void; onSaved: (p: Payment) => void }) {
   const { t } = useTranslation()
   const { activeOrgId, detail } = useOrg()
@@ -56,6 +59,7 @@ export function PaymentEditModal({ payment, onClose, onSaved }: { payment: Payme
   const [lines, setLines] = useState<Line[]>(() =>
     payment.lines.map((line, index) => ({
       key: index + 1,
+      id: line.id,
       typeId: line.contribution_type,
       month: line.period_month ? line.period_month.slice(0, 7) : '',
       amount: line.amount,
@@ -68,6 +72,7 @@ export function PaymentEditModal({ payment, onClose, onSaved }: { payment: Payme
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState(false)
 
+  const amountsOnly = Boolean(payment.keeps_balance)
   const typeList = types.data?.results ?? []
   const typeById = (id: string) => typeList.find((ct) => ct.id === id)
   const total = sumMoney(lines.map((l) => (MONEY.test(l.amount) ? l.amount : '0')))
@@ -88,11 +93,17 @@ export function PaymentEditModal({ payment, onClose, onSaved }: { payment: Payme
       reference_number: reference.trim(),
       paid_at: new Date(paidAt).toISOString(),
       notes,
-      lines: lines.map((line) => ({
+    }
+    if (amountsOnly) {
+      const saved = (line: Line) => payment.lines.find((l) => l.id === line.id)?.amount ?? '0'
+      const changed = lines.filter((line) => sumMoney([line.amount]) !== sumMoney([saved(line)]))
+      if (changed.length) input.line_amounts = Object.fromEntries(changed.map((line) => [line.id!, line.amount]))
+    } else {
+      input.lines = lines.map((line) => ({
         contribution_type: line.typeId,
         amount: line.amount,
         period_month: typeById(line.typeId)?.kind === 'recurring_monthly' ? `${line.month}-01` : null,
-      })),
+      }))
     }
     if (kind === 'new') input.new_person = { ...newPerson, full_name: newPerson.full_name.trim() }
     else input.payer = kind === 'existing' && person ? person.id : null
@@ -133,6 +144,7 @@ export function PaymentEditModal({ payment, onClose, onSaved }: { payment: Payme
     >
       <div className="space-y-4 text-sm">
         <p className="rounded-lg bg-amber-50 p-3 text-amber-900 ring-1 ring-amber-200">{t('payments.editNote')}</p>
+        {amountsOnly && <p className="rounded-lg bg-sky-50 p-3 text-sky-900 ring-1 ring-sky-200">{t('payments.balanceEditNote')}</p>}
         <PayerChoice
           kind={kind}
           onKind={setKind}
@@ -145,7 +157,7 @@ export function PaymentEditModal({ payment, onClose, onSaved }: { payment: Payme
         <div className="space-y-3">
           {lines.map((line, index) => (
             <div key={line.key} className="grid gap-2 sm:grid-cols-[1fr_8rem_8rem_auto] sm:items-start">
-              <SelectInput label={t('collect.type')} value={line.typeId} error={errors[`lines.${index}.contribution_type`]} onChange={(e) => update(line.key, { typeId: e.target.value })}>
+              <SelectInput label={t('collect.type')} value={line.typeId} disabled={amountsOnly} error={errors[`lines.${index}.contribution_type`]} onChange={(e) => update(line.key, { typeId: e.target.value })}>
                 {typeList.map((option) => (
                   <option key={option.id} value={option.id}>
                     {option.name}
@@ -153,7 +165,7 @@ export function PaymentEditModal({ payment, onClose, onSaved }: { payment: Payme
                 ))}
               </SelectInput>
               {typeById(line.typeId)?.kind === 'recurring_monthly' ? (
-                <TextInput label={t('collect.month')} type="month" value={line.month} error={errors[`lines.${index}.period_month`]} onChange={(e) => update(line.key, { month: e.target.value })} />
+                <TextInput label={t('collect.month')} type="month" value={line.month} disabled={amountsOnly} error={errors[`lines.${index}.period_month`]} onChange={(e) => update(line.key, { month: e.target.value })} />
               ) : (
                 <div className="hidden sm:block" />
               )}
@@ -164,21 +176,24 @@ export function PaymentEditModal({ payment, onClose, onSaved }: { payment: Payme
                 error={errors[`lines.${index}.amount`]}
                 onChange={(e) => update(line.key, { amount: e.target.value.replace(/[^\d.]/g, '') })}
               />
-              {lines.length > 1 && (
+              {lines.length > 1 && !amountsOnly && (
                 <Button variant="ghost" size="sm" className="sm:mt-7" aria-label={t('collect.removeLine')} onClick={() => setLines((ls) => ls.filter((l) => l.key !== line.key))}>
                   <Trash2 className="size-4" />
                 </Button>
               )}
             </div>
           ))}
-          <Button
-            variant="secondary"
-            size="sm"
-            icon={<Plus className="size-4" />}
-            onClick={() => setLines((ls) => [...ls, { key: Math.max(0, ...ls.map((l) => l.key)) + 1, typeId: typeList[0]?.id ?? '', month: '', amount: '' }])}
-          >
-            {t('collect.addLine')}
-          </Button>
+          {errors.line_amounts && <p className="text-sm text-red-700">{errors.line_amounts}</p>}
+          {!amountsOnly && (
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={<Plus className="size-4" />}
+              onClick={() => setLines((ls) => [...ls, { key: Math.max(0, ...ls.map((l) => l.key)) + 1, typeId: typeList[0]?.id ?? '', month: '', amount: '' }])}
+            >
+              {t('collect.addLine')}
+            </Button>
+          )}
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
           <SelectInput label={t('collect.mode')} value={mode} onChange={(e) => setMode(e.target.value as PaymentMode)}>

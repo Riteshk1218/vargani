@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, Ban, Download, MessageCircle, Printer, RotateCcw } from 'lucide-react'
+import { ArrowLeft, Ban, Download, MessageCircle, Pencil, Printer, RotateCcw } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router-dom'
@@ -11,8 +11,9 @@ import { ErrorState, Spinner } from '../../components/ui/States'
 import { useToast } from '../../components/ui/Toast'
 import { useOrg } from '../../context/OrgContext'
 import { useApiErrors } from '../../hooks/useApiErrors'
-import { receiptService, saveBlob } from '../../services/finance'
-import { ReceiptView } from './ReceiptView'
+import { paymentService, receiptService, saveBlob } from '../../services/finance'
+import { PaymentEditModal } from '../payments/PaymentEditModal'
+import { ReceiptLanguagePicker, ReceiptView } from './ReceiptView'
 
 export function ReceiptPage() {
   const { t } = useTranslation()
@@ -23,16 +24,25 @@ export function ReceiptPage() {
   const onError = useApiErrors()
   const [voiding, setVoiding] = useState(false)
   const [reason, setReason] = useState('')
+  const [chosenLanguage, setLanguage] = useState<string>()
+  const [editing, setEditing] = useState(false)
   const key = ['org', activeOrgId, 'receipts', 'detail', id]
   const receipt = useQuery({ queryKey: key, queryFn: () => receiptService.get(id) })
+  const language = chosenLanguage ?? receipt.data?.language ?? 'en'
+  const canEdit = can('records.admin_edit') && receipt.data?.status === 'issued'
+  const payment = useQuery({
+    queryKey: ['org', activeOrgId, 'payments', 'detail', receipt.data?.payment],
+    queryFn: () => paymentService.get(receipt.data!.payment),
+    enabled: editing && Boolean(receipt.data?.payment),
+  })
 
   const download = useMutation({
-    mutationFn: () => receiptService.pdf(id),
+    mutationFn: () => receiptService.pdf(id, language),
     onSuccess: (blob) => saveBlob(blob, `${receipt.data?.receipt_number ?? 'receipt'}.pdf`),
     onError,
   })
   const share = useMutation({
-    mutationFn: () => receiptService.share(id),
+    mutationFn: () => receiptService.share(id, language),
     onSuccess: (link) => {
       window.open(link.whatsapp_url, '_blank', 'noopener')
       void navigator.clipboard?.writeText(link.share_url).catch(() => undefined)
@@ -63,6 +73,12 @@ export function ReceiptPage() {
           <ArrowLeft className="size-4" /> {t('receipts.title')}
         </Link>
         <div className="flex flex-wrap gap-2">
+          <ReceiptLanguagePicker value={language} onChange={setLanguage} />
+          {canEdit && (
+            <Button variant="secondary" icon={<Pencil className="size-4" />} loading={editing && payment.isLoading} onClick={() => setEditing(true)}>
+              {t('receipts.edit')}
+            </Button>
+          )}
           {issued && can('receipts.share') && (
             <Button icon={<MessageCircle className="size-4" />} loading={share.isPending} onClick={() => share.mutate()}>
               {t('receipts.whatsapp')}
@@ -122,8 +138,18 @@ export function ReceiptPage() {
         </p>
       )}
       <Card className="overflow-hidden print:shadow-none print:ring-0">
-        <ReceiptView receipt={r} />
+        <ReceiptView receipt={r} language={language} />
       </Card>
+      {editing && payment.data && (
+        <PaymentEditModal
+          payment={payment.data}
+          onClose={() => setEditing(false)}
+          onSaved={() => {
+            setEditing(false)
+            void queryClient.invalidateQueries({ queryKey: key })
+          }}
+        />
+      )}
       <Modal
         open={voiding}
         title={t('receipts.requestVoid')}

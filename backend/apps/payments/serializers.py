@@ -101,6 +101,7 @@ class PaymentCreateSerializer(PayerChoiceMixin, serializers.Serializer):
 class PaymentLineSerializer(serializers.ModelSerializer):
     contribution_type_name = serializers.CharField(source="contribution_type.name", read_only=True)
     fund_name = serializers.CharField(source="fund.name", read_only=True, default=None)
+    towards_balance = serializers.SerializerMethodField()
 
     class Meta:
         model = Contribution
@@ -114,8 +115,12 @@ class PaymentLineSerializer(serializers.ModelSerializer):
             "amount",
             "status",
             "notes",
+            "towards_balance",
         ]
         read_only_fields = fields
+
+    def get_towards_balance(self, obj) -> bool:
+        return obj.due_id is not None
 
 
 class ReceiptRefSerializer(serializers.ModelSerializer):
@@ -142,6 +147,7 @@ class PaymentSerializer(CreatedByMixin, serializers.ModelSerializer):
     receipt = serializers.SerializerMethodField()
     balance_due = serializers.SerializerMethodField()
     pavti_status = serializers.SerializerMethodField()
+    keeps_balance = serializers.SerializerMethodField()
     follow_up_state = serializers.SerializerMethodField()
     custom_fields = serializers.SerializerMethodField()
 
@@ -171,6 +177,7 @@ class PaymentSerializer(CreatedByMixin, serializers.ModelSerializer):
             "receipt",
             "balance_due",
             "pavti_status",
+            "keeps_balance",
             "follow_up_on",
             "follow_up_state",
             "custom_fields",
@@ -192,6 +199,10 @@ class PaymentSerializer(CreatedByMixin, serializers.ModelSerializer):
     def get_pavti_status(self, obj) -> str | None:
         """unpaid, partly_paid or paid (received pavtis only)."""
         return followups.pavti_status(obj)
+
+    def get_keeps_balance(self, obj) -> bool:
+        """True when this pavti kept a balance or pays one: only line amounts can be corrected then."""
+        return bool(obj.dues.all()) or any(line.due_id for line in obj.lines.all())
 
     def get_follow_up_state(self, obj) -> str | None:
         """overdue, today or upcoming while money is owed and a follow-up date is set."""
@@ -223,6 +234,12 @@ class PaymentAdminEditSerializer(PayerChoiceMixin, serializers.Serializer):
     cheque_date = serializers.DateField(required=False, allow_null=True)
     notes = serializers.CharField(max_length=500, required=False, allow_blank=True)
     lines = PaymentLineInputSerializer(many=True, allow_empty=False, max_length=36, required=False)
+    line_amounts = serializers.DictField(
+        child=serializers.DecimalField(**MONEY, min_value=Decimal("0.01")),
+        required=False,
+        allow_empty=False,
+        help_text="Line id -> corrected amount. Works on a pavti that keeps a balance; the balance moves to match.",
+    )
 
 
 class PaymentVisitSerializer(serializers.Serializer):

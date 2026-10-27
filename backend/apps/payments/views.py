@@ -114,7 +114,7 @@ class PaymentViewSet(ListDownloadMixin, TenantModelViewSet):
         return followups.with_pavti_balance(
             Payment.objects.for_org(self.organization)
             .select_related("event", "payer", "collector__user", "organization", "created_by")
-            .prefetch_related("lines__contribution_type", "lines__fund", "receipts")
+            .prefetch_related("lines__contribution_type", "lines__fund", "receipts", "dues")
             .distinct()
         )
 

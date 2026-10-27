@@ -333,6 +333,8 @@ export interface PaymentLine {
   amount: string
   status: ContributionStatus
   notes: string
+  /** This line pays a balance kept on a pavti. */
+  towards_balance?: boolean
 }
 
 export interface ReceiptRef {
@@ -367,6 +369,8 @@ export interface Payment {
   /** Still owed on this pavti. */
   balance_due: string
   pavti_status: PavtiStatus | null
+  /** Kept or pays a balance: only the line amounts can be corrected. */
+  keeps_balance?: boolean
   /** When to go back for the money still owed. */
   follow_up_on: string | null
   follow_up_state: FollowUpState | null
@@ -443,7 +447,10 @@ export interface Due {
 /** Organization Admin edit: send only what changes; `lines` replaces every line. */
 export type PaymentEditInput = Partial<
   Pick<PaymentInput, 'payer' | 'new_person' | 'mode' | 'paid_at' | 'reference_number' | 'cheque_bank' | 'cheque_date' | 'notes' | 'lines'>
->
+> & {
+  /** Line id -> corrected amount (on a pavti with a balance, the balance moves to match). */
+  line_amounts?: Record<string, string>
+}
 
 export interface Contribution {
   id: string
@@ -496,6 +503,8 @@ export interface ReceiptSnapshot {
   paid_at: string
   timezone?: string
   collector: string | null
+  /** Printed above "Authorised signatory": who collected the money (older receipts: the collector). */
+  signatory?: string | null
   thank_you_message: string
 }
 

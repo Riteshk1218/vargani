@@ -34,6 +34,13 @@ def _money(value) -> str:
     return f"{value:.2f}"
 
 
+def signatory_name(payment) -> str | None:
+    """Who signs the pavti: the collector who took the money, else whoever recorded it."""
+    if payment.collector_id:
+        return payment.collector.user.full_name
+    return payment.created_by.full_name if payment.created_by_id else None
+
+
 def build_snapshot(payment) -> dict:
     """Everything a receipt shows, frozen at issue time. Later edits to org/person/event never change it."""
     org = payment.organization
@@ -108,6 +115,7 @@ def build_snapshot(payment) -> dict:
         "paid_at": payment.paid_at.isoformat(),
         "timezone": org.timezone,
         "collector": collector.user.full_name if collector else None,
+        "signatory": signatory_name(payment),
         "thank_you_message": event.thank_you_message,
     }
 
