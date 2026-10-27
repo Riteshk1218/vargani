@@ -23,6 +23,8 @@ class FakeApi {
     'collector' => {'payments.create': 'assigned', 'receipts.view': 'own', 'receipts.share': 'own', 'portal.self': 'self'},
     'treasurer' => {'payments.create': 'all', 'payments.view': 'all', 'receipts.view': 'all'},
     'org_admin' => {'payments.create': 'all', 'members.view': 'all', 'members.manage': 'all'},
+    'pavti_admin' => {'payments.create': 'all', 'payments.view': 'all', 'receipts.view': 'all', 'receipts.share': 'all',
+      'records.admin_edit': 'all', 'reports.export': 'all', 'people.view': 'all'},
     _ => {'portal.self': 'self'},
   };
 
@@ -100,6 +102,17 @@ class FakeApi {
         return _json({'follow_ups': {'overdue': 0, 'due_today': 0, 'owing': 1, 'balance': '151.00', 'paid': 4}});
       case ('GET', '/receipts/rc-1/'):
         return _json(_receipt);
+      case ('GET', '/receipts/'):
+        return _json({'count': 1, 'next': null, 'results': [
+          {'id': 'rc-1', 'receipt_number': 'GC-2026-00002', 'status': 'issued', 'payer_name': 'Sunita More',
+           'amount': '651.00', 'issued_at': '2026-10-07T15:55:51Z', 'paid_at': '2026-10-07T15:55:51Z'}
+        ]});
+      case ('GET', '/payments/pay-1/'):
+        return _json({'id': 'pay-1', 'payer_name': 'Sunita More', 'notes': '', 'keeps_balance': true,
+          'receipt': {'id': 'rc-1', 'receipt_number': 'GC-2026-00002'},
+          'lines': [{'id': 'l-1', 'contribution_type_name': 'Ganesh Vargani', 'amount': '651.00', 'period_month': null}]});
+      case ('POST', '/payments/pay-1/edit/'):
+        return _json({'id': 'pay-1', 'amount': '600.00'});
       case ('GET', '/members/'):
         return _json({'count': 2, 'next': null, 'results': [
           {'id': 'm-1', 'status': 'active', 'can_reset_password': false,
@@ -136,6 +149,7 @@ class FakeApi {
 
   static final _receipt = {
     'id': 'rc-1', 'receipt_number': 'GC-2026-00002', 'status': 'issued', 'amount': '651.00', 'logo_url': null,
+    'payment': 'pay-1', 'language': 'en',
     'snapshot': {
       'organization': {'name': 'Demo Mandal', 'address': 'Pune'},
       'person': {'name': 'Sunita More', 'mobile': '+919822001133'},
@@ -400,5 +414,42 @@ void main() {
     await tester.pumpAndSettle();
     expect(fake.requests.any((r) => r.method == 'POST' && r.url.path == '/api/v1/members/m-2/remove/'), isTrue);
     expect(find.text('User deleted'), findsOneWidget);
+  });
+
+  testWidgets('an admin finds a pavti by its number, corrects the amount and downloads contacts', (tester) async {
+    final (_, fake) = await start(tester, 'pavti_admin');
+    await tester.enterText(find.byKey(const Key('login-identifier')), 'ritesh');
+    await tester.enterText(find.byKey(const Key('login-password')), 'right');
+    await tester.tap(find.byKey(const Key('login-submit')));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('People').last);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('people-download')), findsOneWidget);
+
+    await tester.tap(find.text('Receipts').last);
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('receipts-search')), 'GC-2026-00002');
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
+    final search = fake.requests.lastWhere((r) => r.url.path == '/api/v1/receipts/');
+    expect(search.url.queryParameters['search'], 'GC-2026-00002');
+
+    await tester.tap(find.text('Sunita More'));
+    await tester.pumpAndSettle();
+    // The collector's name is printed above "Authorised signatory".
+    expect(find.descendant(of: find.byKey(const Key('receipt-signatory')), matching: find.text('Kiran')), findsOneWidget);
+    expect(find.text('Authorised signatory'), findsOneWidget);
+
+    await tester.ensureVisible(find.byKey(const Key('receipt-edit')));
+    await tester.tap(find.byKey(const Key('receipt-edit')));
+    await tester.pumpAndSettle();
+    expect(find.text('This pavti keeps a balance: the difference moves to the balance still owed.'), findsOneWidget);
+    await tester.enterText(find.byKey(const Key('pavti-amount-l-1')), '600');
+    await tester.tap(find.byKey(const Key('pavti-save')));
+    await tester.pumpAndSettle();
+    final edit = fake.requests.lastWhere((r) => r.method == 'POST' && r.url.path == '/api/v1/payments/pay-1/edit/');
+    expect(jsonDecode(edit.body)['line_amounts'], {'l-1': '600'});
+    expect(find.text('Receipt no. GC-2026-00002'), findsOneWidget);
   });
 }

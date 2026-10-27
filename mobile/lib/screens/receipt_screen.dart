@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../l10n/strings.dart';
 import '../util/files.dart';
 import '../util/money.dart';
 import '../widgets/common.dart';
 import 'org_picker_screen.dart';
+import 'pavti_edit_screen.dart';
 
 /// A receipt (pavti) as issued, built from the snapshot the server stored at issue time.
 class ReceiptScreen extends StatefulWidget {
@@ -22,13 +24,16 @@ class ReceiptScreen extends StatefulWidget {
 class _ReceiptScreenState extends State<ReceiptScreen> {
   bool _busy = false;
 
+  /// The language the PDF and WhatsApp message are made in; null: the one the pavti was issued in.
+  String? _language;
+
   String get _base => widget.portal ? '/portal/receipts/${widget.receiptId}' : '/receipts/${widget.receiptId}';
 
   Future<void> _share() async {
     final app = AppScope.read(context);
     setState(() => _busy = true);
     try {
-      final r = (await app.api.post('/receipts/${widget.receiptId}/share/')) as Map;
+      final r = (await app.api.post('/receipts/${widget.receiptId}/share/', {'language': ?_language})) as Map;
       final url = Uri.parse('${r['whatsapp_url']}');
       if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
         if (mounted) showMessage(context, '${r['whatsapp_text']}');
@@ -44,7 +49,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
     final app = AppScope.read(context);
     setState(() => _busy = true);
     try {
-      final bytes = await app.api.getBytes('$_base/pdf/');
+      final bytes = await app.api.getBytes('$_base/pdf/', query: {'language': _language});
       await openPdfBytes(bytes, 'receipt-$number.pdf');
     } catch (e) {
       if (mounted) showMessage(context, errorText(context, e), error: true);
@@ -61,7 +66,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
       appBar: AppBar(title: Text(widget.justIssued ? t('receipt_issued') : t('receipts'))),
       body: AsyncView<Map<String, dynamic>>(
         load: () async => ((await app.api.get('$_base/')) as Map).cast<String, dynamic>(),
-        builder: (context, r, _) {
+        builder: (context, r, reload) {
           final s = (r['snapshot'] as Map?)?.cast<String, dynamic>() ?? {};
           final org = (s['organization'] as Map?) ?? {};
           final person = (s['person'] as Map?) ?? {};
@@ -219,11 +224,64 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                           style: text.bodyMedium?.copyWith(fontStyle: FontStyle.italic),
                         ),
                       ],
+                      if ('${s['signatory'] ?? s['collector'] ?? ''}'.isNotEmpty) ...[
+                        const SizedBox(height: 16),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: Column(
+                            key: const Key('receipt-signatory'),
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Text(
+                                '${s['signatory'] ?? s['collector']}',
+                                style: text.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                              ),
+                              Container(
+                                margin: const EdgeInsets.only(top: 2),
+                                padding: const EdgeInsets.only(top: 2),
+                                decoration: const BoxDecoration(
+                                  border: Border(top: BorderSide(color: Colors.grey)),
+                                ),
+                                child: Text(t('signatory'), style: text.bodySmall),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
               ),
               const SizedBox(height: 16),
+              Text(t('receipt_language'), style: text.bodySmall),
+              const SizedBox(height: 4),
+              SegmentedButton<String>(
+                key: const Key('receipt-language'),
+                segments: [
+                  for (final e in supportedLanguages.entries) ButtonSegment(value: e.key, label: Text(e.value)),
+                ],
+                selected: {_language ?? '${r['language'] ?? 'en'}'},
+                showSelectedIcon: false,
+                onSelectionChanged: (v) => setState(() => _language = v.first),
+              ),
+              const SizedBox(height: 12),
+              if (!widget.portal && app.can('records.admin_edit') && r['status'] == 'issued') ...[
+                OutlinedButton.icon(
+                  key: const Key('receipt-edit'),
+                  onPressed: _busy
+                      ? null
+                      : () async {
+                          final saved = await Navigator.push<bool>(
+                            context,
+                            MaterialPageRoute(builder: (_) => PavtiEditScreen(paymentId: '${r['payment']}')),
+                          );
+                          if (saved == true) await reload();
+                        },
+                  icon: const Icon(Icons.edit_outlined),
+                  label: Padding(padding: const EdgeInsets.all(12), child: Text(t('edit_pavti'))),
+                ),
+                const SizedBox(height: 8),
+              ],
               if (!widget.portal && app.can('receipts.share') && r['status'] == 'issued')
                 FilledButton.icon(
                   key: const Key('receipt-whatsapp'),

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../api/api_client.dart';
@@ -6,7 +8,8 @@ import '../widgets/common.dart';
 import '../widgets/list_tools.dart';
 import 'receipt_screen.dart';
 
-/// Receipts in the current event (collectors see only their own; the API filters).
+/// Receipts in the current event (collectors see only their own; the API filters). Search finds a pavti by
+/// its number, the contributor's name or mobile.
 class ReceiptsScreen extends StatefulWidget {
   const ReceiptsScreen({super.key});
 
@@ -16,12 +19,48 @@ class ReceiptsScreen extends StatefulWidget {
 
 class _ReceiptsScreenState extends State<ReceiptsScreen> {
   ListQuery _query = const ListQuery(ordering: '-issued_at');
+  final _search = TextEditingController();
+  Timer? _debounce;
+  String _term = '';
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _search.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final app = AppScope.of(context);
     return Column(
       children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+          child: TextField(
+            key: const Key('receipts-search'),
+            controller: _search,
+            textInputAction: TextInputAction.search,
+            decoration: InputDecoration(
+              prefixIcon: const Icon(Icons.search),
+              hintText: app.t('search_receipts'),
+              border: const OutlineInputBorder(),
+              isDense: true,
+            ),
+            onChanged: (text) {
+              _debounce?.cancel();
+              _debounce = Timer(const Duration(milliseconds: 350), () {
+                // A typed mobile number like "98678 50909" is stored without spaces.
+                final term = text.trim();
+                if (mounted) {
+                  setState(
+                    () => _term = RegExp(r'^[+\d\s-]+$').hasMatch(term) ? term.replaceAll(RegExp(r'[\s-]'), '') : term,
+                  );
+                }
+              });
+            },
+          ),
+        ),
         ListToolsBar(
           value: _query,
           onChanged: (q) => setState(() => _query = q),
@@ -34,9 +73,12 @@ class _ReceiptsScreenState extends State<ReceiptsScreen> {
         ),
         Expanded(
           child: AsyncView<List<Map<String, dynamic>>>(
-            reloadKey: '${app.eventId}-${_query.key}',
+            reloadKey: '${app.eventId}-${_query.key}-$_term',
             load: () async => resultsOf(
-              await app.api.get('/receipts/', query: {'event': app.eventId, ..._query.query, 'page_size': '100'}),
+              await app.api.get(
+                '/receipts/',
+                query: {'event': app.eventId, 'search': _term, ..._query.query, 'page_size': '100'},
+              ),
             ),
             builder: (context, items, reload) => items.isEmpty
                 ? EmptyState(icon: Icons.receipt_long, text: app.t('no_receipts'))
