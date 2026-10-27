@@ -4,6 +4,7 @@ from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
 from apps.core.fields import TenantPrimaryKeyRelatedField
+from apps.core.serializers import CreatedByMixin
 from apps.organizations.models import FinancialYear
 from apps.people.models import Person
 
@@ -17,7 +18,7 @@ def suggest_code(name: str) -> str:
     return code or "EV"
 
 
-class EventSerializer(serializers.ModelSerializer):
+class EventSerializer(CreatedByMixin, serializers.ModelSerializer):
     financial_year = TenantPrimaryKeyRelatedField(queryset=FinancialYear.objects.all())
     financial_year_label = serializers.CharField(source="financial_year.label", read_only=True)
     code = serializers.CharField(max_length=12, required=False, allow_blank=True)
@@ -39,9 +40,10 @@ class EventSerializer(serializers.ModelSerializer):
             "description",
             "thank_you_message",
             "created_at",
+            "created_by_name",
             "updated_at",
         ]
-        read_only_fields = ["id", "status", "financial_year_label", "created_at", "updated_at"]
+        read_only_fields = ["id", "status", "financial_year_label", "created_at", "created_by_name", "updated_at"]
 
     def validate_name(self, value):
         value = " ".join(value.split())

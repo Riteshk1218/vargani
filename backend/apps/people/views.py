@@ -10,6 +10,7 @@ from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.response import Response
 
 from apps.audit import services as audit
+from apps.core.dates import OrgDayFilter
 from apps.core.downloads import Col, ListDownloadMixin
 from apps.core.phone import normalize_mobile
 from apps.core.tenancy import SCOPE_ALL, SCOPE_SELF
@@ -24,6 +25,8 @@ from .serializers import PersonSerializer
 class PersonFilter(django_filters.FilterSet):
     person_type = django_filters.ChoiceFilter(choices=PersonType.choices, method="filter_person_type")
     is_active = django_filters.BooleanFilter()
+    date_from = OrgDayFilter(field_name="created_at")
+    date_to = OrgDayFilter(field_name="created_at", end=True)
 
     class Meta:
         model = Person
@@ -49,6 +52,8 @@ class PersonViewSet(ListDownloadMixin, TenantModelViewSet):
         Col("area", gettext_noop("Area")),
         Col("city", gettext_noop("City")),
         Col("is_active", gettext_noop("Active"), "bool"),
+        Col("created_at", gettext_noop("Created at"), "datetime"),
+        Col("created_by_name", gettext_noop("Created by")),
     ]
     serializer_class = PersonSerializer
     filterset_class = PersonFilter
@@ -66,7 +71,7 @@ class PersonViewSet(ListDownloadMixin, TenantModelViewSet):
     }
 
     def get_base_queryset(self):
-        return Person.objects.for_org(self.organization).alive()
+        return Person.objects.for_org(self.organization).alive().select_related("created_by")
 
     def scope_queryset(self, queryset):
         queryset = self._filter_assigned(queryset)

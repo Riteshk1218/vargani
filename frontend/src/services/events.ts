@@ -6,7 +6,7 @@ export type EventInput = Partial<
 >
 
 export const eventService = {
-  list: (params: { financial_year?: string; status?: string; search?: string; page?: number; page_size?: number }) =>
+  list: (params: { financial_year?: string; status?: string; search?: string; page?: number; page_size?: number; ordering?: string; date_from?: string; date_to?: string }) =>
     api.get<Paginated<EventItem>>('/events/', { params }).then((r) => r.data),
   get: (id: string) => api.get<EventItem>(`/events/${id}/`).then((r) => r.data),
   create: (input: EventInput) => api.post<EventItem>('/events/', input).then((r) => r.data),

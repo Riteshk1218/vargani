@@ -2,7 +2,7 @@ from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
 from apps.core.fields import TenantPrimaryKeyRelatedField
-from apps.core.serializers import ImmutableFieldsMixin
+from apps.core.serializers import CreatedByMixin, ImmutableFieldsMixin
 from apps.events.models import Event
 from apps.funds.models import Fund
 from apps.organizations.models import OrganizationMembership
@@ -79,7 +79,7 @@ class ContributionTypeSerializer(ImmutableFieldsMixin, serializers.ModelSerializ
         return attrs
 
 
-class ContributionSerializer(serializers.ModelSerializer):
+class ContributionSerializer(CreatedByMixin, serializers.ModelSerializer):
     person_name = serializers.CharField(source="payment.payer_name", read_only=True)
     contribution_type_name = serializers.CharField(source="contribution_type.name", read_only=True)
     fund_name = serializers.CharField(source="fund.name", read_only=True, default=None)
@@ -106,6 +106,7 @@ class ContributionSerializer(serializers.ModelSerializer):
             "collector_name",
             "notes",
             "created_at",
+            "created_by_name",
         ]
         read_only_fields = fields
 
@@ -150,7 +151,7 @@ class AssignInputSerializer(serializers.Serializer):
         return value
 
 
-class DueSerializer(serializers.ModelSerializer):
+class DueSerializer(CreatedByMixin, serializers.ModelSerializer):
     person_name = serializers.CharField(source="person.full_name", read_only=True)
     person_mobile = serializers.CharField(source="person.mobile", read_only=True)
     contribution_type_name = serializers.CharField(source="contribution_type.name", read_only=True)
@@ -179,6 +180,7 @@ class DueSerializer(serializers.ModelSerializer):
             "receipt_number",
             "collector_name",
             "created_at",
+            "created_by_name",
         ]
         read_only_fields = fields
 

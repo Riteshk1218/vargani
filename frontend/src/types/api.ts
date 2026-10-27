@@ -163,6 +163,7 @@ export interface EventItem {
   description: string
   thank_you_message: string
   created_at: string
+  created_by_name?: string | null
   updated_at: string
 }
 
@@ -206,6 +207,7 @@ export interface Person {
   linked_user: string | null
   linked_user_name: string | null
   created_at: string
+  created_by_name?: string | null
   updated_at: string
 }
 
@@ -272,7 +274,9 @@ export interface DashboardSummary {
   financial: FinancialSummary | null
   event?: { id: string; name: string; status: EventStatus; target_amount: string | null; participants: number | null }
   /** Pavtis still owing money (door-to-door follow-up), for roles that see payments. */
-  follow_ups?: { overdue: number; due_today: number; owing: number; balance: string }
+  follow_ups?: { overdue: number; due_today: number; owing: number; balance: string; paid?: number }
+  /** The days the money and pavti numbers cover, when a date range was asked for. */
+  dates?: { from: string | null; to: string | null }
 }
 
 export interface Fund {
@@ -361,6 +365,7 @@ export interface Payment {
   /** The organization's own dropdowns answered on this collection. */
   custom_fields: { key: string; label: string; value: string }[]
   created_at: string
+  created_by_name?: string | null
 }
 
 export type PavtiStatus = 'unpaid' | 'partly_paid' | 'paid'
@@ -424,6 +429,7 @@ export interface Due {
   receipt_number: string | null
   collector_name: string | null
   created_at: string
+  created_by_name?: string | null
 }
 
 /** Organization Admin edit: send only what changes; `lines` replaces every line. */
@@ -449,6 +455,7 @@ export interface Contribution {
   collector_name: string | null
   notes: string
   created_at: string
+  created_by_name?: string | null
 }
 
 export interface ReceiptSnapshot {
@@ -505,6 +512,8 @@ export interface Receipt {
   pending_void_request: { id: string; reason: string } | null
   snapshot: ReceiptSnapshot
   logo_url: string | null
+  created_at?: string
+  created_by_name?: string | null
 }
 
 export interface PublicReceipt {

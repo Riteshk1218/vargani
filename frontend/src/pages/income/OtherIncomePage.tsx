@@ -19,6 +19,7 @@ import type { IncomeSource, OtherIncome, OtherIncomeInput, PaymentMode } from '.
 import { formatDate, formatMoney, todayIso } from '../../utils/format'
 import { INCOME_SOURCES, MANUAL_MODES } from '../../utils/payments'
 import { DownloadMenu } from '../../components/DownloadMenu'
+import { CreatedMeta, ListTools, useListTools } from '../../components/ListTools'
 
 /** Income that does not come from a person: donation box (hundi), sponsorship, bank interest, sales. */
 export function OtherIncomePage() {
@@ -30,6 +31,7 @@ export function OtherIncomePage() {
   const isAdmin = can('records.admin_edit')
   const [source, setSource] = useState('')
   const [page, setPage] = useState(1)
+  const tools = useListTools('-received_on', () => setPage(1))
   const [adding, setAdding] = useState<OtherIncome | true | false>(false)
   const remove = useMutation({
     mutationFn: (id: string) => otherIncomeService.remove(id),
@@ -40,8 +42,8 @@ export function OtherIncomePage() {
   const eventId = activeEvent?.id
   const currency = detail?.organization.currency
   const income = useQuery({
-    queryKey: ['org', activeOrgId, 'other-income', eventId, source, page],
-    queryFn: () => otherIncomeService.list({ event: eventId, source: source || undefined, page }),
+    queryKey: ['org', activeOrgId, 'other-income', eventId, source, tools.query, page],
+    queryFn: () => otherIncomeService.list({ event: eventId, source: source || undefined, ...tools.query, page }),
     enabled: Boolean(eventId),
   })
 
@@ -52,7 +54,7 @@ export function OtherIncomePage() {
         description={activeEvent ? `${activeEvent.name} · ${t('income.subtitle')}` : t('income.subtitle')}
         actions={
           <>
-            <DownloadMenu path="/other-income/" params={{ event: eventId, source }} />
+            <DownloadMenu path="/other-income/" params={{ event: eventId, source, ...tools.query }} />
             {eventId && (
               <Button icon={<Plus className="size-4" />} onClick={() => setAdding(true)}>
                 {t('income.add')}
@@ -76,12 +78,20 @@ export function OtherIncomePage() {
                 ))}
               </SelectInput>
             </div>
+            <ListTools
+              tools={tools}
+              sortOptions={[
+                { field: 'received_on', label: t('common.date') },
+                { field: 'created_at', label: t('list.createdAt') },
+                { field: 'amount', label: t('common.amount') },
+              ]}
+            />
             {income.isLoading ? (
               <SkeletonRows />
             ) : income.isError ? (
               <ErrorState onRetry={() => void income.refetch()} />
             ) : income.data!.count === 0 ? (
-              <EmptyState icon={<PiggyBank className="size-6" />} title={t('income.empty')} message={t('income.emptyMessage')} />
+              <EmptyState icon={<PiggyBank className="size-6" />} title={source || tools.filtered ? t('people.noMatches') : t('income.empty')} message={source || tools.filtered ? undefined : t('income.emptyMessage')} />
             ) : (
               <>
                 <ul className="divide-y divide-slate-100">
@@ -97,6 +107,7 @@ export function OtherIncomePage() {
                           {i.fund_name && ` · ${i.fund_name}`}
                           {i.status === 'void' && ` · ${t('expenses.voidBecause', { reason: i.void_reason })}`}
                         </p>
+                        <CreatedMeta at={i.created_at} by={i.created_by_name} />
                       </div>
                       <div className="flex shrink-0 items-center gap-3">
                         <div className="text-right">

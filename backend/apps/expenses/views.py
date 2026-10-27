@@ -74,11 +74,13 @@ class ExpenseViewSet(ListDownloadMixin, TenantModelViewSet):
         Col("status", gettext_noop("Status"), "status"),
         Col("decided_by_name", gettext_noop("Approved by")),
         Col("amount", gettext_noop("Amount"), "money"),
+        Col("created_at", gettext_noop("Created at"), "datetime"),
+        Col("created_by_name", gettext_noop("Created by")),
     ]
     serializer_class = ExpenseSerializer
     filterset_class = ExpenseFilter
     search_fields = ["payee", "description", "reference_number", "category__name"]
-    ordering_fields = ["expense_date", "amount", "created_at"]
+    ordering_fields = ["expense_date", "amount", "created_at", "payee"]
     parser_classes = [JSONParser, MultiPartParser, FormParser]
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
     required_permissions = {
@@ -241,6 +243,8 @@ class OtherIncomeViewSet(ListDownloadMixin, TenantModelViewSet):
         Col("reference_number", gettext_noop("Reference")),
         Col("status", gettext_noop("Status"), "status"),
         Col("amount", gettext_noop("Amount"), "money"),
+        Col("created_at", gettext_noop("Created at"), "datetime"),
+        Col("created_by_name", gettext_noop("Created by")),
     ]
     serializer_class = OtherIncomeSerializer
     filterset_class = OtherIncomeFilter

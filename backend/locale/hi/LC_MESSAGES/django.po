@@ -1391,6 +1391,18 @@ msgstr ""
 msgid "English"
 msgstr "English"
 
+msgid "Created at"
+msgstr "बनाने का समय"
+
+msgid "Created by"
+msgstr "बनाने वाले"
+
+msgid "Enter a valid date."
+msgstr "सही तारीख डालें।"
+
+msgid "The end date cannot be before the start date."
+msgstr "अंतिम तारीख शुरुआती तारीख से पहले नहीं हो सकती।"
+
 #~ msgid "Enter who was paid."
 #~ msgstr "किसे भुगतान किया, वह लिखें।"
 

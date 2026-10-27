@@ -8,6 +8,7 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 
 from apps.contributions import assignments
+from apps.core.dates import OrgDayFilter
 from apps.core.downloads import Col, ListDownloadMixin
 from apps.core.scoping import scope_money
 from apps.core.tenancy import SCOPE_ALL
@@ -28,8 +29,8 @@ from .serializers import (
 
 
 class PaymentFilter(django_filters.FilterSet):
-    date_from = django_filters.DateFilter(field_name="paid_at", lookup_expr="date__gte")
-    date_to = django_filters.DateFilter(field_name="paid_at", lookup_expr="date__lte")
+    date_from = OrgDayFilter(field_name="paid_at")
+    date_to = OrgDayFilter(field_name="paid_at", end=True)
     pavti = django_filters.ChoiceFilter(
         method="filter_pavti",
         choices=[(v, v) for v in ("unpaid", "partly_paid", "owing", "paid")],
@@ -77,11 +78,13 @@ class PaymentViewSet(ListDownloadMixin, TenantModelViewSet):
         Col("amount", gettext_noop("Amount"), "money"),
         Col("balance_due", gettext_noop("Still owed"), "money"),
         Col("follow_up_on", gettext_noop("Follow-up date"), "date"),
+        Col("created_at", gettext_noop("Created at"), "datetime"),
+        Col("created_by_name", gettext_noop("Created by")),
     ]
     serializer_class = PaymentSerializer
     filterset_class = PaymentFilter
     search_fields = ["payer__full_name", "payer__mobile", "reference_number", "receipts__receipt_number"]
-    ordering_fields = ["paid_at", "amount", "created_at", "follow_up_on", "balance_due"]
+    ordering_fields = ["paid_at", "amount", "created_at", "follow_up_on", "balance_due", "payer__full_name"]
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
     required_permissions = {
         "list": "payments.view",
@@ -110,7 +113,7 @@ class PaymentViewSet(ListDownloadMixin, TenantModelViewSet):
     def get_base_queryset(self):
         return followups.with_pavti_balance(
             Payment.objects.for_org(self.organization)
-            .select_related("event", "payer", "collector__user", "organization")
+            .select_related("event", "payer", "collector__user", "organization", "created_by")
             .prefetch_related("lines__contribution_type", "lines__fund", "receipts")
             .distinct()
         )

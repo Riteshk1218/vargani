@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { CalendarClock, HandCoins, Pencil, ReceiptText, Search, Trash2 } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Button } from '../../components/ui/Button'
@@ -21,6 +21,7 @@ import { FOLLOW_UP_TONE, MANUAL_MODES, PAVTI_TONE, PAYMENT_TONE } from '../../ut
 import { PaymentEditModal } from './PaymentEditModal'
 import { PavtiVisitModal } from './PavtiVisitModal'
 import { DownloadMenu } from '../../components/DownloadMenu'
+import { CreatedMeta, ListTools, useListTools } from '../../components/ListTools'
 
 
 const STATUSES: PaymentStatus[] = ['successful', 'pending', 'failed', 'cancelled', 'deleted']
@@ -53,11 +54,12 @@ export function PaymentsPage() {
   const { t } = useTranslation()
   const { activeOrgId, detail, can } = useOrg()
   const { activeEvent } = useEvents()
-  const [search, setSearch] = useState('')
-  const [status, setStatus] = useState('')
-  const [mode, setMode] = useState('')
-  // ?follow_up=overdue (from the dashboard) or ?pavti=unpaid open the list already filtered.
+  // ?follow_up=overdue, ?pavti=unpaid, ?status=, ?mode= and ?date_from=&date_to= (from the dashboard) open the
+  // list already filtered; ?open=<id> opens that payment.
   const [params, setParams] = useSearchParams()
+  const [search, setSearch] = useState('')
+  const [status, setStatus] = useState(params.get('status') ?? '')
+  const [mode, setMode] = useState(params.get('mode') ?? '')
   const followUp = params.get('follow_up') ?? ''
   const pavti = params.get('pavti') ?? ''
   const pavtiFilter = followUp || pavti
@@ -71,11 +73,20 @@ export function PaymentsPage() {
     setPage(1)
   }
   const [page, setPage] = useState(1)
+  const tools = useListTools(followUp ? 'follow_up_on' : '-paid_at', () => setPage(1))
   const [selected, setSelected] = useState<Payment | null>(null)
+  const openId = params.get('open')
+  useEffect(() => {
+    if (!openId) return
+    void paymentService.get(openId).then(setSelected, () => undefined)
+    const next = new URLSearchParams(params)
+    next.delete('open')
+    setParams(next, { replace: true })
+  }, [openId])
   const debounced = useDebounced(search)
   const eventId = activeEvent?.id
   const payments = useQuery({
-    queryKey: ['org', activeOrgId, 'payments', 'list', eventId, debounced, status, mode, followUp, pavti, page],
+    queryKey: ['org', activeOrgId, 'payments', 'list', eventId, debounced, status, mode, followUp, pavti, tools.query, page],
     queryFn: () =>
       paymentService.list({
         event: eventId,
@@ -84,13 +95,13 @@ export function PaymentsPage() {
         mode: mode || undefined,
         follow_up: followUp || undefined,
         pavti: pavti || undefined,
-        ordering: followUp ? 'follow_up_on' : undefined,
+        ...tools.query,
         page,
       }),
     enabled: Boolean(eventId),
   })
   const currency = detail?.organization.currency
-  const filtered = Boolean(debounced || status || mode || pavtiFilter)
+  const filtered = Boolean(debounced || status || mode || pavtiFilter || tools.filtered)
 
   return (
     <div>
@@ -99,7 +110,7 @@ export function PaymentsPage() {
         description={activeEvent ? `${activeEvent.name} · ${t('payments.subtitle')}` : t('payments.subtitle')}
         actions={
           <>
-            <DownloadMenu path="/payments/" params={{ event: eventId, search: debounced, status, mode, follow_up: followUp, pavti }} />
+            <DownloadMenu path="/payments/" params={{ event: eventId, search: debounced, status, mode, follow_up: followUp, pavti, ...tools.query }} />
             {can('payments.create') && (
               <Link to="/app/collect">
                 <Button icon={<HandCoins className="size-4" />}>{t('collect.title')}</Button>
@@ -148,6 +159,18 @@ export function PaymentsPage() {
                 ))}
               </SelectInput>
             </div>
+            <ListTools
+              tools={tools}
+              dateLabel={t('payments.dateTime')}
+              sortOptions={[
+                { field: 'paid_at', label: t('payments.dateTime') },
+                { field: 'created_at', label: t('list.createdAt') },
+                { field: 'amount', label: t('common.amount') },
+                { field: 'payer__full_name', label: t('people.fullName') },
+                { field: 'balance_due', label: t('balances.stillOwed') },
+                { field: 'follow_up_on', label: t('pavti.followUpDate') },
+              ]}
+            />
             {payments.isLoading ? (
               <SkeletonRows />
             ) : payments.isError ? (
@@ -166,6 +189,7 @@ export function PaymentsPage() {
                             {formatStamp(p.paid_at)} · {t(`mode.${p.mode}`)}
                             {p.receipt && ` · ${p.receipt.receipt_number}`}
                           </p>
+                          <CreatedMeta at={p.created_at} by={p.created_by_name} />
                         </div>
                         <div className="shrink-0 text-right">
                           <p className="font-semibold tabular-nums">{formatMoney(p.amount, currency)}</p>
@@ -315,6 +339,14 @@ function PaymentDetailModal({ payment, onClose, onChanged }: { payment: Payment 
             )}
             <dt className="text-slate-500">{t('receipts.number')}</dt>
             <dd className="font-mono">{payment.receipt?.receipt_number ?? t('payments.noReceipt')}</dd>
+            <dt className="text-slate-500">{t('list.createdAt')}</dt>
+            <dd>{formatStamp(payment.created_at)}</dd>
+            {payment.created_by_name && (
+              <>
+                <dt className="text-slate-500">{t('list.createdBy')}</dt>
+                <dd>{payment.created_by_name}</dd>
+              </>
+            )}
             {payment.notes && (
               <>
                 <dt className="text-slate-500">{t('common.notes')}</dt>

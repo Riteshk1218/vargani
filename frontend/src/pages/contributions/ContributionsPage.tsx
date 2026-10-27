@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { HandCoins, Search, Users, Wallet } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { Button } from '../../components/ui/Button'
 import { ConfirmDialog } from '../../components/ui/Modal'
 import { useToast } from '../../components/ui/Toast'
@@ -17,9 +17,10 @@ import { useOrg } from '../../context/OrgContext'
 import { useDebounced } from '../../hooks/useDebounced'
 import { contributionService, contributionTypeService, dueService } from '../../services/finance'
 import type { Due } from '../../types/api'
-import { formatDate, formatMobile, formatMoney, formatMonth } from '../../utils/format'
+import { formatDate, formatMobile, formatMoney, formatMonth, formatStamp } from '../../utils/format'
 import { cn } from '../../utils/cn'
 import { DownloadMenu } from '../../components/DownloadMenu'
+import { CreatedMeta, ListTools, useListTools } from '../../components/ListTools'
 import { RemindButton } from './RemindButton'
 
 type Tab = 'list' | 'balances' | 'dues'
@@ -29,6 +30,12 @@ export function ContributionsPage() {
   const { activeEvent } = useEvents()
   const { scope } = useOrg()
   const [tab, setTab] = useState<Tab>('list')
+  const [, setParams] = useSearchParams()
+  // Each tab has its own sort fields and dates, so a new tab starts from its defaults.
+  const openTab = (value: Tab) => {
+    setTab(value)
+    setParams({}, { replace: true })
+  }
 
   if (!activeEvent) {
     return (
@@ -53,7 +60,7 @@ export function ContributionsPage() {
               key={value}
               role="tab"
               aria-selected={tab === value}
-              onClick={() => setTab(value)}
+              onClick={() => openTab(value)}
               className={cn('-mb-px border-b-2 px-3 py-2 text-sm font-medium', tab === value ? 'border-brand-700 text-brand-800' : 'border-transparent text-slate-500 hover:text-slate-800')}
             >
               {t(`contributions.tab.${value}`)}
@@ -103,11 +110,12 @@ function ContributionList({ eventId }: { eventId: string }) {
   const [search, setSearch] = useState('')
   const [type, setType] = useState('')
   const [page, setPage] = useState(1)
+  const tools = useListTools('-contributed_on', () => setPage(1))
   const debounced = useDebounced(search)
   const types = useQuery({ queryKey: ['org', activeOrgId, 'contribution-types', eventId], queryFn: () => contributionTypeService.list(eventId) })
   const rows = useQuery({
-    queryKey: ['org', activeOrgId, 'contributions', 'list', eventId, debounced, type, page],
-    queryFn: () => contributionService.list({ event: eventId, search: debounced || undefined, contribution_type: type || undefined, page }),
+    queryKey: ['org', activeOrgId, 'contributions', 'list', eventId, debounced, type, tools.query, page],
+    queryFn: () => contributionService.list({ event: eventId, search: debounced || undefined, contribution_type: type || undefined, ...tools.query, page }),
   })
   const currency = detail?.organization.currency
   return (
@@ -125,8 +133,18 @@ function ContributionList({ eventId }: { eventId: string }) {
             </option>
           ))}
         </SelectInput>
-        <DownloadMenu path="/contributions/" params={{ event: eventId, search: debounced, contribution_type: type }} />
+        <DownloadMenu path="/contributions/" params={{ event: eventId, search: debounced, contribution_type: type, ...tools.query }} />
       </div>
+      <ListTools
+        tools={tools}
+        sortOptions={[
+          { field: 'contributed_on', label: t('common.date') },
+          { field: 'created_at', label: t('list.createdAt') },
+          { field: 'amount', label: t('common.amount') },
+          { field: 'person__full_name', label: t('collect.person') },
+          { field: 'period_month', label: t('list.forMonth') },
+        ]}
+      />
       {rows.isLoading ? (
         <SkeletonRows />
       ) : rows.isError ? (
@@ -142,6 +160,8 @@ function ContributionList({ eventId }: { eventId: string }) {
                   <th className="px-4 py-2 font-medium">{t('collect.person')}</th>
                   <th className="hidden px-4 py-2 font-medium sm:table-cell">{t('collect.type')}</th>
                   <th className="hidden px-4 py-2 font-medium md:table-cell">{t('common.date')}</th>
+                  <th className="hidden px-4 py-2 font-medium lg:table-cell">{t('list.createdAt')}</th>
+                  <th className="hidden px-4 py-2 font-medium lg:table-cell">{t('list.createdBy')}</th>
                   <th className="px-4 py-2 text-right font-medium">{t('common.amount')}</th>
                 </tr>
               </thead>
@@ -154,12 +174,15 @@ function ContributionList({ eventId }: { eventId: string }) {
                         {c.contribution_type_name}
                         {c.period_month && ` · ${formatMonth(c.period_month)}`}
                       </p>
+                      <CreatedMeta at={c.created_at} by={c.created_by_name} className="text-xs text-slate-500 lg:hidden" />
                     </td>
                     <td className="hidden px-4 py-3 sm:table-cell">
                       {c.contribution_type_name}
                       {c.period_month && <span className="text-slate-500"> · {formatMonth(c.period_month)}</span>}
                     </td>
                     <td className="hidden px-4 py-3 text-slate-600 md:table-cell">{formatDate(c.contributed_on)}</td>
+                    <td className="hidden whitespace-nowrap px-4 py-3 text-slate-600 lg:table-cell">{formatStamp(c.created_at)}</td>
+                    <td className="hidden px-4 py-3 text-slate-600 lg:table-cell">{c.created_by_name ?? '—'}</td>
                     <td className="px-4 py-3 text-right">
                       <span className="tabular-nums">{formatMoney(c.amount, currency)}</span>
                       {c.status !== 'confirmed' && (
@@ -278,8 +301,9 @@ function Balances({ eventId }: { eventId: string }) {
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [writeOff, setWriteOff] = useState<Due | null>(null)
+  const tools = useListTools('-created_at', () => setPage(1))
   const debounced = useDebounced(search)
-  const params = { event: eventId, open: true, search: debounced || undefined, page }
+  const params = { event: eventId, open: true, search: debounced || undefined, ...tools.query, page }
   const dues = useQuery({ queryKey: ['org', activeOrgId, 'dues', 'list', params], queryFn: () => dueService.list(params) })
   const cancel = useMutation({
     mutationFn: (due: Due) => dueService.cancel(due.id, t('balances.writtenOffReason')),
@@ -298,8 +322,17 @@ function Balances({ eventId }: { eventId: string }) {
           <TextInput label={t('common.search')} value={search} onChange={(e) => { setSearch(e.target.value); setPage(1) }} placeholder={t('collect.searchPerson')} />
           <Search className="pointer-events-none absolute right-3 top-9 size-4 text-slate-400" aria-hidden />
         </div>
-        <DownloadMenu path="/dues/" params={{ event: eventId, open: true, search: debounced || undefined }} />
+        <DownloadMenu path="/dues/" params={{ event: eventId, open: true, search: debounced || undefined, ...tools.query }} />
       </div>
+      <ListTools
+        tools={tools}
+        sortOptions={[
+          { field: 'created_at', label: t('list.createdAt') },
+          { field: 'remaining', label: t('balances.stillOwed') },
+          { field: 'amount', label: t('balances.balance') },
+          { field: 'person__full_name', label: t('collect.person') },
+        ]}
+      />
       {dues.isLoading ? (
         <SkeletonRows />
       ) : dues.isError ? (
@@ -323,7 +356,8 @@ function Balances({ eventId }: { eventId: string }) {
                 <tr key={due.id}>
                   <td className="px-4 py-3">
                     <p className="font-medium">{due.person_name}</p>
-                    <p className="text-xs text-slate-500">{[formatMobile(due.person_mobile), due.receipt_number, formatDate(due.created_at)].filter(Boolean).join(' · ')}</p>
+                    <p className="text-xs text-slate-500">{[formatMobile(due.person_mobile), due.receipt_number].filter(Boolean).join(' · ')}</p>
+                    <CreatedMeta at={due.created_at} by={due.created_by_name} />
                   </td>
                   <td className="hidden px-4 py-3 sm:table-cell">
                     {due.contribution_type_name}

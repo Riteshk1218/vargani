@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Check, Download, FileText, Paperclip, Pencil, Plus, Receipt, Send, Tags, Trash2, X } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useSearchParams } from 'react-router-dom'
 import { Button } from '../../components/ui/Button'
 import { Badge, Card, PageHeader } from '../../components/ui/Card'
 import { SelectInput, TextArea, TextInput } from '../../components/ui/Field'
@@ -19,14 +20,18 @@ import type { Expense, ExpenseInput, PaymentMode } from '../../types/api'
 import { formatBytes, formatDate, formatDateTime, formatMoney, formatStamp, todayIso } from '../../utils/format'
 import { EXPENSE_STATUSES, EXPENSE_TONE, MANUAL_MODES } from '../../utils/payments'
 import { DownloadMenu } from '../../components/DownloadMenu'
+import { CreatedMeta, ListTools, useListTools } from '../../components/ListTools'
 
 export function ExpensesPage() {
   const { t } = useTranslation()
   const { activeOrgId, detail, can } = useOrg()
   const { activeEvent } = useEvents()
-  const [status, setStatus] = useState('')
-  const [category, setCategory] = useState('')
+  // ?status=approved&category=…&date_from=… (from the dashboard) open the list already filtered.
+  const [params] = useSearchParams()
+  const [status, setStatus] = useState(params.get('status') ?? '')
+  const [category, setCategory] = useState(params.get('category') ?? '')
   const [page, setPage] = useState(1)
+  const tools = useListTools('-expense_date', () => setPage(1))
   const [editing, setEditing] = useState<Expense | 'new' | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [managingCategories, setManagingCategories] = useState(false)
@@ -34,8 +39,8 @@ export function ExpensesPage() {
   const currency = detail?.organization.currency
   const categories = useQuery({ queryKey: ['org', activeOrgId, 'expense-categories'], queryFn: expenseCategoryService.list })
   const expenses = useQuery({
-    queryKey: ['org', activeOrgId, 'expenses', eventId, status, category, page],
-    queryFn: () => expenseService.list({ event: eventId, status: status || undefined, category: category || undefined, page }),
+    queryKey: ['org', activeOrgId, 'expenses', eventId, status, category, tools.query, page],
+    queryFn: () => expenseService.list({ event: eventId, status: status || undefined, category: category || undefined, ...tools.query, page }),
     enabled: Boolean(eventId),
   })
 
@@ -46,7 +51,7 @@ export function ExpensesPage() {
         description={activeEvent ? `${activeEvent.name} · ${t('expenses.subtitle')}` : t('expenses.subtitle')}
         actions={
           <>
-            <DownloadMenu path="/expenses/" params={{ event: eventId, status, category }} />
+            <DownloadMenu path="/expenses/" params={{ event: eventId, status, category, ...tools.query }} />
             {can('expenses.approve') && (
               <Button variant="secondary" icon={<Tags className="size-4" />} onClick={() => setManagingCategories(true)}>
                 {t('expenses.categories')}
@@ -83,6 +88,15 @@ export function ExpensesPage() {
                 ))}
               </SelectInput>
             </div>
+            <ListTools
+              tools={tools}
+              sortOptions={[
+                { field: 'expense_date', label: t('common.date') },
+                { field: 'created_at', label: t('list.createdAt') },
+                { field: 'amount', label: t('common.amount') },
+                { field: 'payee', label: t('list.paidTo') },
+              ]}
+            />
             {expenses.isLoading ? (
               <SkeletonRows />
             ) : expenses.isError ? (
@@ -90,8 +104,8 @@ export function ExpensesPage() {
             ) : expenses.data!.count === 0 ? (
               <EmptyState
                 icon={<Receipt className="size-6" />}
-                title={status || category ? t('people.noMatches') : t('expenses.empty')}
-                message={status || category ? undefined : t('expenses.emptyMessage')}
+                title={status || category || tools.filtered ? t('people.noMatches') : t('expenses.empty')}
+                message={status || category || tools.filtered ? undefined : t('expenses.emptyMessage')}
               />
             ) : (
               <>
@@ -106,8 +120,8 @@ export function ExpensesPage() {
                           </p>
                           <p className="truncate text-slate-500">
                             {expenseWhen(e)} · {e.category_name} · {t(`mode.${e.mode}`)}
-                            {e.created_by_name && ` · ${e.created_by_name}`}
                           </p>
+                          <CreatedMeta at={e.created_at} by={e.created_by_name} />
                         </div>
                         <div className="shrink-0 text-right">
                           <p className={e.status === 'void' ? 'font-semibold tabular-nums text-slate-400 line-through' : 'font-semibold tabular-nums'}>

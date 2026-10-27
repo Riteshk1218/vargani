@@ -11,6 +11,7 @@ from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
+from apps.core.dates import OrgDayFilter
 from apps.core.downloads import Col, ListDownloadMixin
 from apps.core.scoping import scope_money
 from apps.core.tenancy import SCOPE_ALL
@@ -23,8 +24,8 @@ from .serializers import ReceiptSerializer, ReceiptVoidRequestSerializer
 
 
 class ReceiptFilter(django_filters.FilterSet):
-    date_from = django_filters.DateFilter(field_name="issued_at", lookup_expr="date__gte")
-    date_to = django_filters.DateFilter(field_name="issued_at", lookup_expr="date__lte")
+    date_from = OrgDayFilter(field_name="issued_at")
+    date_to = OrgDayFilter(field_name="issued_at", end=True)
 
     class Meta:
         model = Receipt
@@ -67,11 +68,12 @@ class ReceiptViewSet(ListDownloadMixin, TenantReadOnlyViewSet):
         Col("status", gettext_noop("Status"), "status"),
         Col("void_reason", gettext_noop("Void reason")),
         Col("amount", gettext_noop("Amount"), "money"),
+        Col("created_by_name", gettext_noop("Created by")),
     ]
     serializer_class = ReceiptSerializer
     filterset_class = ReceiptFilter
     search_fields = ["receipt_number", "payment__payer__full_name", "payment__payer__mobile"]
-    ordering_fields = ["issued_at", "sequence"]
+    ordering_fields = ["issued_at", "sequence", "created_at", "payment__amount", "payment__payer__full_name"]
     http_method_names = ["get", "post", "head", "options"]
     required_permissions = {
         "list": "receipts.view",
@@ -82,7 +84,9 @@ class ReceiptViewSet(ListDownloadMixin, TenantReadOnlyViewSet):
     }
 
     def get_base_queryset(self):
-        return Receipt.objects.for_org(self.organization).select_related("payment__payer", "replaces_receipt")
+        return Receipt.objects.for_org(self.organization).select_related(
+            "payment__payer", "replaces_receipt", "created_by"
+        )
 
     def scope_queryset(self, queryset):
         return scope_money(

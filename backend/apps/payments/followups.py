@@ -100,6 +100,7 @@ def counts(queryset, today: date) -> dict:
         balance=Sum("balance_due"),
     )
     data["balance"] = f"{(data['balance'] or Decimal('0')):.2f}"
+    data["paid"] = queryset.filter(status=Payment.Status.SUCCESSFUL, balance_due__lte=0).count()
     return data
 
 

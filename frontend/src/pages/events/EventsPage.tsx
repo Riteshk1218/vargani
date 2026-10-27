@@ -14,6 +14,7 @@ import { formatDate, formatMoney } from '../../utils/format'
 import type { EventItem, EventStatus } from '../../types/api'
 import { EventFormModal } from './EventFormModal'
 import { DownloadMenu } from '../../components/DownloadMenu'
+import { CreatedMeta, ListTools, useListTools } from '../../components/ListTools'
 
 export const STATUS_TONE: Record<EventStatus, 'green' | 'gray' | 'amber' | 'red'> = { active: 'green', draft: 'amber', closed: 'gray', archived: 'gray' }
 
@@ -23,16 +24,17 @@ export function EventsPage() {
   const [params, setParams] = useSearchParams()
   const [status, setStatus] = useState('')
   const [page, setPage] = useState(1)
+  const tools = useListTools('-start_date', () => setPage(1))
   const [editing, setEditing] = useState<EventItem | null>(null)
   const creating = params.get('new') === '1'
   const events = useQuery({
-    queryKey: ['org', activeOrgId, 'events', 'list', status, page],
-    queryFn: () => eventService.list({ status: status || undefined, page }),
+    queryKey: ['org', activeOrgId, 'events', 'list', status, tools.query, page],
+    queryFn: () => eventService.list({ status: status || undefined, ...tools.query, page }),
   })
   const canManage = can('events.manage')
   const closeForm = () => {
     setEditing(null)
-    if (creating) setParams({})
+    if (creating) setParams((prev) => (prev.delete('new'), prev))
   }
 
   return (
@@ -42,9 +44,9 @@ export function EventsPage() {
         description={t('events.subtitle')}
         actions={
           <>
-            <DownloadMenu path="/events/" params={{ status }} />
+            <DownloadMenu path="/events/" params={{ status, ...tools.query }} />
             {canManage && (
-              <Button icon={<CalendarPlus className="size-4" />} onClick={() => setParams({ new: '1' })}>
+              <Button icon={<CalendarPlus className="size-4" />} onClick={() => setParams((prev) => (prev.set('new', '1'), prev))}>
                 {t('events.create')}
               </Button>
             )}
@@ -62,6 +64,17 @@ export function EventsPage() {
             ))}
           </SelectInput>
         </div>
+        <ListTools
+          tools={tools}
+          dateLabel={t('list.addedOn')}
+          sortOptions={[
+            { field: 'start_date', label: t('list.startDate') },
+            { field: 'end_date', label: t('list.endDate') },
+            { field: 'name', label: t('list.name') },
+            { field: 'created_at', label: t('list.createdAt') },
+            { field: 'target_amount', label: t('events.target') },
+          ]}
+        />
         {events.isLoading ? (
           <SkeletonRows />
         ) : events.isError ? (
@@ -88,6 +101,7 @@ export function EventsPage() {
                       {event.start_date && ` · ${formatDate(event.start_date)}`}
                       {event.target_amount && ` · ${t('events.target')}: ${formatMoney(event.target_amount, detail?.organization.currency)}`}
                     </p>
+                    <CreatedMeta at={event.created_at} by={event.created_by_name} />
                   </Link>
                   {canManage && (
                     <Button variant="ghost" size="sm" icon={<Pencil className="size-4" />} onClick={() => setEditing(event)}>

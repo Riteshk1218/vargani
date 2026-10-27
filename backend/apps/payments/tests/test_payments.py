@@ -327,3 +327,43 @@ def test_funds_and_types_api(setup):
     archived = s.admin.patch(f"/api/v1/contribution-types/{s.monthly.pk}/", {"is_active": False}, format="json")
     assert archived.status_code == 200
     assert collect(s.admin, s, [month_line(s, "2027-05-01", "500")]).status_code == 400
+
+
+def test_dashboard_and_lists_for_one_day(setup):
+    """Picking 27 Oct shows only that day's money, by the mandal's (Indian) calendar day."""
+    s = setup
+    early = collect(s.admin, s, [month_line(s, "2027-04-01", "500")]).data
+    other = collect(s.admin, s, [month_line(s, "2027-05-01", "700")], mode="upi").data
+    # 00:30 in India on 27 Oct is still 26 Oct in UTC.
+    Payment.objects.filter(pk=early["id"]).update(paid_at=datetime(2026, 10, 27, 0, 30, tzinfo=IST))
+    Contribution.objects.filter(payment_id=early["id"]).update(contributed_on=date(2026, 10, 27))
+    Payment.objects.filter(pk=other["id"]).update(paid_at=datetime(2026, 10, 25, 12, 0, tzinfo=IST))
+    Contribution.objects.filter(payment_id=other["id"]).update(contributed_on=date(2026, 10, 25))
+
+    day = {"event": str(s.event.pk), "date_from": "2026-10-27", "date_to": "2026-10-27"}
+    data = s.admin.get("/api/v1/dashboard/summary/", day).data
+    assert data["dates"] == {"from": "2026-10-27", "to": "2026-10-27"}
+    assert data["financial"]["collected"] == "500.00" and data["financial"]["payments"] == 1
+    assert data["follow_ups"]["paid"] == 1
+    assert s.admin.get("/api/v1/dashboard/summary/", {"event": str(s.event.pk)}).data["financial"]["collected"] == (
+        "1200.00"
+    )
+
+    listed = s.admin.get("/api/v1/payments/", day).data
+    assert [p["id"] for p in listed["results"]] == [early["id"]]
+    assert listed["results"][0]["created_by_name"] == s.org.admin_user.full_name
+    assert listed["results"][0]["created_at"]
+
+    bad = s.admin.get("/api/v1/dashboard/summary/", {"date_from": "2026-10-28", "date_to": "2026-10-27"})
+    assert bad.status_code == 400
+
+
+def test_lists_sort_both_ways(setup):
+    s = setup
+    asha = Person.objects.create(organization=s.org, full_name="Asha Kale", created_by=s.org.admin_user)
+    names = [p["full_name"] for p in s.admin.get("/api/v1/people/", {"ordering": "full_name"}).data["results"]]
+    assert names == ["Asha Kale", "Ritesh Patil"]
+    names = [p["full_name"] for p in s.admin.get("/api/v1/people/", {"ordering": "-full_name"}).data["results"]]
+    assert names == ["Ritesh Patil", "Asha Kale"]
+    people = s.admin.get("/api/v1/people/", {"ordering": "-created_at"}).data["results"]
+    assert people[0]["id"] == str(asha.pk) and people[0]["created_by_name"] == s.org.admin_user.full_name
