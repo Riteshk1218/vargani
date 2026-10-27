@@ -1,5 +1,8 @@
 export type Language = 'en' | 'mr' | 'hi'
 
+/** The app's main color. */
+export type ThemeColor = 'orange' | 'red' | 'maroon' | 'pink' | 'purple' | 'indigo' | 'blue' | 'teal' | 'green'
+
 export interface Paginated<T> {
   count: number
   next: string | null
@@ -20,6 +23,8 @@ export interface User {
   email: string | null
   mobile: string | null
   preferred_language: Language
+  /** The user's own app color; empty uses the organization's color. */
+  theme_color: ThemeColor | ''
   email_verified_at: string | null
   mobile_verified_at: string | null
   is_platform_admin: boolean
@@ -102,6 +107,8 @@ export interface MyOrganizationDetail {
   permissions: Record<string, string>
   current_financial_year: FinancialYear | null
   member_portal_enabled: boolean
+  /** The organization's app color, the default for everyone in it. */
+  theme_color: ThemeColor
   form_studio: FormStudio
 }
 
@@ -142,6 +149,7 @@ export interface OrganizationSettings {
   require_expense_approval: boolean
   member_portal_enabled: boolean
   auto_reminders: boolean
+  theme_color: ThemeColor
 }
 
 export type EventTemplateCode = 'festival' | 'fundraising' | 'membership' | 'society' | 'custom'

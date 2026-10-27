@@ -237,3 +237,25 @@ def test_invitation_is_created_when_email_cannot_be_sent(client_for, make_org, m
     assert response.status_code == 201, response.data
     assert response.data["invite_url"] and response.data["email_sent"] is False
     assert Invitation.objects.filter(email="tanaji@example.com", status="pending").exists()
+
+
+def test_theme_color_org_default_and_per_user_choice(make_org, add_member, client_for):
+    org = make_org()
+    admin = org.created_by
+    collector = add_member(org, "collector")
+    detail = client_for(collector).get(f"/api/v1/me/organizations/{org.pk}/")
+    assert detail.data["theme_color"] == "orange"
+
+    # The admin sets the organization's color; everyone sees it unless they picked their own.
+    url = f"/api/v1/organizations/{org.pk}/settings/"
+    response = client_for(admin, org).patch(url, {"theme_color": "blue"})
+    assert response.status_code == 200 and response.data["theme_color"] == "blue"
+    assert client_for(admin, org).patch(url, {"theme_color": "#fff"}).status_code == 400
+    assert client_for(collector, org).patch(url, {"theme_color": "red"}).status_code == 403
+    assert client_for(collector).get(f"/api/v1/me/organizations/{org.pk}/").data["theme_color"] == "blue"
+
+    me = client_for(collector)
+    assert me.get("/api/v1/me/").data["theme_color"] == ""
+    assert me.patch("/api/v1/me/", {"theme_color": "green"}).data["theme_color"] == "green"
+    assert me.patch("/api/v1/me/", {"theme_color": "neon"}).status_code == 400
+    assert me.patch("/api/v1/me/", {"theme_color": ""}).data["theme_color"] == ""

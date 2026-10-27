@@ -15,7 +15,7 @@ export function UserMenu() {
       align="right"
       label={t('topbar.profile')}
       trigger={() => (
-        <span className="inline-flex size-9 items-center justify-center rounded-full bg-slate-800 text-sm font-semibold text-white">{initials(user.full_name)}</span>
+        <span className="inline-flex size-9 items-center justify-center rounded-full bg-gradient-to-br from-brand-500 to-brand-800 text-sm font-semibold text-white shadow-sm ring-2 ring-white transition-transform hover:scale-105">{initials(user.full_name)}</span>
       )}
     >
       {(close) => (

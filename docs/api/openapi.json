@@ -1719,7 +1719,7 @@
         "/api/v1/dashboard/summary/": {
             "get": {
                 "operationId": "dashboard_summary_retrieve",
-                "description": "Dashboard numbers for the active organization (and event, when given).\n\nOnly real numbers are returned. `financial` is present for roles with dashboard.view_financial and covers\nthe selected event, or every event of the current financial year when no event is given. Income is\nconfirmed contributions plus recorded other income; expenses are approved expenses (reports/selectors.py).\n`follow_ups` (roles that see payments) counts pavtis still owing money: overdue, due today and all.",
+                "description": "Dashboard numbers for the active organization (and event, when given).\n\nOnly real numbers are returned. `financial` is present for roles with dashboard.view_financial and covers\nthe selected event, or every event of the current financial year when no event is given. Income is\nconfirmed contributions plus recorded other income; expenses are approved expenses (reports/selectors.py).\n`follow_ups` (roles that see payments) counts pavtis still owing money: overdue, due today and all.\n\n`date_from` / `date_to` (YYYY-MM-DD, either or both) narrow the money and pavti numbers to those days in\nthe organization's time zone: what was collected, spent and received, and the pavtis given on those days.",
                 "tags": [
                     "dashboard"
                 ],
@@ -1856,6 +1856,22 @@
                         "schema": {
                             "type": "string",
                             "format": "uuid"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "date_from",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "date_to",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
                         }
                     },
                     {
@@ -2356,6 +2372,22 @@
                 "operationId": "events_list",
                 "description": "Add to a tenant list viewset and set `download_title` and `download_columns`.",
                 "parameters": [
+                    {
+                        "in": "query",
+                        "name": "date_from",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "date_to",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
                     {
                         "in": "query",
                         "name": "financial_year",
@@ -5172,6 +5204,37 @@
                 }
             }
         },
+        "/api/v1/members/{id}/remove/": {
+            "post": {
+                "operationId": "members_remove_create",
+                "description": "Delete a user's access (kept as \"removed\" for the records and the audit log).",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "description": "A UUID string identifying this organization membership.",
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "members"
+                ],
+                "security": [
+                    {
+                        "jwtAuth": []
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No response body"
+                    }
+                }
+            }
+        },
         "/api/v1/members/{id}/set-password/": {
             "post": {
                 "operationId": "members_set_password_create",
@@ -6943,6 +7006,22 @@
                         "name": "building",
                         "schema": {
                             "type": "string"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "date_from",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "date_to",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
                         }
                     },
                     {
@@ -9149,6 +9228,11 @@
                     "user_agent"
                 ]
             },
+            "BlankEnum": {
+                "enum": [
+                    ""
+                ]
+            },
             "ChangePasswordRequest": {
                 "type": "object",
                 "properties": {
@@ -9248,6 +9332,7 @@
             },
             "Contribution": {
                 "type": "object",
+                "description": "Adds `created_by_name`: who made the record, shown with `created_at` in every list.",
                 "properties": {
                     "id": {
                         "type": "string",
@@ -9335,6 +9420,11 @@
                         "type": "string",
                         "format": "date-time",
                         "readOnly": true
+                    },
+                    "created_by_name": {
+                        "type": "string",
+                        "nullable": true,
+                        "readOnly": true
                     }
                 },
                 "required": [
@@ -9344,6 +9434,7 @@
                     "contribution_type",
                     "contribution_type_name",
                     "created_at",
+                    "created_by_name",
                     "event",
                     "fund",
                     "fund_name",
@@ -9592,6 +9683,7 @@
             },
             "Due": {
                 "type": "object",
+                "description": "Adds `created_by_name`: who made the record, shown with `created_at` in every list.",
                 "properties": {
                     "id": {
                         "type": "string",
@@ -9680,6 +9772,11 @@
                         "type": "string",
                         "format": "date-time",
                         "readOnly": true
+                    },
+                    "created_by_name": {
+                        "type": "string",
+                        "nullable": true,
+                        "readOnly": true
                     }
                 },
                 "required": [
@@ -9688,6 +9785,7 @@
                     "contribution_type",
                     "contribution_type_name",
                     "created_at",
+                    "created_by_name",
                     "event",
                     "id",
                     "paid",
@@ -9725,6 +9823,7 @@
             },
             "Event": {
                 "type": "object",
+                "description": "Adds `created_by_name`: who made the record, shown with `created_at` in every list.",
                 "properties": {
                     "id": {
                         "type": "string",
@@ -9787,6 +9886,11 @@
                         "format": "date-time",
                         "readOnly": true
                     },
+                    "created_by_name": {
+                        "type": "string",
+                        "nullable": true,
+                        "readOnly": true
+                    },
                     "updated_at": {
                         "type": "string",
                         "format": "date-time",
@@ -9795,6 +9899,7 @@
                 },
                 "required": [
                     "created_at",
+                    "created_by_name",
                     "financial_year",
                     "financial_year_label",
                     "id",
@@ -9889,6 +9994,7 @@
             },
             "EventRequest": {
                 "type": "object",
+                "description": "Adds `created_by_name`: who made the record, shown with `created_at` in every list.",
                 "properties": {
                     "name": {
                         "type": "string",
@@ -10950,7 +11056,7 @@
                     "identifier": {
                         "type": "string",
                         "minLength": 1,
-                        "description": "Email address or mobile number"
+                        "description": "Email address, mobile number or username"
                     },
                     "password": {
                         "type": "string",
@@ -11037,12 +11143,16 @@
             },
             "MemberCreateRequest": {
                 "type": "object",
-                "description": "Name, email or mobile and a password that an admin types in for someone else.",
+                "description": "Name, a username, email or mobile, and a password that an admin types in for someone else.",
                 "properties": {
                     "full_name": {
                         "type": "string",
                         "minLength": 1,
                         "maxLength": 150
+                    },
+                    "username": {
+                        "type": "string",
+                        "nullable": true
                     },
                     "email": {
                         "nullable": true,
@@ -11665,6 +11775,9 @@
                     },
                     "auto_reminders": {
                         "type": "boolean"
+                    },
+                    "theme_color": {
+                        "$ref": "#/components/schemas/ThemeColorEnum"
                     }
                 }
             },
@@ -12573,6 +12686,7 @@
             },
             "PatchedEventRequest": {
                 "type": "object",
+                "description": "Adds `created_by_name`: who made the record, shown with `created_at` in every list.",
                 "properties": {
                     "name": {
                         "type": "string",
@@ -12842,6 +12956,9 @@
                     },
                     "auto_reminders": {
                         "type": "boolean"
+                    },
+                    "theme_color": {
+                        "$ref": "#/components/schemas/ThemeColorEnum"
                     }
                 }
             },
@@ -12869,6 +12986,7 @@
             },
             "PatchedPersonRequest": {
                 "type": "object",
+                "description": "Adds `created_by_name`: who made the record, shown with `created_at` in every list.",
                 "properties": {
                     "full_name": {
                         "type": "string",
@@ -12943,11 +13061,22 @@
                     },
                     "preferred_language": {
                         "$ref": "#/components/schemas/LanguageEnum"
+                    },
+                    "theme_color": {
+                        "oneOf": [
+                            {
+                                "$ref": "#/components/schemas/ThemeColorEnum"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BlankEnum"
+                            }
+                        ]
                     }
                 }
             },
             "Payment": {
                 "type": "object",
+                "description": "Adds `created_by_name`: who made the record, shown with `created_at` in every list.",
                 "properties": {
                     "id": {
                         "type": "string",
@@ -13094,6 +13223,11 @@
                         "type": "string",
                         "format": "date-time",
                         "readOnly": true
+                    },
+                    "created_by_name": {
+                        "type": "string",
+                        "nullable": true,
+                        "readOnly": true
                     }
                 },
                 "required": [
@@ -13103,6 +13237,7 @@
                     "cheque_date",
                     "collector_name",
                     "created_at",
+                    "created_by_name",
                     "custom_fields",
                     "event",
                     "event_name",
@@ -13463,6 +13598,7 @@
             },
             "Person": {
                 "type": "object",
+                "description": "Adds `created_by_name`: who made the record, shown with `created_at` in every list.",
                 "properties": {
                     "id": {
                         "type": "string",
@@ -13553,6 +13689,11 @@
                         "format": "date-time",
                         "readOnly": true
                     },
+                    "created_by_name": {
+                        "type": "string",
+                        "nullable": true,
+                        "readOnly": true
+                    },
                     "updated_at": {
                         "type": "string",
                         "format": "date-time",
@@ -13561,6 +13702,7 @@
                 },
                 "required": [
                     "created_at",
+                    "created_by_name",
                     "full_name",
                     "has_login",
                     "id",
@@ -13572,6 +13714,7 @@
             },
             "PersonRequest": {
                 "type": "object",
+                "description": "Adds `created_by_name`: who made the record, shown with `created_at` in every list.",
                 "properties": {
                     "full_name": {
                         "type": "string",
@@ -13756,6 +13899,10 @@
                         "minLength": 1,
                         "maxLength": 150
                     },
+                    "username": {
+                        "type": "string",
+                        "nullable": true
+                    },
                     "email": {
                         "nullable": true,
                         "oneOf": [
@@ -13808,6 +13955,11 @@
                     "full_name": {
                         "type": "string",
                         "maxLength": 150
+                    },
+                    "username": {
+                        "type": "string",
+                        "nullable": true,
+                        "maxLength": 30
                     },
                     "email": {
                         "nullable": true,
@@ -13926,6 +14078,7 @@
             },
             "Receipt": {
                 "type": "object",
+                "description": "Adds `created_by_name`: who made the record, shown with `created_at` in every list.",
                 "properties": {
                     "id": {
                         "type": "string",
@@ -14026,10 +14179,22 @@
                         "type": "string",
                         "nullable": true,
                         "readOnly": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    },
+                    "created_by_name": {
+                        "type": "string",
+                        "nullable": true,
+                        "readOnly": true
                     }
                 },
                 "required": [
                     "amount",
+                    "created_at",
+                    "created_by_name",
                     "event",
                     "id",
                     "issued_at",
@@ -14389,6 +14554,21 @@
                 "type": "string",
                 "description": "* `festival` - Festival\n* `fundraising` - Fundraising\n* `membership` - Membership\n* `society` - Society\n* `custom` - Custom"
             },
+            "ThemeColorEnum": {
+                "enum": [
+                    "orange",
+                    "red",
+                    "maroon",
+                    "pink",
+                    "purple",
+                    "indigo",
+                    "blue",
+                    "teal",
+                    "green"
+                ],
+                "type": "string",
+                "description": "* `orange` - Orange\n* `red` - Red\n* `maroon` - Maroon\n* `pink` - Pink\n* `purple` - Purple\n* `indigo` - Indigo\n* `blue` - Blue\n* `teal` - Teal\n* `green` - Green"
+            },
             "TokenResponse": {
                 "type": "object",
                 "properties": {
@@ -14431,8 +14611,23 @@
                         "readOnly": true,
                         "nullable": true
                     },
+                    "username": {
+                        "type": "string",
+                        "readOnly": true,
+                        "nullable": true
+                    },
                     "preferred_language": {
                         "$ref": "#/components/schemas/LanguageEnum"
+                    },
+                    "theme_color": {
+                        "oneOf": [
+                            {
+                                "$ref": "#/components/schemas/ThemeColorEnum"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BlankEnum"
+                            }
+                        ]
                     },
                     "email_verified_at": {
                         "type": "string",
@@ -14464,7 +14659,8 @@
                     "id",
                     "is_platform_admin",
                     "mobile",
-                    "mobile_verified_at"
+                    "mobile_verified_at",
+                    "username"
                 ]
             },
             "UserStatusInputRequest": {

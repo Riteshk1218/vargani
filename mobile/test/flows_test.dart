@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vargani_app/api/api_client.dart';
 import 'package:vargani_app/main.dart';
 import 'package:vargani_app/state/app_state.dart';
+import 'package:vargani_app/util/theme.dart';
 
 /// A small fake of the Vargani API with the response shapes the real server returns.
 class FakeApi {
@@ -257,6 +258,35 @@ void main() {
     final patch = fake.requests.where((r) => r.method == 'PATCH').single;
     expect(jsonDecode(patch.body), {'preferred_language': 'mr'});
     expect(fake.requests.last.headers['Accept-Language'], 'mr');
+  });
+
+  testWidgets('a user picks their own app color and the whole app repaints', (tester) async {
+    final (state, fake) = await start(tester, 'member');
+    await tester.tap(find.text('Member'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('otp-mobile')), '9822001122');
+    await tester.tap(find.byKey(const Key('otp-send')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('otp-verify')));
+    await tester.pumpAndSettle();
+    expect(state.themeColor, 'orange');
+
+    await tester.tap(find.text('Settings'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('org-theme')), findsNothing); // only organization admins set the default
+    await tester.scrollUntilVisible(find.byKey(const Key('theme-blue')), 200);
+    await tester.tap(find.byKey(const Key('theme-blue')));
+    await tester.pumpAndSettle();
+
+    expect(state.themeColor, 'blue');
+    final patch = fake.requests.where((r) => r.method == 'PATCH').single;
+    expect(jsonDecode(patch.body), {'theme_color': 'blue'});
+    final app = tester.widget<MaterialApp>(find.byType(MaterialApp));
+    expect(app.theme!.colorScheme.primary, isNot(buildTheme('orange', Brightness.light).colorScheme.primary));
+
+    await tester.tap(find.byKey(const Key('theme-org')));
+    await tester.pumpAndSettle();
+    expect(state.themeColor, 'orange');
   });
 
   testWidgets('a person opens their contribution history across events, then Collect', (tester) async {

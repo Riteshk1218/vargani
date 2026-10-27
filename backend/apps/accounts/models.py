@@ -18,6 +18,20 @@ class Language(models.TextChoices):
     HINDI = "hi", "हिन्दी"
 
 
+class ThemeColor(models.TextChoices):
+    """The app's main color. The website and the mobile app map each name to their own shades."""
+
+    ORANGE = "orange", "Orange"
+    RED = "red", "Red"
+    MAROON = "maroon", "Maroon"
+    PINK = "pink", "Pink"
+    PURPLE = "purple", "Purple"
+    INDIGO = "indigo", "Indigo"
+    BLUE = "blue", "Blue"
+    TEAL = "teal", "Teal"
+    GREEN = "green", "Green"
+
+
 # A username starts with a letter, so it can never be mistaken for a mobile number or an email at login.
 USERNAME_PATTERN = re.compile(r"^[a-z][a-z0-9._-]{2,29}$")
 
@@ -73,6 +87,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     # Set by an organization admin for people who log in without an email or mobile number (lower case).
     username = models.CharField(max_length=30, null=True, blank=True, unique=True)
     preferred_language = models.CharField(max_length=8, choices=Language.choices, default=Language.ENGLISH)
+    # The user's own app color; empty means the organization's color.
+    theme_color = models.CharField(max_length=16, choices=ThemeColor.choices, blank=True, default="")
     email_verified_at = models.DateTimeField(null=True, blank=True)
     mobile_verified_at = models.DateTimeField(null=True, blank=True)
     is_active = models.BooleanField(default=True)

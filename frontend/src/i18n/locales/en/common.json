@@ -346,6 +346,7 @@
     "tabs": {
       "profile": "Profile",
       "logo": "Logo",
+      "appearance": "Colors",
       "financialYears": "Financial years",
       "preferences": "Preferences",
       "onlinePayments": "Online payments"
@@ -1052,5 +1053,24 @@
     "endDate": "End date",
     "name": "Name",
     "paidTo": "Paid to"
+  },
+  "theme": {
+    "myColor": "My app color",
+    "myColorHelp": "Pick the color you like. It changes the whole app for you only, on the website and the mobile app.",
+    "orgColor": "Organization color",
+    "orgColorHelp": "The main color of the website and the mobile app for everyone in this organization. Each person can still pick their own color in My profile.",
+    "orgDefault": "Organization",
+    "saved": "Color changed",
+    "colors": {
+      "orange": "Orange",
+      "red": "Red",
+      "maroon": "Maroon",
+      "pink": "Pink",
+      "purple": "Purple",
+      "indigo": "Indigo",
+      "blue": "Blue",
+      "teal": "Teal",
+      "green": "Green"
+    }
   }
 }

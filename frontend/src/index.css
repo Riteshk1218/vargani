@@ -1,14 +1,42 @@
 @import "tailwindcss";
 
+/* brand-* is the app color. utils/theme.ts swaps these variables when a user or organization picks another color. */
 @theme {
   --font-sans: "Noto Sans", "Noto Sans Devanagari", ui-sans-serif, system-ui, sans-serif;
   --color-brand-50: #fff7ed;
   --color-brand-100: #ffedd5;
   --color-brand-200: #fed7aa;
+  --color-brand-300: #fdba74;
+  --color-brand-400: #fb923c;
   --color-brand-500: #f97316;
   --color-brand-600: #ea580c;
   --color-brand-700: #c2410c;
   --color-brand-800: #9a3412;
+  --color-brand-900: #7c2d12;
+  --animate-fade-in: fade-in 0.25s ease-out both;
+  --animate-pop-in: pop-in 0.18s ease-out both;
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes pop-in {
+    from {
+      opacity: 0;
+      transform: scale(0.96);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
 }
 
 html,
@@ -19,8 +47,35 @@ body,
 
 body {
   @apply bg-slate-50 text-slate-900 antialiased;
+  background-image: radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--color-brand-100) 45%, transparent), transparent 40%);
+  background-attachment: fixed;
+}
+
+::selection {
+  background: var(--color-brand-200);
+  color: var(--color-brand-900);
 }
 
 :focus-visible {
   @apply outline-2 outline-offset-2 outline-brand-600;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-slate-300) transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media print {
+  body {
+    background-image: none;
+  }
 }

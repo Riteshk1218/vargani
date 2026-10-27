@@ -5,6 +5,7 @@ import 'screens/home_shell.dart';
 import 'screens/login_screen.dart';
 import 'screens/org_picker_screen.dart';
 import 'state/app_state.dart';
+import 'util/theme.dart';
 import 'widgets/common.dart';
 
 void main() {
@@ -27,9 +28,9 @@ class VarganiApp extends StatelessWidget {
         return MaterialApp(
           title: app.t('app_name'),
           debugShowCheckedModeBanner: false,
-          theme: ThemeData(colorSchemeSeed: const Color(0xFFE65100), useMaterial3: true),
-          darkTheme: ThemeData(
-              colorSchemeSeed: const Color(0xFFE65100), brightness: Brightness.dark, useMaterial3: true),
+          theme: buildTheme(app.themeColor, Brightness.light),
+          darkTheme: buildTheme(app.themeColor, Brightness.dark),
+          themeAnimationDuration: const Duration(milliseconds: 350),
           home: const _Root(),
         );
       }),

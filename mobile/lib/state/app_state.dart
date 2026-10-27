@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../api/api_client.dart';
 import '../l10n/strings.dart';
+import '../util/theme.dart';
 
 /// Default API address, set at build time:
 /// flutter build apk --dart-define=API_BASE=https://api.your-domain.in
@@ -54,6 +55,27 @@ class AppState extends ChangeNotifier {
   String get orgName => (orgDetail?['organization'] as Map?)?['name']?.toString() ?? '';
   String? get logoUrl => (orgDetail?['organization'] as Map?)?['logo_url']?.toString();
 
+  /// The organization's app color (set by its admin), the default for everyone in it.
+  String get orgThemeColor {
+    final c = orgDetail?['theme_color'];
+    return themeSeeds.containsKey(c) ? c as String : defaultThemeColor;
+  }
+
+  /// The user's own app color; empty means the organization's.
+  String get userThemeColor {
+    final c = user?['theme_color'];
+    return themeSeeds.containsKey(c) ? c as String : '';
+  }
+
+  String? _savedTheme;
+
+  /// The color the app is drawn in. Before login, the last one used on this phone.
+  String get themeColor {
+    if (userThemeColor.isNotEmpty) return userThemeColor;
+    if (orgDetail != null) return orgThemeColor;
+    return _savedTheme ?? defaultThemeColor;
+  }
+
   /// Admin studio: how this organization's admins set up the Collect form.
   Map<String, dynamic> get formStudio => (orgDetail?['form_studio'] as Map?)?.cast<String, dynamic>() ?? const {};
 
@@ -89,6 +111,7 @@ class AppState extends ChangeNotifier {
     _prefs ??= await SharedPreferences.getInstance();
     api.baseUrl = _prefs!.getString('api_base') ?? initialApiBase();
     api.language = _prefs!.getString('language') ?? 'en';
+    _savedTheme = _prefs!.getString('theme_color');
     final savedOrg = _prefs!.getString('org_id');
     try {
       if (await api.refresh()) {
@@ -127,6 +150,37 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  /// Saves the user's own color ('' for the organization's) on their profile.
+  Future<void> setThemeColor(String color) async {
+    if (color.isNotEmpty && !themeSeeds.containsKey(color)) return;
+    final before = user?['theme_color'];
+    user = {...?user, 'theme_color': color};
+    _rememberTheme();
+    notifyListeners();
+    try {
+      await api.patch('/me/', {'theme_color': color});
+    } catch (_) {
+      user = {...?user, 'theme_color': before};
+      _rememberTheme();
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  /// Organization admins set the color for everyone in the organization.
+  Future<void> setOrgThemeColor(String color) async {
+    if (!themeSeeds.containsKey(color) || orgId == null) return;
+    await api.patch('/organizations/$orgId/settings/', {'theme_color': color});
+    orgDetail = {...?orgDetail, 'theme_color': color};
+    _rememberTheme();
+    notifyListeners();
+  }
+
+  void _rememberTheme() {
+    _savedTheme = themeColor;
+    _prefs?.setString('theme_color', themeColor);
+  }
+
   Future<void> loginWithPassword(String identifier, String password) async {
     final auth = await api.post('/auth/login/', {'identifier': identifier.trim(), 'password': password});
     await api.saveSession((auth as Map).cast<String, dynamic>());
@@ -160,6 +214,7 @@ class AppState extends ChangeNotifier {
       api.orgId = null;
       orgDetail = null;
     }
+    _rememberTheme();
     notifyListeners();
   }
 
@@ -167,6 +222,7 @@ class AppState extends ChangeNotifier {
     api.orgId = id;
     await _prefs?.setString('org_id', id);
     orgDetail = ((await api.get('/me/organizations/$id/')) as Map).cast<String, dynamic>();
+    _rememberTheme();
     await loadEvents();
     if (notify) notifyListeners();
   }

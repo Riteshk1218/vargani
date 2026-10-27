@@ -17,6 +17,7 @@ from PIL import Image, ImageOps, UnidentifiedImageError
 from rest_framework import status
 from rest_framework.exceptions import APIException, ValidationError
 
+from apps.accounts.models import ThemeColor
 from apps.audit import services as audit
 from apps.core.exceptions import BusinessRuleViolation
 from apps.expenses.defaults import seed_categories
@@ -31,6 +32,7 @@ DEFAULT_SETTINGS = {
     "require_expense_approval": True,
     "member_portal_enabled": False,
     "auto_reminders": False,
+    "theme_color": ThemeColor.ORANGE.value,
 }
 SETTINGS_TYPES = {key: type(value) for key, value in DEFAULT_SETTINGS.items()}
 

@@ -25,6 +25,6 @@ export const authService = {
   changePassword: (current_password: string, new_password: string) =>
     api.post<TokenResponse>('/auth/password/change/', { current_password, new_password }).then((r) => r.data),
   me: () => api.get<User>('/me/').then((r) => r.data),
-  updateMe: (data: Partial<Pick<User, 'full_name' | 'preferred_language'>>) =>
+  updateMe: (data: Partial<Pick<User, 'full_name' | 'preferred_language' | 'theme_color'>>) =>
     api.patch<User>('/me/', data).then((r) => r.data),
 }
