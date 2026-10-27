@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 
 import '../api/api_client.dart';
+import '../state/app_state.dart';
 import '../util/money.dart';
 import '../widgets/common.dart';
 import 'collect_screen.dart' show collectionModes, modesNeedingReference;
 
 /// Door-to-door follow-up: one pavti per house, updated on every later visit instead of making a new one.
 
-String _isoDate(DateTime d) =>
-    '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+String _isoDate(DateTime d) => '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
 DateTime _today() {
   final now = DateTime.now();
@@ -31,10 +31,18 @@ Future<String?> pickFollowUpDate(BuildContext context, String? current) async {
 
 /// A tappable field showing the follow-up date.
 class FollowUpDateField extends StatelessWidget {
-  const FollowUpDateField({super.key, required this.value, required this.onChanged, this.label, this.error});
+  const FollowUpDateField({
+    super.key,
+    required this.value,
+    required this.onChanged,
+    this.label,
+    this.helper,
+    this.error,
+  });
   final String? value;
   final ValueChanged<String> onChanged;
   final String? label;
+  final String? helper;
   final String? error;
 
   @override
@@ -48,7 +56,7 @@ class FollowUpDateField extends StatelessWidget {
       child: InputDecorator(
         decoration: InputDecoration(
           labelText: label ?? t('follow_up_date'),
-          helperText: t('follow_up_hint'),
+          helperText: helper ?? t('follow_up_hint'),
           errorText: error,
           border: const OutlineInputBorder(),
           suffixIcon: const Icon(Icons.event),
@@ -114,7 +122,9 @@ class FollowUpCards extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           onTap: () => Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => PavtiListScreen(filter: filter, title: label)),
+            MaterialPageRoute(
+              builder: (_) => PavtiListScreen(filter: filter, title: label),
+            ),
           ).then((_) => onReturn()),
           child: Padding(
             padding: const EdgeInsets.all(14),
@@ -158,7 +168,9 @@ class FollowUpCards extends StatelessWidget {
             trailing: Text('${followUps['owing'] ?? 0}', style: Theme.of(context).textTheme.titleMedium),
             onTap: () => Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => PavtiListScreen(filter: 'owing', title: t('pavtis_owing'))),
+              MaterialPageRoute(
+                builder: (_) => PavtiListScreen(filter: 'owing', title: t('pavtis_owing')),
+              ),
             ).then((_) => onReturn()),
           ),
         ),
@@ -214,10 +226,7 @@ class PavtiListScreen extends StatelessWidget {
                         PavtiChips(p),
                       ],
                     ),
-                    trailing: Text(
-                      formatInr('${p['balance_due']}'),
-                      style: Theme.of(context).textTheme.titleSmall,
-                    ),
+                    trailing: Text(formatInr('${p['balance_due']}'), style: Theme.of(context).textTheme.titleSmall),
                     onTap: () async {
                       final saved = await Navigator.push<bool>(
                         context,
@@ -260,13 +269,26 @@ class _PavtiVisitScreenState extends State<PavtiVisitScreen> {
   void initState() {
     super.initState();
     final amount = double.tryParse('${_p['amount']}') ?? 0;
+    final modes = _modes(AppScope.read(context));
     _mode = amount > 0 ? '${_p['mode']}' : 'cash';
-    if (!collectionModes.contains(_mode)) _mode = 'cash';
+    if (!modes.contains(_mode)) _mode = modes.contains('cash') || modes.isEmpty ? 'cash' : modes.first;
     final current = _p['follow_up_on']?.toString();
     final today = _isoDate(_today());
     _followUp = current != null && current.compareTo(today) >= 0
         ? current
         : _isoDate(_today().add(const Duration(days: 1)));
+  }
+
+  /// Modes the admin studio still shows.
+  List<String> _modes(AppState app) => [
+    for (final m in collectionModes)
+      if (!app.modeHidden(m)) m,
+  ];
+
+  /// What is still owed after this visit, for the hint under the next date.
+  String get _left {
+    final left = (double.tryParse(_owed) ?? 0) - (double.tryParse(_amount ?? '') ?? 0);
+    return (left < 0 ? 0 : left).toStringAsFixed(2);
   }
 
   /// What was typed, or "0" when left empty (nobody paid today). Null when not a valid amount.
@@ -291,6 +313,18 @@ class _PavtiVisitScreenState extends State<PavtiVisitScreen> {
       return;
     }
     final paying = (double.tryParse(amount) ?? 0) > 0;
+    if (paying && modesNeedingReference.contains(_mode) && _reference.text.trim().isEmpty) {
+      showMessage(
+        context,
+        t('enter_field', {'field': _mode == 'cheque' ? t('cheque_number') : t('reference')}),
+        error: true,
+      );
+      return;
+    }
+    if (!_paysAll && _followUp != null && _followUp!.compareTo(_isoDate(_today())) < 0) {
+      showMessage(context, t('date_past'), error: true);
+      return;
+    }
     setState(() {
       _saving = true;
       _error = null;
@@ -331,9 +365,12 @@ class _PavtiVisitScreenState extends State<PavtiVisitScreen> {
               title: Text('${_p['payer_name']}'),
               subtitle: Text(
                 [
-                  (_p['receipt'] as Map?)?['receipt_number'],
-                  '${formatInr(_owed)} ${t('still_owed')}',
-                ].where((x) => x != null && '$x'.isNotEmpty).join(' · '),
+                  [
+                    (_p['receipt'] as Map?)?['receipt_number'],
+                    '${formatInr(_owed)} ${t('still_owed')}',
+                  ].where((x) => x != null && '$x'.isNotEmpty).join(' · '),
+                  if (_p['follow_up_on'] != null) t('last_follow_up', {'date': formatDate('${_p['follow_up_on']}')}),
+                ].join('\n'),
               ),
             ),
           ),
@@ -361,13 +398,13 @@ class _PavtiVisitScreenState extends State<PavtiVisitScreen> {
             ),
           ),
           if (paying) ...[
-            Text(t('payment_mode'), style: Theme.of(context).textTheme.titleSmall),
+            Text(app.fieldLabel('mode', t('payment_mode')), style: Theme.of(context).textTheme.titleSmall),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
               runSpacing: 8,
               children: [
-                for (final m in collectionModes)
+                for (final m in _modes(app))
                   ChoiceChip(
                     label: Text(modeLabel(app, m)),
                     selected: _mode == m,
@@ -375,12 +412,15 @@ class _PavtiVisitScreenState extends State<PavtiVisitScreen> {
                   ),
               ],
             ),
-            if (modesNeedingReference.contains(_mode)) ...[
+            if (_mode != 'cash') ...[
               const SizedBox(height: 12),
               TextField(
+                key: const Key('visit-reference'),
                 controller: _reference,
                 decoration: InputDecoration(
-                  labelText: t('reference'),
+                  labelText:
+                      '${_mode == 'cheque' ? app.fieldLabel('cheque_number', t('cheque_number')) : app.fieldLabel('reference', t('reference'))}'
+                      '${modesNeedingReference.contains(_mode) ? ' *' : ' (${t('optional')})'}',
                   errorText: _error?.fieldError('reference_number'),
                   border: const OutlineInputBorder(),
                 ),
@@ -396,6 +436,7 @@ class _PavtiVisitScreenState extends State<PavtiVisitScreen> {
           else
             FollowUpDateField(
               label: t('next_follow_up'),
+              helper: t('left_after', {'amount': formatInr(_left)}),
               value: _followUp,
               error: _error?.fieldError('follow_up_on'),
               onChanged: (v) => setState(() => _followUp = v),
@@ -409,7 +450,11 @@ class _PavtiVisitScreenState extends State<PavtiVisitScreen> {
                 : const Icon(Icons.check),
             label: Padding(
               padding: const EdgeInsets.all(12),
-              child: Text(_paysAll ? t('mark_paid') : (paying ? t('save_payment') : t('save_follow_up'))),
+              child: Text(
+                _paysAll
+                    ? t('mark_paid')
+                    : (paying ? t('save_received', {'amount': formatInr(_amount)}) : t('save_follow_up')),
+              ),
             ),
           ),
         ],

@@ -166,6 +166,9 @@ class StatusChip extends StatelessWidget {
         'approved' => app.t('status_approved'),
         'rejected' => app.t('status_rejected'),
         'deleted' => app.t('status_deleted'),
+        'pending' => app.t('status_pending'),
+        'failed' => app.t('status_failed'),
+        'refunded' => app.t('status_refunded'),
         _ => status,
       }, style: Theme.of(context).textTheme.labelSmall),
     );

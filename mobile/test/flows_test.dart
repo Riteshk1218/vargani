@@ -18,9 +18,11 @@ class FakeApi {
 
   static const org = 'org-1', event = 'ev-1', ct = 'ct-1';
 
-  Map<String, dynamic> get permissions => role == 'collector'
-      ? {'payments.create': 'assigned', 'receipts.view': 'own', 'receipts.share': 'own', 'portal.self': 'self'}
-      : {'portal.self': 'self'};
+  Map<String, dynamic> get permissions => switch (role) {
+    'collector' => {'payments.create': 'assigned', 'receipts.view': 'own', 'receipts.share': 'own', 'portal.self': 'self'},
+    'treasurer' => {'payments.create': 'all', 'payments.view': 'all', 'receipts.view': 'all'},
+    _ => {'portal.self': 'self'},
+  };
 
   http.Response _json(Object body, [int status = 200]) =>
       http.Response.bytes(utf8.encode(jsonEncode(body)), status, headers: {'content-type': 'application/json'});
@@ -75,6 +77,22 @@ class FakeApi {
         final b = jsonDecode(r.body) as Map<String, dynamic>;
         collections.add({...b, 'key': r.headers['Idempotency-Key']});
         return _json({'id': 'pay-1', 'amount': '651.00', 'receipt': {'id': 'rc-1', 'receipt_number': 'GC-2026-00002'}}, 201);
+      case ('GET', '/payments/'):
+        return _json({'count': 2, 'next': null, 'results': [
+          {'id': 'pay-2', 'event': event, 'event_name': 'Ganesh Chaturthi 2026', 'status': 'successful',
+           'amount': '500.00', 'balance_due': '151.00', 'pavti_status': 'partly_paid', 'follow_up_on': '2026-10-30',
+           'follow_up_state': 'upcoming', 'mode': 'cash', 'paid_at': '2026-10-20T10:00:00Z', 'payer_name': 'Sunita More',
+           'collector_name': 'Kiran', 'receipt': {'id': 'rc-2', 'receipt_number': 'GC-2026-00003'},
+           'lines': [{'contribution_type_name': 'Donation', 'period_month': null}]},
+          {'id': 'pay-1', 'event': 'ev-0', 'event_name': 'Navratri 2025', 'status': 'successful', 'amount': '300.00',
+           'balance_due': '0.00', 'pavti_status': 'paid', 'mode': 'upi', 'paid_at': '2025-10-01T10:00:00Z',
+           'payer_name': 'Sunita More', 'receipt': {'id': 'rc-1', 'receipt_number': 'NV-2025-00001'},
+           'lines': [{'contribution_type_name': 'Monthly Contribution', 'period_month': '2025-10-01'}]},
+        ]});
+      case ('GET', '/dues/'):
+        return _json({'count': 0, 'next': null, 'results': []});
+      case ('GET', '/dashboard/summary/'):
+        return _json({'follow_ups': {'overdue': 0, 'due_today': 0, 'owing': 1, 'balance': '151.00'}});
       case ('GET', '/receipts/rc-1/'):
         return _json(_receipt);
       case ('GET', '/portal/me/'):
@@ -152,6 +170,18 @@ void main() {
     await tester.tap(find.byKey(const Key('mode-upi')));
     await tester.pumpAndSettle();
     await tester.enterText(find.byKey(const Key('collect-reference')), 'UPI123');
+    expect(find.byKey(const Key('collect-total')), findsOneWidget);
+    expect(find.text('₹651'), findsWidgets);
+    // Part of it came now: the rest is kept as balance and the Save button says so.
+    await tester.enterText(find.byKey(const Key('collect-received')), '500');
+    await tester.pumpAndSettle();
+    expect(find.text('Balance ₹151 will be shown on the receipt and in Balance due.'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('collect-save')),
+      200,
+      scrollable: find.descendant(of: find.byKey(const Key('collect-form')), matching: find.byType(Scrollable)).first,
+    );
+    expect(find.text('Save ₹500 received, ₹151 balance, and issue receipt'), findsOneWidget);
     await tester.ensureVisible(find.byKey(const Key('collect-save')));
     await tester.tap(find.byKey(const Key('collect-save')));
     await tester.pumpAndSettle();
@@ -162,6 +192,10 @@ void main() {
     expect(c['mode'], 'upi');
     expect(c['reference_number'], 'UPI123');
     expect(c['lines'], [{'contribution_type': 'ct-1', 'amount': '651.00'}]);
+    expect(c['received'], '500.00');
+    expect(c['follow_up_on'], isNotNull);
+    expect(c['status'], 'successful');
+    expect(c.containsKey('paid_at'), isFalse); // today: the server records the time
     expect(c['key'], isNotEmpty);
     expect(fake.requests.last.headers['X-Organization-ID'], 'org-1');
 
@@ -196,5 +230,36 @@ void main() {
     final patch = fake.requests.where((r) => r.method == 'PATCH').single;
     expect(jsonDecode(patch.body), {'preferred_language': 'mr'});
     expect(fake.requests.last.headers['Accept-Language'], 'mr');
+  });
+
+  testWidgets('a person opens their contribution history across events, then Collect', (tester) async {
+    await start(tester, 'treasurer');
+    await tester.enterText(find.byKey(const Key('login-identifier')), 'asha@demo.test');
+    await tester.enterText(find.byKey(const Key('login-password')), 'right');
+    await tester.tap(find.byKey(const Key('login-submit')));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('People'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Sunita More'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Contribution history'), findsOneWidget);
+    expect(find.text('₹800'), findsOneWidget); // total paid across both events
+    expect(find.text('₹151'), findsOneWidget); // still owed
+    expect(find.text('Donation'), findsOneWidget);
+    expect(find.text('Partly paid'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('history-event')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Navratri 2025').last);
+    await tester.pumpAndSettle();
+    expect(find.text('Donation'), findsNothing);
+    expect(find.text('Monthly Contribution (Oct 2025)'), findsOneWidget);
+    expect(find.text('₹300'), findsWidgets);
+
+    await tester.tap(find.byKey(const Key('person-collect')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('collect-amount-0')), findsOneWidget);
   });
 }

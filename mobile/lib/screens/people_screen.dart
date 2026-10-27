@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../api/api_client.dart';
 import '../widgets/common.dart';
 import 'collect_screen.dart';
+import 'person_screen.dart';
 
 /// People the user may collect from. Collectors get only their assigned people;
 /// the API decides that, not the app.
@@ -13,8 +14,15 @@ class PeopleScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final app = AppScope.of(context);
+    // With access to payments, a person opens their contribution history (Collect is one tap from there).
     return PersonSearchList(
-      onPick: (p) => Navigator.push(context, MaterialPageRoute(builder: (_) => CollectScreen(person: p))),
+      onPick: (p) => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => app.can('payments.view') ? PersonScreen(person: p) : CollectScreen(person: p),
+        ),
+      ),
     );
   }
 }

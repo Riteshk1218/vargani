@@ -59,3 +59,6 @@ String formatDate(String? iso, {bool withTime = false}) {
   if (!withTime) return date;
   return '$date, ${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
 }
+
+/// A calendar day as the API's "YYYY-MM-DD".
+String isoDay(DateTime d) => '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
