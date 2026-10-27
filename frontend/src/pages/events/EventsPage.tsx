@@ -15,6 +15,7 @@ import type { EventItem, EventStatus } from '../../types/api'
 import { EventFormModal } from './EventFormModal'
 import { DownloadMenu } from '../../components/DownloadMenu'
 import { CreatedMeta, ListTools, useListTools } from '../../components/ListTools'
+import { BulkDeleteBar, DELETE_PERMISSION, SelectBox, useRowSelection } from '../../components/BulkDelete'
 
 export const STATUS_TONE: Record<EventStatus, 'green' | 'gray' | 'amber' | 'red'> = { active: 'green', draft: 'amber', closed: 'gray', archived: 'gray' }
 
@@ -32,6 +33,8 @@ export function EventsPage() {
     queryFn: () => eventService.list({ status: status || undefined, ...tools.query, page }),
   })
   const canManage = can('events.manage')
+  const canDelete = can(DELETE_PERMISSION)
+  const selection = useRowSelection([status, tools.query])
   const closeForm = () => {
     setEditing(null)
     if (creating) setParams((prev) => (prev.delete('new'), prev))
@@ -88,9 +91,13 @@ export function EventsPage() {
           />
         ) : (
           <>
+            {canDelete && (
+              <BulkDeleteBar selection={selection} ids={events.data!.results.map((e) => e.id)} path="/events/" invalidate={[['events'], ['dashboard']]} />
+            )}
             <ul className="divide-y divide-slate-100">
               {events.data!.results.map((event) => (
-                <li key={event.id} className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center">
+                <li key={event.id} className="flex flex-col gap-2 px-4 py-3 hover:bg-slate-50 sm:flex-row sm:items-center">
+                  {canDelete && <SelectBox checked={selection.has(event.id)} onChange={() => selection.toggle(event.id)} label={t('bulk.select')} />}
                   <Link to={`/app/events/${event.id}`} className="min-w-0 flex-1">
                     <p className="flex items-center gap-2 font-medium text-slate-900">
                       <span className="truncate">{event.name}</span>

@@ -20,6 +20,7 @@ import { LinkLoginModal } from './LinkLoginModal'
 import { PERSON_TYPES, PersonFormModal } from './PersonFormModal'
 import { DownloadMenu } from '../../components/DownloadMenu'
 import { CreatedMeta, ListTools, useListTools } from '../../components/ListTools'
+import { BulkDeleteBar, DELETE_PERMISSION, SelectAllHeader, SelectCell, useRowSelection } from '../../components/BulkDelete'
 
 export function PeoplePage() {
   const { t } = useTranslation()
@@ -55,6 +56,9 @@ export function PeoplePage() {
     onError,
   })
   const filtersActive = Boolean(debouncedSearch || type || tools.filtered)
+  const canDelete = can(DELETE_PERMISSION)
+  const selection = useRowSelection([debouncedSearch, type, tools.query])
+  const pageIds = people.data?.results.map((p) => p.id) ?? []
 
   return (
     <div>
@@ -118,10 +122,14 @@ export function PeoplePage() {
           )
         ) : (
           <>
+            {canDelete && (
+              <BulkDeleteBar selection={selection} ids={pageIds} path="/people/" invalidate={[['people']]} showSelectAll={false} message={t('bulk.confirmPeople')} />
+            )}
             <div className="overflow-x-auto">
               <table className="min-w-full text-sm">
                 <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
                   <tr>
+                    {canDelete && <SelectAllHeader selection={selection} ids={pageIds} />}
                     <th className="px-4 py-2 font-medium">{t('people.fullName')}</th>
                     <th className="hidden px-4 py-2 font-medium sm:table-cell">{t('people.mobile')}</th>
                     <th className="hidden px-4 py-2 font-medium md:table-cell">{t('people.area')}</th>
@@ -134,6 +142,7 @@ export function PeoplePage() {
                 <tbody className="divide-y divide-slate-100">
                   {people.data!.results.map((person) => (
                     <tr key={person.id} className="cursor-pointer hover:bg-slate-50" onClick={() => navigate(`/app/people/${person.id}`)}>
+                      {canDelete && <SelectCell selection={selection} id={person.id} />}
                       <td className="px-4 py-3">
                         <p className="font-medium text-slate-900">
                           <Link to={`/app/people/${person.id}`} className="hover:underline" onClick={(e) => e.stopPropagation()}>

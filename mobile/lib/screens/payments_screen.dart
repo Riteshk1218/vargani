@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../api/api_client.dart';
 import '../util/money.dart';
+import '../widgets/bulk_delete.dart';
 import '../widgets/common.dart';
 import '../widgets/list_tools.dart';
 import 'followups_screen.dart' show PavtiChips;
@@ -28,7 +29,7 @@ class PaymentsListScreen extends StatefulWidget {
   State<PaymentsListScreen> createState() => _PaymentsListScreenState();
 }
 
-class _PaymentsListScreenState extends State<PaymentsListScreen> {
+class _PaymentsListScreenState extends State<PaymentsListScreen> with BulkSelect {
   late ListQuery _query = ListQuery(dateFrom: widget.dateFrom, dateTo: widget.dateTo, ordering: '-paid_at');
 
   @override
@@ -40,15 +41,24 @@ class _PaymentsListScreenState extends State<PaymentsListScreen> {
       body: Column(
         children: [
           ListToolsBar(value: _query, onChanged: (q) => setState(() => _query = q), sortOptions: paymentSorts),
+          if (selecting)
+            BulkDeleteBar(
+              count: selected.length,
+              onSelectAll: toggleAllVisible,
+              onClear: clearSelected,
+              onDelete: () => confirmBulkDelete('/payments/', messageKey: 'bulk_confirm_collections'),
+            ),
           Expanded(
             child: AsyncView<Map<String, dynamic>>(
-              reloadKey: '${app.eventId}-${_query.key}',
+              reloadKey: '${app.eventId}-${_query.key}-$bulkVersion',
               load: () async => ((await app.api.get(
                 '/payments/',
                 query: {'event': app.eventId, ...widget.filters, ..._query.query, 'page_size': '100'},
               )) as Map).cast<String, dynamic>(),
               builder: (context, data, reload) {
                 final rows = resultsOf(data);
+                visibleIds = [for (final p in rows) if (p['status'] != 'deleted') '${p['id']}'];
+                final canDelete = app.can(deletePermission);
                 if (rows.isEmpty) return EmptyState(icon: Icons.payments_outlined, text: t('no_payments'));
                 final total = rows
                     .where((p) => p['status'] == 'successful')
@@ -71,7 +81,10 @@ class _PaymentsListScreenState extends State<PaymentsListScreen> {
                     }
                     final p = rows[i - 1];
                     final receipt = p['receipt'] as Map?;
+                    final id = '${p['id']}';
                     return ListTile(
+                      leading: selectBox(id),
+                      onLongPress: canDelete && p['status'] != 'deleted' ? () => toggleSelected(id) : null,
                       title: Text('${p['payer_name']}'),
                       subtitle: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -95,7 +108,9 @@ class _PaymentsListScreenState extends State<PaymentsListScreen> {
                           if (p['status'] != 'successful') StatusChip('${p['status']}'),
                         ],
                       ),
-                      onTap: receipt == null
+                      onTap: selecting
+                          ? (p['status'] != 'deleted' ? () => toggleSelected(id) : null)
+                          : receipt == null
                           ? null
                           : () => Navigator.push(
                               context,

@@ -14,10 +14,11 @@ import { receiptService } from '../../services/finance'
 import { formatMoney, formatStamp } from '../../utils/format'
 import { DownloadMenu } from '../../components/DownloadMenu'
 import { CreatedMeta, ListTools, useListTools } from '../../components/ListTools'
+import { BulkDeleteBar, DELETE_PERMISSION, SelectBox, useRowSelection } from '../../components/BulkDelete'
 
 export function ReceiptsPage() {
   const { t } = useTranslation()
-  const { activeOrgId, detail } = useOrg()
+  const { activeOrgId, detail, can } = useOrg()
   const { activeEvent } = useEvents()
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
@@ -30,6 +31,8 @@ export function ReceiptsPage() {
     enabled: Boolean(eventId),
   })
   const currency = detail?.organization.currency
+  const selection = useRowSelection([eventId, debounced, tools.query])
+  const canDelete = can(DELETE_PERMISSION)
 
   return (
     <div>
@@ -60,10 +63,23 @@ export function ReceiptsPage() {
               <EmptyState icon={<ReceiptText className="size-6" />} title={debounced || tools.filtered ? t('people.noMatches') : t('receipts.empty')} message={debounced || tools.filtered ? undefined : t('receipts.emptyMessage')} />
             ) : (
               <>
+                {canDelete && (
+                  <BulkDeleteBar
+                    selection={selection}
+                    ids={receipts.data!.results.filter((r) => r.status !== 'void').map((r) => r.id)}
+                    path="/receipts/"
+                    invalidate={[['receipts'], ['payments'], ['contributions'], ['dues'], ['dashboard']]}
+                    message={t('bulk.confirmCollections')}
+                  />
+                )}
                 <ul className="divide-y divide-slate-100">
                   {receipts.data!.results.map((r) => (
-                    <li key={r.id}>
-                      <Link to={`/app/receipts/${r.id}`} className="flex items-center justify-between gap-3 px-4 py-3 text-sm hover:bg-slate-50">
+                    <li key={r.id} className="flex items-center">
+                      {canDelete && r.status !== 'void' && (
+                        <SelectBox className="ml-4" checked={selection.has(r.id)} onChange={() => selection.toggle(r.id)} label={t('bulk.select')} />
+                      )}
+                      {canDelete && r.status === 'void' && <span className="ml-4 size-4 shrink-0" />}
+                      <Link to={`/app/receipts/${r.id}`} className="flex min-w-0 flex-1 items-center justify-between gap-3 px-4 py-3 text-sm hover:bg-slate-50">
                         <div className="min-w-0">
                           <p className="font-mono font-medium">{r.receipt_number}</p>
                           <p className="truncate text-slate-600">

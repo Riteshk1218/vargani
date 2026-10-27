@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../api/api_client.dart';
+import '../widgets/bulk_delete.dart';
 import '../widgets/common.dart';
 import '../widgets/list_tools.dart';
 import 'collect_screen.dart';
@@ -18,6 +19,7 @@ class PeopleScreen extends StatelessWidget {
     final app = AppScope.of(context);
     // With access to payments, a person opens their contribution history (Collect is one tap from there).
     return PersonSearchList(
+      bulkDelete: true,
       onPick: (p) => Navigator.push(
         context,
         MaterialPageRoute(
@@ -29,8 +31,11 @@ class PeopleScreen extends StatelessWidget {
 }
 
 class PersonSearchList extends StatefulWidget {
-  const PersonSearchList({super.key, required this.onPick, this.searchFirst = false});
+  const PersonSearchList({super.key, required this.onPick, this.searchFirst = false, this.bulkDelete = false});
   final void Function(Map<String, dynamic> person) onPick;
+
+  /// The admin may tick people (long press) and delete them together.
+  final bool bulkDelete;
 
   /// List nobody until something is typed (picking a contributor from hundreds of donors).
   final bool searchFirst;
@@ -39,7 +44,7 @@ class PersonSearchList extends StatefulWidget {
   State<PersonSearchList> createState() => _PersonSearchListState();
 }
 
-class _PersonSearchListState extends State<PersonSearchList> {
+class _PersonSearchListState extends State<PersonSearchList> with BulkSelect {
   final _search = TextEditingController();
   Timer? _debounce;
   final List<Map<String, dynamic>> _items = [];
@@ -92,6 +97,7 @@ class _PersonSearchListState extends State<PersonSearchList> {
       setState(() {
         if (reset) _items.clear();
         _items.addAll(resultsOf(data));
+        visibleIds = [for (final p in _items) '${p['id']}'];
         _hasMore = data is Map && data['next'] != null;
         _page += 1;
       });
@@ -138,6 +144,17 @@ class _PersonSearchListState extends State<PersonSearchList> {
               SortOption('area', 'list_area'),
             ],
           ),
+        if (selecting)
+          BulkDeleteBar(
+            count: selected.length,
+            onSelectAll: toggleAllVisible,
+            onClear: clearSelected,
+            onDelete: () async {
+              final before = bulkVersion;
+              await confirmBulkDelete('/people/', messageKey: 'bulk_confirm_people');
+              if (bulkVersion != before) _load(reset: true);
+            },
+          ),
         Expanded(
           child: RefreshIndicator(
             onRefresh: () => _load(reset: true),
@@ -179,8 +196,11 @@ class _PersonSearchListState extends State<PersonSearchList> {
                         p['building'],
                         p['area'],
                       ].where((s) => s != null && '$s'.isNotEmpty).join(' · ');
+                      final id = '${p['id']}';
+                      final canDelete = widget.bulkDelete && app.can(deletePermission);
                       return ListTile(
-                        leading: CircleAvatar(child: Text('${p['full_name']}'.characters.first)),
+                        leading: selectBox(id) ?? CircleAvatar(child: Text('${p['full_name']}'.characters.first)),
+                        onLongPress: canDelete ? () => toggleSelected(id) : null,
                         title: Text('${p['full_name']}'),
                         subtitle: widget.searchFirst
                             ? (sub.isEmpty ? null : Text(sub))
@@ -189,7 +209,7 @@ class _PersonSearchListState extends State<PersonSearchList> {
                                 children: [if (sub.isNotEmpty) Text(sub), CreatedLine(p)],
                               ),
                         trailing: const Icon(Icons.chevron_right),
-                        onTap: () => widget.onPick(p),
+                        onTap: selecting ? () => toggleSelected(id) : () => widget.onPick(p),
                       );
                     },
                   ),

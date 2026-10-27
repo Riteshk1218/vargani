@@ -11,6 +11,7 @@ from rest_framework.views import APIView
 from apps.audit import services as audit
 from apps.contributions.defaults import seed_types
 from apps.core.admin_override import ADMIN_EDIT
+from apps.core.bulk import BulkDeleteMixin
 from apps.core.dates import OrgDayFilter
 from apps.core.downloads import Col, ListDownloadMixin
 from apps.core.exceptions import EventRequired, InvalidStateTransition
@@ -38,7 +39,7 @@ class EventFilter(django_filters.FilterSet):
         fields = ["financial_year", "status", "template"]
 
 
-class EventViewSet(ListDownloadMixin, TenantModelViewSet):
+class EventViewSet(BulkDeleteMixin, ListDownloadMixin, TenantModelViewSet):
     queryset = Event.objects.all()
     download_title = gettext_noop("Events")
     download_columns = [
@@ -65,6 +66,7 @@ class EventViewSet(ListDownloadMixin, TenantModelViewSet):
         "activate": "events.manage",
         "archive": "events.manage",
         "destroy": ADMIN_EDIT,
+        "bulk_delete": ADMIN_EDIT,
     }
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
 
@@ -77,11 +79,14 @@ class EventViewSet(ListDownloadMixin, TenantModelViewSet):
 
     def destroy(self, request, *args, **kwargs):
         """Organization Admin: delete an event. It disappears from every list and summary; its records stay."""
-        event = self.get_object()
+        self.bulk_delete_one(self.get_object())
+        return Response(status=204)
+
+    def bulk_delete_one(self, event):
         before = model_to_dict(event)
-        event.soft_delete(user=request.user)
+        event.soft_delete(user=self.request.user)
         audit.record(
-            request=request,
+            request=self.request,
             organization=self.organization,
             action=audit.SOFT_DELETE,
             entity_type="events.event",
@@ -89,7 +94,6 @@ class EventViewSet(ListDownloadMixin, TenantModelViewSet):
             before=before,
             after=model_to_dict(event),
         )
-        return Response(status=204)
 
     def scope_queryset(self, queryset):
         if self.org_context.scope("events.view") == SCOPE_ALL:
