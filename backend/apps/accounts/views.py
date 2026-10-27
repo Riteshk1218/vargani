@@ -82,7 +82,7 @@ class ResendVerificationView(PublicAuthView):
         kind, destination = normalize_identifier(serializer.validated_data["destination"])
         user = services.find_user(kind, destination)
         payload = {"verification": {"destination": services.mask(destination)}}
-        if user is not None and not user.is_verified:
+        if user is not None and not user.is_verified and kind != "username":
             code = issue_otp(destination, OTPChallenge.Purpose.REGISTER, ip=_client_ip(request))
             payload = services.verification_payload(destination, code)
         return Response(payload)  # same response whether or not the account exists
@@ -162,7 +162,8 @@ class ForgotPasswordView(PublicAuthView):
         kind, value = normalize_identifier(serializer.validated_data["identifier"])
         user = services.find_user(kind, value)
         payload = {"detail": _("If an account exists, a reset code has been sent.")}
-        if user is not None and user.is_active:
+        # A username has nowhere to send a code to; the organization admin sets a new password instead.
+        if user is not None and user.is_active and kind != "username":
             code = issue_otp(value, OTPChallenge.Purpose.RESET, ip=_client_ip(request))
             if settings.OTP_DEBUG_ECHO:
                 payload["debug_code"] = code

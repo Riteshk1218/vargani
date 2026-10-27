@@ -22,7 +22,7 @@ export function UserMenu() {
         <div>
           <div className="px-3 py-2">
             <p className="truncate text-sm font-semibold">{user.full_name}</p>
-            <p className="truncate text-xs text-slate-500">{user.email ?? user.mobile}</p>
+            <p className="truncate text-xs text-slate-500">{user.username ?? user.email ?? user.mobile}</p>
           </div>
           <div className="my-1 border-t border-slate-100" />
           <button

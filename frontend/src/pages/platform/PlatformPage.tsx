@@ -22,7 +22,7 @@ import { toApiError } from '../../services/apiClient'
 import { platformService } from '../../services/organizations'
 import type { PlatformOrganization, PlatformUser } from '../../types/api'
 import { cn } from '../../utils/cn'
-import { formatDate, formatMobile } from '../../utils/format'
+import { formatDate, formatMobile, loginOf } from '../../utils/format'
 
 const PAGE_SIZE = 25
 
@@ -185,7 +185,7 @@ function OrganizationRow({ org, busy, onStatus }: { org: PlatformOrganization; b
             {t('platform.admin')}:{' '}
             {org.admins.length === 0
               ? '–'
-              : org.admins.map((a) => `${a.full_name} (${a.mobile ? formatMobile(a.mobile) : a.email})`).join(', ')}
+              : org.admins.map((a) => `${a.full_name} (${loginOf(a)})`).join(', ')}
           </p>
           <p className="text-xs text-slate-500">
             {t('platform.counts', { users: org.users_count, people: org.people_count, events: org.events_count, receipts: org.receipts_count })}
@@ -205,6 +205,7 @@ interface CreateValues {
   name: string
   city: string
   full_name: string
+  username: string
   mobile: string
   email: string
   password: string
@@ -215,9 +216,9 @@ function CreateOrganizationModal({ open, onClose }: { open: boolean; onClose: ()
   const queryClient = useQueryClient()
   const [created, setCreated] = useState<{ org: PlatformOrganization; password: string } | null>(null)
   const { register, handleSubmit, reset, setError, setValue, watch, formState } = useForm<CreateValues>({
-    defaultValues: { name: '', city: '', full_name: '', mobile: '', email: '', password: '' },
+    defaultValues: { name: '', city: '', full_name: '', username: '', mobile: '', email: '', password: '' },
   })
-  const onError = useApiErrors(setError, ['name', 'city', 'full_name', 'mobile', 'email', 'password'])
+  const onError = useApiErrors(setError, ['name', 'city', 'full_name', 'username', 'mobile', 'email', 'password'])
   register('password', { required: true })
   const close = () => {
     setCreated(null)
@@ -230,6 +231,7 @@ function CreateOrganizationModal({ open, onClose }: { open: boolean; onClose: ()
         name: values.name,
         city: values.city,
         full_name: values.full_name,
+        username: values.username.trim() || undefined,
         mobile: values.mobile || undefined,
         email: values.email || undefined,
         password: values.password,
@@ -254,7 +256,7 @@ function CreateOrganizationModal({ open, onClose }: { open: boolean; onClose: ()
             <LoginShareCard
               name={admin.full_name}
               organization={created.org.name}
-              identifier={admin.mobile ? formatMobile(admin.mobile) : (admin.email ?? '')}
+              identifier={loginOf(admin)}
               mobile={admin.mobile}
               password={created.password}
             />
@@ -269,6 +271,7 @@ function CreateOrganizationModal({ open, onClose }: { open: boolean; onClose: ()
           <TextInput label={t('organization.city')} error={formState.errors.city?.message} {...register('city')} />
           <h3 className="border-t border-slate-200 pt-4 text-sm font-semibold">{t('platform.firstAdmin')}</h3>
           <TextInput label={t('users.name')} required error={formState.errors.full_name && required(formState.errors.full_name.message)} {...register('full_name', { required: true })} />
+          <TextInput label={t('users.username')} autoCapitalize="none" autoComplete="off" spellCheck={false} hint={t('users.usernameHint')} error={formState.errors.username?.message} {...register('username')} />
           <TextInput label={t('auth.mobile')} type="tel" inputMode="tel" error={formState.errors.mobile?.message} {...register('mobile')} />
           <TextInput label={t('auth.email')} type="email" error={formState.errors.email?.message} {...register('email')} />
           <p className="text-xs text-slate-500">{t('users.addHint')}</p>
@@ -350,7 +353,7 @@ function UsersTab() {
                     {!row.is_active && <Badge tone="amber">{t('platform.blocked')}</Badge>}{' '}
                     {!row.is_verified && <Badge tone="red">{t('platform.notVerified')}</Badge>}
                   </p>
-                  <p className="truncate text-sm text-slate-500">{[row.mobile && formatMobile(row.mobile), row.email].filter(Boolean).join(' · ')}</p>
+                  <p className="truncate text-sm text-slate-500">{[row.username, row.mobile && formatMobile(row.mobile), row.email].filter(Boolean).join(' · ')}</p>
                   <p className="text-sm text-slate-600">
                     {row.organizations.length === 0
                       ? t('platform.noOrganization')
@@ -421,7 +424,7 @@ function UserPasswordModal({ user, onClose }: { user: PlatformUser | null; onClo
           <LoginShareCard
             name={user.full_name}
             organization={user.organizations[0]?.name}
-            identifier={user.mobile ? formatMobile(user.mobile) : (user.email ?? '')}
+            identifier={loginOf(user)}
             mobile={user.mobile}
             password={password}
           />

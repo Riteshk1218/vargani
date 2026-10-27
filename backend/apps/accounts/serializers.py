@@ -5,14 +5,16 @@ from rest_framework import serializers
 
 from apps.core.phone import normalize_mobile
 
-from .models import Language, User
+from .models import Language, User, normalize_username
 
 
 def normalize_identifier(value: str) -> tuple[str, str]:
-    """Return ("email"|"mobile", normalised value)."""
+    """Return ("email"|"mobile"|"username", normalised value)."""
     value = (value or "").strip()
     if "@" in value:
         return "email", value.lower()
+    if value[:1].isalpha():
+        return "username", value.lower()  # mobile numbers never start with a letter
     try:
         return "mobile", normalize_mobile(value)
     except DjangoValidationError as exc:
@@ -30,6 +32,17 @@ class MobileField(serializers.CharField):
             raise serializers.ValidationError(exc.messages, code="invalid_mobile") from exc
 
 
+class UsernameField(serializers.CharField):
+    def to_internal_value(self, data):
+        value = super().to_internal_value(data)
+        if not value:
+            return None
+        try:
+            return normalize_username(value)
+        except DjangoValidationError as exc:
+            raise serializers.ValidationError(exc.messages, code="invalid_username") from exc
+
+
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
@@ -38,6 +51,7 @@ class UserSerializer(serializers.ModelSerializer):
             "full_name",
             "email",
             "mobile",
+            "username",
             "preferred_language",
             "email_verified_at",
             "mobile_verified_at",
@@ -80,7 +94,7 @@ class ResendSerializer(serializers.Serializer):
 
 
 class LoginSerializer(serializers.Serializer):
-    identifier = serializers.CharField(help_text="Email address or mobile number")
+    identifier = serializers.CharField(help_text="Email address, mobile number or username")
     password = serializers.CharField(write_only=True, style={"input_type": "password"})
 
 

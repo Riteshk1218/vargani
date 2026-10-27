@@ -58,6 +58,8 @@ export const memberService = {
     api.patch<Member>(`/members/${id}/`, input).then((r) => r.data),
   add: (input: LoginDetailsInput & { role_id: string }) => api.post<Member>('/members/', input).then((r) => r.data),
   setPassword: (id: string, password: string) => api.post(`/members/${id}/set-password/`, { password }).then((r) => r.data),
+  /** Deletes the person's access to this organization; their past records keep their name. */
+  remove: (id: string) => api.post(`/members/${id}/remove/`).then((r) => r.data),
   roles: () => api.get<Role[]>('/roles/').then((r) => r.data),
   invitations: (params: { status?: string }) =>
     api.get<Paginated<Invitation>>('/invitations/', { params }).then((r) => r.data),

@@ -21,6 +21,11 @@ export function formatDate(value: string | null | undefined): string {
   return new Intl.DateTimeFormat(locale(), { day: 'numeric', month: 'short', year: 'numeric' }).format(date)
 }
 
+/** What a person types in the login box: their username, else mobile, else email. */
+export function loginOf(user: { username?: string | null; mobile: string | null; email: string | null }): string {
+  return user.username || formatMobile(user.mobile) || user.email || ''
+}
+
 export function formatMobile(value: string | null | undefined): string {
   if (!value) return ''
   const match = /^\+91(\d{5})(\d{5})$/.exec(value)

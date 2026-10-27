@@ -3,7 +3,7 @@ from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
 from apps.accounts.models import Language
-from apps.accounts.serializers import MobileField
+from apps.accounts.serializers import MobileField, UsernameField
 
 from . import services
 from .models import FinancialYear, Invitation, Organization, OrganizationMembership, Permission, Role
@@ -183,6 +183,7 @@ class MemberSerializer(serializers.ModelSerializer):
         return {
             "id": str(obj.user.pk),
             "full_name": obj.user.full_name,
+            "username": obj.user.username,
             "email": obj.user.email,
             "mobile": obj.user.mobile,
         }
@@ -214,22 +215,25 @@ class InvitationSerializer(serializers.ModelSerializer):
         return attrs
 
 
-def _check_password(password, *, full_name="", email=None, mobile=None):
+def _check_password(password, *, full_name="", email=None, mobile=None, username=None):
     from django.contrib.auth import password_validation
     from django.core.exceptions import ValidationError as DjangoValidationError
 
     from apps.accounts.models import User
 
     try:
-        password_validation.validate_password(password, User(full_name=full_name, email=email, mobile=mobile))
+        password_validation.validate_password(
+            password, User(full_name=full_name, email=email, mobile=mobile, username=username)
+        )
     except DjangoValidationError as exc:
         raise serializers.ValidationError({"password": exc.messages}) from exc
 
 
 class LoginDetailsSerializer(serializers.Serializer):
-    """Name, email or mobile and a password that an admin types in for someone else."""
+    """Name, a username, email or mobile, and a password that an admin types in for someone else."""
 
     full_name = serializers.CharField(max_length=150)
+    username = UsernameField(required=False, allow_blank=True, allow_null=True)
     email = serializers.EmailField(required=False, allow_blank=True, allow_null=True)
     mobile = MobileField(required=False, allow_blank=True, allow_null=True)
     password = serializers.CharField(write_only=True, style={"input_type": "password"})
@@ -243,9 +247,16 @@ class LoginDetailsSerializer(serializers.Serializer):
     def validate(self, attrs):
         attrs["email"] = (attrs.get("email") or "").lower() or None
         attrs["mobile"] = attrs.get("mobile") or None
-        if not attrs["email"] and not attrs["mobile"]:
-            raise serializers.ValidationError(_("Enter an email address or a mobile number."))
-        _check_password(attrs["password"], full_name=attrs["full_name"], email=attrs["email"], mobile=attrs["mobile"])
+        attrs["username"] = attrs.get("username") or None
+        if not attrs["email"] and not attrs["mobile"] and not attrs["username"]:
+            raise serializers.ValidationError(_("Enter a username, an email address or a mobile number."))
+        _check_password(
+            attrs["password"],
+            full_name=attrs["full_name"],
+            email=attrs["email"],
+            mobile=attrs["mobile"],
+            username=attrs["username"],
+        )
         return attrs
 
 
@@ -265,7 +276,12 @@ class SetPasswordSerializer(serializers.Serializer):
 
     def validate_password(self, value):
         user = self.context.get("user")
-        _check_password(value, full_name=getattr(user, "full_name", ""), email=getattr(user, "email", None))
+        _check_password(
+            value,
+            full_name=getattr(user, "full_name", ""),
+            email=getattr(user, "email", None),
+            username=getattr(user, "username", None),
+        )
         return value
 
 

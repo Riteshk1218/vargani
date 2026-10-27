@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../l10n/strings.dart';
 import '../widgets/common.dart';
+import 'users_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -14,7 +15,9 @@ class SettingsScreen extends StatelessWidget {
       ListTile(
         leading: const Icon(Icons.account_circle_outlined),
         title: Text('${app.user?['full_name'] ?? ''}'),
-        subtitle: Text([app.user?['email'], app.user?['mobile']].where((x) => x != null).join(' · ')),
+        subtitle: Text(
+          [app.user?['username'], app.user?['email'], app.user?['mobile']].where((x) => x != null).join(' · '),
+        ),
       ),
       ListTile(
         leading: const Icon(Icons.groups_outlined),
@@ -26,6 +29,14 @@ class SettingsScreen extends StatelessWidget {
         title: Text(t('event')),
         subtitle: Text('${app.event?['name'] ?? t('no_events')}'),
       ),
+      if (app.can('members.manage'))
+        ListTile(
+          key: const Key('manage-users'),
+          leading: const Icon(Icons.manage_accounts_outlined),
+          title: Text(t('users')),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const UsersScreen())),
+        ),
       const Divider(),
       ListTile(leading: const Icon(Icons.translate), title: Text(t('language'))),
       RadioGroup<String>(

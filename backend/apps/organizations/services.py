@@ -459,25 +459,56 @@ def _find_existing_user(email, mobile):
     return next(iter(matches.values()), None)
 
 
-def create_login(*, full_name, email, mobile, password):
+def _reusable_username_login(username, org):
+    """The login that owns this username, when it may be given to someone again in this organization: it was
+    made for this organization alone and its access was deleted. Anyone else's username is taken."""
+    from apps.accounts.models import User
+    from apps.core.rls import unscoped
+
+    user = User.objects.filter(username=username).first()
+    if user is None:
+        return None
+    if org is not None and not (user.is_platform_admin or user.is_staff):
+        with unscoped():
+            memberships = list(OrganizationMembership.objects.filter(user=user).values_list("organization", "status"))
+        if memberships and all(
+            o == org.pk and status_ == OrganizationMembership.Status.REMOVED for o, status_ in memberships
+        ):
+            return user
+    raise ValidationError(
+        {"username": [_("This username is already taken. Choose another one.")]}, code="username_taken"
+    )
+
+
+def create_login(*, full_name, email, mobile, password, username=None, org=None):
     """A new login whose details the admin typed in. Returns (user, created): an existing account is reused
     and keeps its own password."""
     from apps.accounts.models import User
 
+    reused = _reusable_username_login(username, org) if username else None
     existing = _find_existing_user(email, mobile)
-    if existing is not None and existing.is_verified:
+    if reused is not None and existing is not None and existing.pk != reused.pk:
+        raise ValidationError(
+            {"username": [_("This username is already taken. Choose another one.")]}, code="username_taken"
+        )
+    if reused is None and existing is not None and existing.is_verified:
         return existing, False
-    if existing is not None:
-        # Someone started signing up but never entered the code, so nobody has proved the account is theirs
-        # (a new sign-up may take it over the same way). The admin's details replace it.
-        user = existing
+    user = reused or existing
+    if user is not None:
+        # Either someone started signing up but never entered the code, so nobody has proved the account is
+        # theirs (a new sign-up may take it over the same way), or it is this organization's own deleted
+        # username login. The admin's details replace it.
         user.full_name = full_name
         user.email = email or user.email
         user.mobile = mobile or user.mobile
+        user.username = username or user.username
+        user.is_active = True
         user.set_password(password)
         user.save()
     else:
-        user = User.objects.create_user(full_name=full_name, email=email, mobile=mobile, password=password)
+        user = User.objects.create_user(
+            full_name=full_name, email=email, mobile=mobile, username=username, password=password
+        )
     # The admin vouches for these details, so the person can log in straight away.
     now = timezone.now()
     user.email_verified_at = now if user.email else None
@@ -487,9 +518,11 @@ def create_login(*, full_name, email, mobile, password):
 
 
 @transaction.atomic
-def add_member_directly(*, org, role, full_name, email, mobile, password, request):
+def add_member_directly(*, org, role, full_name, email, mobile, password, request, username=None):
     """Give someone access without an invitation link: the admin sets their login details."""
-    user, created = create_login(full_name=full_name, email=email, mobile=mobile, password=password)
+    user, created = create_login(
+        full_name=full_name, email=email, mobile=mobile, username=username, password=password, org=org
+    )
     membership = OrganizationMembership.objects.filter(organization=org, user=user).first()
     if membership is not None and membership.status == OrganizationMembership.Status.ACTIVE:
         raise ValidationError(
@@ -518,6 +551,18 @@ def add_member_directly(*, org, role, full_name, email, mobile, password, reques
         after={"user": str(user.pk), "role": role.code, "reason": "added_by_admin", "new_login": created},
     )
     return membership, created
+
+
+@transaction.atomic
+def remove_member(membership: OrganizationMembership, request) -> OrganizationMembership:
+    """Delete someone's access: they disappear from the list and are logged out. Their name stays on the
+    receipts and records they made, and the audit log keeps who did what."""
+    from apps.accounts.services import revoke_all_tokens
+
+    membership = update_membership(membership, status_value=OrganizationMembership.Status.REMOVED, request=request)
+    if can_admin_reset_password(membership):
+        revoke_all_tokens(membership.user)
+    return membership
 
 
 def can_admin_reset_password(membership: OrganizationMembership) -> bool:

@@ -21,6 +21,7 @@ class FakeApi {
   Map<String, dynamic> get permissions => switch (role) {
     'collector' => {'payments.create': 'assigned', 'receipts.view': 'own', 'receipts.share': 'own', 'portal.self': 'self'},
     'treasurer' => {'payments.create': 'all', 'payments.view': 'all', 'receipts.view': 'all'},
+    'org_admin' => {'payments.create': 'all', 'members.view': 'all', 'members.manage': 'all'},
     _ => {'portal.self': 'self'},
   };
 
@@ -42,7 +43,8 @@ class FakeApi {
       case ('POST', '/auth/otp/verify/'):
         return _json({'access': 'A', 'refresh': 'R', 'user': {}});
       case ('GET', '/me/'):
-        return _json({'full_name': role == 'collector' ? 'Kiran' : 'Ritesh', 'preferred_language': 'en'});
+        return _json({'id': role == 'collector' ? 'u-2' : 'u-1', 'full_name': role == 'collector' ? 'Kiran' : 'Ritesh',
+          'preferred_language': 'en'});
       case ('PATCH', '/me/'):
         return _json({});
       case ('GET', '/me/organizations/'):
@@ -95,6 +97,29 @@ class FakeApi {
         return _json({'follow_ups': {'overdue': 0, 'due_today': 0, 'owing': 1, 'balance': '151.00'}});
       case ('GET', '/receipts/rc-1/'):
         return _json(_receipt);
+      case ('GET', '/members/'):
+        return _json({'count': 2, 'next': null, 'results': [
+          {'id': 'm-1', 'status': 'active', 'can_reset_password': false,
+           'role': {'id': 'r-admin', 'code': 'org_admin', 'name': 'Organization Admin'},
+           'user': {'id': 'u-1', 'full_name': 'Ritesh', 'username': 'ritesh', 'email': null, 'mobile': null}},
+          {'id': 'm-2', 'status': 'active', 'can_reset_password': true,
+           'role': {'id': 'r-col', 'code': 'collector', 'name': 'Collector'},
+           'user': {'id': 'u-2', 'full_name': 'Kiran', 'username': 'kiran', 'email': null, 'mobile': '+919822001144'}},
+        ]});
+      case ('GET', '/roles/'):
+        return _json([
+          {'id': 'r-admin', 'code': 'org_admin', 'name': 'Organization Admin'},
+          {'id': 'r-col', 'code': 'collector', 'name': 'Collector'},
+        ]);
+      case ('POST', '/members/'):
+        final b = jsonDecode(r.body) as Map<String, dynamic>;
+        return _json({'id': 'm-3', 'status': 'active', 'new_login': true, 'can_reset_password': true,
+          'role': {'id': b['role_id'], 'code': 'collector', 'name': 'Collector'},
+          'user': {'id': 'u-3', 'full_name': b['full_name'], 'username': b['username'], 'email': null, 'mobile': null}}, 201);
+      case ('PATCH', '/members/m-2/'):
+        return _json({});
+      case ('POST', '/members/m-2/remove/'):
+        return http.Response('', 204);
       case ('GET', '/portal/me/'):
         return _json({'person': {'full_name': 'Ritesh Patil'}, 'organization': {'name': 'Demo Mandal'},
           'events': [{'id': event, 'name': 'Ganesh Chaturthi 2026', 'status': 'active'}], 'online_payments': true});
@@ -261,5 +286,58 @@ void main() {
     await tester.tap(find.byKey(const Key('person-collect')));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('collect-amount-0')), findsOneWidget);
+  });
+
+  testWidgets('an admin logs in with a username and manages users', (tester) async {
+    final (_, fake) = await start(tester, 'org_admin');
+    await tester.enterText(find.byKey(const Key('login-identifier')), 'ritesh');
+    await tester.enterText(find.byKey(const Key('login-password')), 'right');
+    await tester.tap(find.byKey(const Key('login-submit')));
+    await tester.pumpAndSettle();
+    expect(jsonDecode(fake.requests.firstWhere((r) => r.url.path.endsWith('/auth/login/')).body)['identifier'], 'ritesh');
+
+    await tester.tap(find.text('Settings'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('manage-users')));
+    await tester.pumpAndSettle();
+    expect(find.text('Ritesh (you)'), findsOneWidget);
+    expect(find.text('kiran · Collector'), findsOneWidget);
+
+    // Add a collector with only a username and a password.
+    await tester.tap(find.byKey(const Key('fab-add-user')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('add-user-name')), 'Ramesh Pawar');
+    await tester.enterText(find.byKey(const Key('add-user-username')), 'ramesh');
+    await tester.enterText(find.byKey(const Key('user-password-field')), 'Kmrt-4829-Pqws');
+    await tester.tap(find.byKey(const Key('add-user-save')));
+    await tester.pumpAndSettle();
+    final added = jsonDecode(fake.requests.lastWhere((r) => r.method == 'POST' && r.url.path.endsWith('/members/')).body);
+    expect(added['username'], 'ramesh');
+    expect(added['role_id'], 'r-col');
+    expect(added['mobile'], isNull);
+    expect(find.textContaining('Login: ramesh'), findsOneWidget);
+    await tester.tap(find.text('Close'));
+    await tester.pumpAndSettle();
+
+    // Deactivate, then delete Kiran.
+    await tester.tap(find.text('Kiran'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('user-status')));
+    await tester.pumpAndSettle();
+    final patch = fake.requests.lastWhere((r) => r.method == 'PATCH');
+    expect(patch.url.path, '/api/v1/members/m-2/');
+    expect(jsonDecode(patch.body), {'status': 'suspended'});
+
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Kiran'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('user-delete')));
+    await tester.pumpAndSettle();
+    expect(find.text('Delete Kiran?'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('confirm-delete')));
+    await tester.pumpAndSettle();
+    expect(fake.requests.any((r) => r.method == 'POST' && r.url.path == '/api/v1/members/m-2/remove/'), isTrue);
+    expect(find.text('User deleted'), findsOneWidget);
   });
 }

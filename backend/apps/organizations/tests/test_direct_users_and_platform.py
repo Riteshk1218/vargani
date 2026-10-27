@@ -227,3 +227,112 @@ def test_admin_adding_unconfirmed_signup_sets_their_login(client_for, make_org, 
         "/api/v1/auth/login/", {"identifier": "stuck@example.com", "password": NEW_PASSWORD}, format="json"
     )
     assert login.status_code == 200
+
+
+# --- Username logins ------------------------------------------------------------
+def _add_username_user(client, username="Ramesh.P", role="collector"):
+    return client.post(
+        "/api/v1/members/",
+        {
+            "full_name": "Ramesh Pawar",
+            "username": username,
+            "password": NEW_PASSWORD,
+            "role_id": _role_id(client, role),
+        },
+        format="json",
+    )
+
+
+def test_admin_adds_username_login_without_email_or_mobile(client_for, make_org, api):
+    org = make_org()
+    client = org_client(client_for, org, org.admin_user)
+    response = _add_username_user(client)
+    assert response.status_code == 201, response.data
+    assert response.data["user"]["username"] == "ramesh.p"
+    assert response.data["new_login"] is True
+    for identifier in ("ramesh.p", "  RAMESH.P "):
+        login = api.post("/api/v1/auth/login/", {"identifier": identifier, "password": NEW_PASSWORD}, format="json")
+        assert login.status_code == 200, login.data
+        assert login.data["user"]["username"] == "ramesh.p"
+    wrong = api.post("/api/v1/auth/login/", {"identifier": "ramesh.p", "password": "wrong-pass"}, format="json")
+    assert wrong.status_code == 400
+
+
+def test_username_rules_and_uniqueness(client_for, make_org):
+    org = make_org()
+    other = make_org("Other")
+    client = org_client(client_for, org, org.admin_user)
+    for bad in ("ab", "9ramesh", "ram esh", "ram@esh"):
+        response = _add_username_user(client, username=bad)
+        assert response.status_code == 400, bad
+        assert "username" in response.data["error"]["details"], bad
+    assert _add_username_user(client).status_code == 201
+    other_client = org_client(client_for, other, other.admin_user)
+    taken = _add_username_user(other_client, username="ramesh.p")
+    assert taken.status_code == 400
+    assert "username" in taken.data["error"]["details"]
+
+
+def test_suspended_and_deleted_users_lose_access(client_for, make_org, api):
+    org = make_org()
+    client = org_client(client_for, org, org.admin_user)
+    member_id = _add_username_user(client).data["id"]
+    user = User.objects.get(username="ramesh.p")
+    their_client = client_for(user, org)
+    assert their_client.get(f"/api/v1/organizations/{org.pk}/").status_code == 200
+
+    client.patch(f"/api/v1/members/{member_id}/", {"status": "suspended"}, format="json")
+    assert their_client.get(f"/api/v1/organizations/{org.pk}/").status_code == 403
+    client.patch(f"/api/v1/members/{member_id}/", {"status": "active"}, format="json")
+
+    assert client.post(f"/api/v1/members/{member_id}/remove/").status_code == 204
+    assert OrganizationMembership.objects.get(pk=member_id).status == "removed"
+    assert member_id not in [m["id"] for m in client.get("/api/v1/members/").data["results"]]
+    assert their_client.get(f"/api/v1/organizations/{org.pk}/").status_code == 403
+    assert AuditLog.objects.filter(organization=org, entity_id=member_id, after__status="removed").exists()
+
+
+def test_deleted_username_can_be_given_again_in_same_org(client_for, make_org, api):
+    org = make_org()
+    client = org_client(client_for, org, org.admin_user)
+    member_id = _add_username_user(client).data["id"]
+    client.post(f"/api/v1/members/{member_id}/remove/")
+    again = client.post(
+        "/api/v1/members/",
+        {
+            "full_name": "Ramesh K",
+            "username": "ramesh.p",
+            "password": "Morya-Morya-2028",
+            "role_id": _role_id(client, "treasurer"),
+        },
+        format="json",
+    )
+    assert again.status_code == 201, again.data
+    assert again.data["status"] == "active"
+    assert again.data["role"]["code"] == "treasurer"
+    login = api.post("/api/v1/auth/login/", {"identifier": "ramesh.p", "password": "Morya-Morya-2028"}, format="json")
+    assert login.status_code == 200
+
+
+def test_admin_cannot_delete_self_or_last_admin(client_for, make_org):
+    org = make_org()
+    client = org_client(client_for, org, org.admin_user)
+    own = OrganizationMembership.objects.get(organization=org, user=org.admin_user)
+    assert client.post(f"/api/v1/members/{own.pk}/remove/").status_code == 422
+    assert OrganizationMembership.objects.get(pk=own.pk).status == "active"
+
+
+def test_only_member_managers_can_delete_users(client_for, make_org, add_member):
+    org = make_org()
+    collector = add_member(org, "collector")
+    target = add_member(org, "treasurer")
+    target_id = OrganizationMembership.objects.get(organization=org, user=target).pk
+    response = client_for(collector, org).post(f"/api/v1/members/{target_id}/remove/")
+    assert response.status_code == 403
+
+
+def test_forgot_password_for_username_sends_nothing(api):
+    User.objects.create_user(full_name="Ramesh", username="ramesh.p", password=NEW_PASSWORD)
+    response = api.post("/api/v1/auth/password/forgot/", {"identifier": "ramesh.p"}, format="json")
+    assert response.status_code == 200
+    assert "debug_code" not in response.data

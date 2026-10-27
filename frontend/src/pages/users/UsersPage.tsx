@@ -1,12 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Copy, KeyRound, MailPlus, MessageCircle, UserPlus } from 'lucide-react'
+import { Copy, KeyRound, MailPlus, MessageCircle, Trash2, UserPlus } from 'lucide-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../../components/ui/Button'
 import { Badge, Card, PageHeader } from '../../components/ui/Card'
 import { SelectInput, TextInput } from '../../components/ui/Field'
-import { Modal } from '../../components/ui/Modal'
+import { ConfirmDialog, Modal } from '../../components/ui/Modal'
 import { EmptyState, ErrorState, SkeletonRows } from '../../components/ui/States'
 import { useToast } from '../../components/ui/Toast'
 import { useAuth } from '../../context/AuthContext'
@@ -15,7 +15,7 @@ import { useApiErrors } from '../../hooks/useApiErrors'
 import { toApiError } from '../../services/apiClient'
 import { memberService } from '../../services/organizations'
 import type { Invitation, Member, Role } from '../../types/api'
-import { formatDate, formatMobile } from '../../utils/format'
+import { formatDate, formatMobile, loginOf } from '../../utils/format'
 import { DownloadMenu } from '../../components/DownloadMenu'
 import { LoginShareCard, PasswordField } from '../../components/LoginDetails'
 
@@ -30,6 +30,7 @@ export function UsersPage() {
   const [inviting, setInviting] = useState(false)
   const [adding, setAdding] = useState(false)
   const [passwordFor, setPasswordFor] = useState<Member | null>(null)
+  const [removing, setRemoving] = useState<Member | null>(null)
   const members = useQuery({ queryKey: ['org', activeOrgId, 'members'], queryFn: () => memberService.list({}) })
   const roles = useQuery({ queryKey: ['org', activeOrgId, 'roles'], queryFn: memberService.roles })
   const invitations = useQuery({
@@ -42,6 +43,15 @@ export function UsersPage() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['org', activeOrgId, 'members'] })
       notify(t('common.saved'))
+    },
+    onError,
+  })
+  const remove = useMutation({
+    mutationFn: (id: string) => memberService.remove(id),
+    onSuccess: async () => {
+      setRemoving(null)
+      await queryClient.invalidateQueries({ queryKey: ['org', activeOrgId, 'members'] })
+      notify(t('users.deleted'))
     },
     onError,
   })
@@ -90,7 +100,9 @@ export function UsersPage() {
                     <p className="font-medium">
                       {member.user.full_name} {self && <span className="text-xs text-slate-500">({t('users.you')})</span>}
                     </p>
-                    <p className="truncate text-sm text-slate-500">{member.user.email ?? formatMobile(member.user.mobile)}</p>
+                    <p className="truncate text-sm text-slate-500">
+                      {[member.user.username && `${t('users.username')}: ${member.user.username}`, formatMobile(member.user.mobile), member.user.email].filter(Boolean).join(' · ')}
+                    </p>
                   </div>
                   {member.status !== 'active' && <Badge tone="amber">{t(`status.${member.status}`)}</Badge>}
                   {canManage && !self ? (
@@ -134,6 +146,9 @@ export function UsersPage() {
                       >
                         {member.status === 'active' ? t('users.suspend') : t('users.reactivate')}
                       </Button>
+                      <Button variant="ghost" size="sm" icon={<Trash2 className="size-4" />} onClick={() => setRemoving(member)}>
+                        {t('users.delete')}
+                      </Button>
                     </div>
                   ) : (
                     <Badge tone="brand">{t(`roles.${member.role.code}`, member.role.name)}</Badge>
@@ -174,6 +189,16 @@ export function UsersPage() {
       <InviteModal open={inviting} roles={roles.data ?? []} onClose={() => setInviting(false)} />
       <AddUserModal open={adding} roles={roles.data ?? []} onClose={() => setAdding(false)} />
       <SetPasswordModal member={passwordFor} onClose={() => setPasswordFor(null)} />
+      <ConfirmDialog
+        open={removing !== null}
+        title={t('users.deleteTitle', { name: removing?.user.full_name ?? '' })}
+        message={t('users.deleteMessage')}
+        confirmLabel={t('users.delete')}
+        danger
+        loading={remove.isPending}
+        onConfirm={() => removing && remove.mutate(removing.id)}
+        onClose={() => setRemoving(null)}
+      />
     </div>
   )
 }
@@ -277,6 +302,7 @@ function InviteModal({ open, roles, onClose }: { open: boolean; roles: Role[]; o
 
 interface AddValues {
   full_name: string
+  username: string
   email: string
   mobile: string
   password: string
@@ -290,9 +316,9 @@ function AddUserModal({ open, roles, onClose }: { open: boolean; roles: Role[]; 
   const queryClient = useQueryClient()
   const [added, setAdded] = useState<{ member: Member; password: string } | null>(null)
   const { register, handleSubmit, reset, setError, setValue, watch, formState } = useForm<AddValues>({
-    defaultValues: { full_name: '', email: '', mobile: '', password: '', role_id: '' },
+    defaultValues: { full_name: '', username: '', email: '', mobile: '', password: '', role_id: '' },
   })
-  const onError = useApiErrors(setError, ['full_name', 'email', 'mobile', 'password', 'role_id'])
+  const onError = useApiErrors(setError, ['full_name', 'username', 'email', 'mobile', 'password', 'role_id'])
   register('password', { required: true })
 
   const close = () => {
@@ -304,6 +330,7 @@ function AddUserModal({ open, roles, onClose }: { open: boolean; roles: Role[]; 
     try {
       const member = await memberService.add({
         full_name: values.full_name,
+        username: values.username.trim() || undefined,
         email: values.email || undefined,
         mobile: values.mobile || undefined,
         password: values.password,
@@ -329,7 +356,7 @@ function AddUserModal({ open, roles, onClose }: { open: boolean; roles: Role[]; 
               <LoginShareCard
                 name={added.member.user.full_name}
                 organization={detail?.organization.name}
-                identifier={added.member.user.mobile ? formatMobile(added.member.user.mobile) : (added.member.user.email ?? '')}
+                identifier={loginOf(added.member.user)}
                 mobile={added.member.user.mobile}
                 password={added.password}
               />
@@ -342,6 +369,15 @@ function AddUserModal({ open, roles, onClose }: { open: boolean; roles: Role[]; 
       ) : (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
           <TextInput label={t('users.name')} required error={formState.errors.full_name && (formState.errors.full_name.message || t('validation.required'))} {...register('full_name', { required: true })} />
+          <TextInput
+            label={t('users.username')}
+            autoCapitalize="none"
+            autoComplete="off"
+            spellCheck={false}
+            hint={t('users.usernameHint')}
+            error={formState.errors.username?.message}
+            {...register('username')}
+          />
           <TextInput label={t('auth.mobile')} type="tel" inputMode="tel" error={formState.errors.mobile?.message} {...register('mobile')} />
           <TextInput label={t('auth.email')} type="email" error={formState.errors.email?.message} {...register('email')} />
           <p className="text-xs text-slate-500">{t('users.addHint')}</p>
@@ -404,7 +440,7 @@ function SetPasswordModal({ member, onClose }: { member: Member | null; onClose:
           <LoginShareCard
             name={member.user.full_name}
             organization={detail?.organization.name}
-            identifier={member.user.mobile ? formatMobile(member.user.mobile) : (member.user.email ?? '')}
+            identifier={loginOf(member.user)}
             mobile={member.user.mobile}
             password={password}
           />
