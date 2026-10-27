@@ -10,7 +10,8 @@ import 'people_screen.dart';
 import 'receipt_screen.dart';
 
 const collectionModes = ['cash', 'upi', 'bank_transfer', 'cheque', 'other'];
-const modesNeedingReference = {'upi', 'bank_transfer', 'cheque'};
+// The server refuses these without a cheque or transaction number; UPI and other take one optionally.
+const modesNeedingReference = {'bank_transfer', 'cheque'};
 
 class _Line {
   String? typeId;
@@ -47,6 +48,7 @@ class _CollectScreenState extends State<CollectScreen> {
   String _payerKind = 'existing'; // existing | new | anonymous
   final _newName = TextEditingController();
   final _newMobile = TextEditingController();
+  final _newArea = TextEditingController();
   List<Map<String, dynamic>>? _types;
   Object? _loadError;
   final List<_Line> _lines = [_Line()];
@@ -54,15 +56,18 @@ class _CollectScreenState extends State<CollectScreen> {
   // Answers to the organization's own dropdowns (admin studio): field key -> option.
   final Map<String, String> _custom = {};
   final _reference = TextEditingController();
+  final _chequeBank = TextEditingController();
+  String? _chequeDate; // YYYY-MM-DD
+  // A cheque that has not cleared is saved as pending: the receipt comes when it clears.
+  bool _pending = false;
+  // The day the money came; today unless the collector enters an earlier collection.
+  String _paidOn = isoDay(DateTime.now());
   final _notes = TextEditingController();
   // Money that came now; empty means all of it. The rest is kept as a balance for the person.
   final _received = TextEditingController();
   List<Map<String, dynamic>> _dues = const [];
   // When to go back to this house for the balance (YYYY-MM-DD).
-  String? _followUp = () {
-    final d = DateTime.now().add(const Duration(days: 1));
-    return '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
-  }();
+  String? _followUp = isoDay(DateTime.now().add(const Duration(days: 1)));
   String? _opening; // pavti being opened for an update
   bool _saving = false;
   ApiException? _error;
@@ -93,13 +98,19 @@ class _CollectScreenState extends State<CollectScreen> {
     }
   }
 
-  /// Open balances grouped by pavti: payment id -> (receipt number, still owed in paise).
-  Map<String, ({String? receipt, int paise})> get _owedPavtis {
-    final out = <String, ({String? receipt, int paise})>{};
+  /// Open balances grouped by pavti: payment id -> (receipt number, still owed in paise, types owed).
+  Map<String, ({String? receipt, int paise, List<String> types})> get _owedPavtis {
+    final out = <String, ({String? receipt, int paise, List<String> types})>{};
     for (final d in _dues) {
       final id = '${d['payment']}';
       final before = out[id];
-      out[id] = (receipt: d['receipt_number']?.toString(), paise: (before?.paise ?? 0) + _paise('${d['remaining']}'));
+      final month = DateTime.tryParse('${d['period_month']}');
+      final type = [d['contribution_type_name'], if (month != null) _monthLabel(month)].whereType<Object>().join(' · ');
+      out[id] = (
+        receipt: d['receipt_number']?.toString(),
+        paise: (before?.paise ?? 0) + _paise('${d['remaining']}'),
+        types: [...?before?.types, if (type.isNotEmpty) type],
+      );
     }
     return out;
   }
@@ -131,6 +142,9 @@ class _CollectScreenState extends State<CollectScreen> {
 
   bool get _named => (_payerKind == 'existing' && _person != null) || _payerKind == 'new';
 
+  /// Only a named person can owe a balance, and a pending cheque has no money in hand yet.
+  bool get _canKeepBalance => _named && !(_mode == 'cheque' && _pending);
+
   int get _totalPaise => _lines.fold(0, (sum, l) => sum + _paise(normaliseAmount(l.amount.text)));
 
   /// What is not received now is kept as a balance on the pavti.
@@ -139,7 +153,7 @@ class _CollectScreenState extends State<CollectScreen> {
   /// The received amount typed in, in paise, or null when it was left empty (all of it came).
   int? get _receivedPaise {
     final raw = _received.text.trim();
-    if (raw.isEmpty || !_named) return null;
+    if (raw.isEmpty || !_canKeepBalance) return null;
     if (RegExp(r'^0+(\.0{1,2})?$').hasMatch(raw)) return 0;
     final v = normaliseAmount(raw);
     return v == null ? -1 : _paise(v);
@@ -230,9 +244,18 @@ class _CollectScreenState extends State<CollectScreen> {
         return;
       }
     }
+    if (modesNeedingReference.contains(_mode) && _reference.text.trim().isEmpty) {
+      showMessage(context, t('enter_field', {'field': _referenceLabel(app)}), error: true);
+      return;
+    }
     final received = _receivedPaise;
     if (received != null && (received < 0 || received > _totalPaise)) {
       showMessage(context, t('received_too_much'), error: true);
+      return;
+    }
+    final keepsBalance = received != null && received < _totalPaise;
+    if (keepsBalance && _followUp != null && _followUp!.compareTo(isoDay(DateTime.now())) < 0) {
+      showMessage(context, t('date_past'), error: true);
       return;
     }
     setState(() {
@@ -249,17 +272,24 @@ class _CollectScreenState extends State<CollectScreen> {
             'new_person': {
               'full_name': _newName.text.trim(),
               if (_newMobile.text.trim().isNotEmpty) 'mobile': _newMobile.text.trim(),
+              if (_newArea.text.trim().isNotEmpty) 'area': _newArea.text.trim(),
             },
           'mode': _mode,
-          'reference_number': _reference.text.trim(),
+          'status': _mode == 'cheque' && _pending ? 'pending' : 'successful',
+          // An earlier day is recorded at midday so it stays on that date in every time zone.
+          if (_paidOn != isoDay(DateTime.now()))
+            'paid_at': DateTime.parse('${_paidOn}T12:00:00').toUtc().toIso8601String(),
+          'reference_number': _mode == 'cash' ? '' : _reference.text.trim(),
+          if (_mode == 'cheque') 'cheque_bank': _chequeBank.text.trim(),
+          if (_mode == 'cheque' && _chequeDate != null) 'cheque_date': _chequeDate,
           'notes': _notes.text.trim(),
           'lines': lines,
           'custom_fields': {
             for (final f in app.customFields)
               if ((_custom[f['key']] ?? '').isNotEmpty) '${f['key']}': _custom[f['key']],
           },
-          if (received != null && received < _totalPaise) 'received': _fromPaise(received),
-          if (received != null && received < _totalPaise) 'follow_up_on': _followUp,
+          if (keepsBalance) 'received': _fromPaise(received),
+          if (keepsBalance) 'follow_up_on': _followUp,
         },
         {'Idempotency-Key': _idempotencyKey},
       );
@@ -272,7 +302,7 @@ class _CollectScreenState extends State<CollectScreen> {
           MaterialPageRoute(builder: (_) => ReceiptScreen(receiptId: '${receipt['id']}', justIssued: true)),
         );
       } else {
-        showMessage(context, t('saved'));
+        showMessage(context, payment['status'] == 'pending' ? t('pending_saved') : t('saved'));
         Navigator.pop(context);
       }
     } on ApiException catch (e) {
@@ -285,10 +315,68 @@ class _CollectScreenState extends State<CollectScreen> {
     }
   }
 
+  String _referenceLabel(AppState app) => _mode == 'cheque'
+      ? app.fieldLabel('cheque_number', app.t('cheque_number'))
+      : app.fieldLabel('reference', app.t('reference'));
+
+  /// The save button says what will happen: the amount, what is kept as balance, or a pending cheque.
+  String _submitLabel(AppState app) {
+    final t = app.t;
+    if (_mode == 'cheque' && _pending) return t('submit_pending');
+    final received = _receivedPaise;
+    if (received != null && received >= 0 && received < _totalPaise) {
+      return t('submit_with_balance', {
+        'amount': formatInr(_fromPaise(received)),
+        'balance': formatInr(_fromPaise(_balancePaise(received))),
+      });
+    }
+    return _totalPaise > 0 ? t('submit_amount', {'amount': formatInr(_fromPaise(_totalPaise))}) : t('save_payment');
+  }
+
+  Future<void> _pickDate({
+    required String? current,
+    required DateTime first,
+    required DateTime last,
+    required ValueChanged<String> onPicked,
+  }) async {
+    var initial = DateTime.tryParse(current ?? '') ?? last;
+    if (initial.isAfter(last)) initial = last;
+    if (initial.isBefore(first)) initial = first;
+    final picked = await showDatePicker(context: context, initialDate: initial, firstDate: first, lastDate: last);
+    if (picked != null) setState(() => onPicked(isoDay(picked)));
+  }
+
+  Widget _dateField({
+    required Key key,
+    required String label,
+    required String? value,
+    String? helper,
+    String? error,
+    required VoidCallback onTap,
+  }) {
+    final t = AppScope.of(context).t;
+    return InkWell(
+      key: key,
+      onTap: onTap,
+      child: InputDecorator(
+        decoration: InputDecoration(
+          labelText: label,
+          helperText: helper,
+          helperMaxLines: 2,
+          errorText: error,
+          border: const OutlineInputBorder(),
+          suffixIcon: const Icon(Icons.event),
+        ),
+        child: Text(value == null ? t('choose_date') : formatDate(value)),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final app = AppScope.of(context);
     final t = app.t;
+    final today = DateTime.now();
     return Scaffold(
       appBar: AppBar(title: Text(t('collect')), actions: const [EventSwitcher()]),
       body: _types == null
@@ -303,7 +391,24 @@ class _CollectScreenState extends State<CollectScreen> {
                       ],
                     ),
             )
+          : _types!.isEmpty
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.category_outlined, size: 48, color: Theme.of(context).colorScheme.outline),
+                    const SizedBox(height: 12),
+                    Text(t('no_types'), textAlign: TextAlign.center, style: Theme.of(context).textTheme.titleMedium),
+                    const SizedBox(height: 4),
+                    Text(t('no_types_manage'), textAlign: TextAlign.center),
+                  ],
+                ),
+              ),
+            )
           : ListView(
+              key: const Key('collect-form'),
               padding: const EdgeInsets.all(16),
               children: [
                 if (widget.person == null) ...[
@@ -382,6 +487,16 @@ class _CollectScreenState extends State<CollectScreen> {
                               border: const OutlineInputBorder(),
                             ),
                           ),
+                          const SizedBox(height: 12),
+                          TextField(
+                            key: const Key('new-person-area'),
+                            controller: _newArea,
+                            textCapitalization: TextCapitalization.words,
+                            decoration: InputDecoration(
+                              labelText: '${t('area')} (${t('optional')})',
+                              border: const OutlineInputBorder(),
+                            ),
+                          ),
                           const SizedBox(height: 8),
                           Text(t('new_person_saved'), style: Theme.of(context).textTheme.bodySmall),
                         ],
@@ -418,7 +533,12 @@ class _CollectScreenState extends State<CollectScreen> {
                           ListTile(
                             dense: true,
                             title: Text(e.value.receipt ?? t('pavti')),
-                            subtitle: Text('${formatInr(_fromPaise(e.value.paise))} ${t('still_owed')}'),
+                            subtitle: Text(
+                              [
+                                e.value.types.join(', '),
+                                '${formatInr(_fromPaise(e.value.paise))} ${t('still_owed')}',
+                              ].where((x) => x.isNotEmpty).join(' · '),
+                            ),
                             trailing: FilledButton.tonal(
                               key: Key('update-pavti-${e.key}'),
                               onPressed: _opening == null ? () => _updatePavti(e.key) : null,
@@ -436,16 +556,24 @@ class _CollectScreenState extends State<CollectScreen> {
                   ),
                 const SizedBox(height: 8),
                 for (var i = 0; i < _lines.length; i++) _lineCard(i),
-                if (_types!.length > 1)
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: TextButton.icon(
-                      icon: const Icon(Icons.add),
-                      label: Text(t('add_line')),
-                      onPressed: () => setState(() => _lines.add(_Line()..typeId = _types!.first['id'] as String)),
+                Row(
+                  children: [
+                    if (_types!.length > 1)
+                      TextButton.icon(
+                        icon: const Icon(Icons.add),
+                        label: Text(t('add_line')),
+                        onPressed: () => setState(() => _lines.add(_Line()..typeId = _types!.first['id'] as String)),
+                      ),
+                    const Spacer(),
+                    Text('${t('total')} ', style: Theme.of(context).textTheme.bodyMedium),
+                    Text(
+                      formatInr(_fromPaise(_totalPaise)),
+                      key: const Key('collect-total'),
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
                     ),
-                  ),
-                if (_named) ...[
+                  ],
+                ),
+                if (_canKeepBalance) ...[
                   const SizedBox(height: 8),
                   TextField(
                     key: const Key('collect-received'),
@@ -466,7 +594,7 @@ class _CollectScreenState extends State<CollectScreen> {
                     Padding(
                       padding: const EdgeInsets.only(top: 8),
                       child: Text(
-                        '${t('balance_due')}: ${formatInr(_fromPaise(_balancePaise(_receivedPaise!)))}',
+                        t('balance_will_be', {'amount': formatInr(_fromPaise(_balancePaise(_receivedPaise!)))}),
                         key: const Key('collect-balance'),
                         style: TextStyle(color: Colors.amber.shade900, fontWeight: FontWeight.w600),
                       ),
@@ -474,6 +602,7 @@ class _CollectScreenState extends State<CollectScreen> {
                     const SizedBox(height: 12),
                     FollowUpDateField(
                       key: const Key('collect-follow-up'),
+                      label: app.fieldLabel('follow_up_on', t('follow_up_date')),
                       value: _followUp,
                       error: _error?.fieldError('follow_up_on'),
                       onChanged: (v) => setState(() => _followUp = v),
@@ -499,20 +628,69 @@ class _CollectScreenState extends State<CollectScreen> {
                 if (_error?.fieldError('mode') != null)
                   Text(_error!.fieldError('mode')!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
                 const SizedBox(height: 16),
-                if (modesNeedingReference.contains(_mode) || _reference.text.isNotEmpty)
+                if (_mode != 'cash')
                   Padding(
                     padding: const EdgeInsets.only(bottom: 16),
                     child: TextField(
                       key: const Key('collect-reference'),
                       controller: _reference,
                       decoration: InputDecoration(
-                        labelText: app.fieldLabel(_mode == 'cheque' ? 'cheque_number' : 'reference', t('reference')),
-                        helperText: t('reference_required'),
+                        labelText: modesNeedingReference.contains(_mode)
+                            ? '${_referenceLabel(app)} *'
+                            : '${_referenceLabel(app)} (${t('optional')})',
                         errorText: _error?.fieldError('reference_number'),
                         border: const OutlineInputBorder(),
                       ),
                     ),
                   ),
+                if (_mode == 'cheque') ...[
+                  TextField(
+                    key: const Key('collect-cheque-bank'),
+                    controller: _chequeBank,
+                    textCapitalization: TextCapitalization.words,
+                    decoration: InputDecoration(
+                      labelText: '${app.fieldLabel('cheque_bank', t('cheque_bank'))} (${t('optional')})',
+                      errorText: _error?.fieldError('cheque_bank'),
+                      border: const OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _dateField(
+                    key: const Key('collect-cheque-date'),
+                    label: '${app.fieldLabel('cheque_date', t('cheque_date'))} (${t('optional')})',
+                    value: _chequeDate,
+                    error: _error?.fieldError('cheque_date'),
+                    onTap: () => _pickDate(
+                      current: _chequeDate,
+                      first: DateTime(today.year - 1, today.month, today.day),
+                      last: DateTime(today.year + 1, today.month, today.day),
+                      onPicked: (v) => _chequeDate = v,
+                    ),
+                  ),
+                  CheckboxListTile(
+                    key: const Key('collect-cheque-pending'),
+                    contentPadding: EdgeInsets.zero,
+                    controlAffinity: ListTileControlAffinity.leading,
+                    value: _pending,
+                    title: Text(t('cheque_pending')),
+                    onChanged: (v) => setState(() => _pending = v ?? false),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+                _dateField(
+                  key: const Key('collect-paid-on'),
+                  label: app.fieldLabel('paid_on', t('paid_on')),
+                  value: _paidOn,
+                  helper: _paidOn == isoDay(today) ? t('time_auto') : null,
+                  error: _error?.fieldError('paid_at'),
+                  onTap: () => _pickDate(
+                    current: _paidOn,
+                    first: DateTime(today.year - 2, today.month, today.day),
+                    last: today,
+                    onPicked: (v) => _paidOn = v,
+                  ),
+                ),
+                const SizedBox(height: 16),
                 for (final f in app.customFields)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 16),
@@ -544,7 +722,6 @@ class _CollectScreenState extends State<CollectScreen> {
                     border: const OutlineInputBorder(),
                   ),
                 ),
-                Text(t('time_auto'), style: Theme.of(context).textTheme.bodySmall),
                 const SizedBox(height: 8),
                 FilledButton.icon(
                   key: const Key('collect-save'),
@@ -552,7 +729,10 @@ class _CollectScreenState extends State<CollectScreen> {
                   icon: _saving
                       ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2))
                       : const Icon(Icons.check),
-                  label: Padding(padding: const EdgeInsets.all(12), child: Text(t('save_payment'))),
+                  label: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Text(_submitLabel(app), key: const Key('collect-save-label'), textAlign: TextAlign.center),
+                  ),
                 ),
               ],
             ),
