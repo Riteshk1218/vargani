@@ -10,6 +10,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.core.dates import org_tz
 from apps.core.exceptions import EventRequired
 from apps.core.permissions import HasOrgPermission
 from apps.core.tenancy import SCOPE_ALL
@@ -146,7 +147,8 @@ class MyCollectorDashboardView(_EventView):
         context = request._org_context
         event = self.get_event(request)
         mine = Payment.objects.filter(event=event, collector=context.membership)
-        now = timezone.localtime()
+        # The mandal's own calendar day, so "today" matches the app's list for today.
+        now = timezone.localtime(timezone.now(), org_tz(context.organization))
         today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
         month_start = today_start.replace(day=1)
         assigned = CollectorAssignment.objects.filter(event=event, collector=context.membership, is_active=True)
@@ -170,6 +172,8 @@ class MyCollectorDashboardView(_EventView):
                 "assigned": assigned.count(),
                 "paid_this_month": paid_people,
                 "pending_payments": mine.filter(status=Payment.Status.PENDING).count(),
+                # Opens "my payments" (?collector=) from the cards above.
+                "collector": str(context.membership.pk),
                 "recent_receipts": [
                     {
                         "id": str(r.pk),

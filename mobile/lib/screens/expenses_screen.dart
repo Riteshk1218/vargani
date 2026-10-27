@@ -4,12 +4,18 @@ import 'package:image_picker/image_picker.dart';
 import '../api/api_client.dart';
 import '../util/money.dart';
 import '../widgets/common.dart';
+import '../widgets/list_tools.dart';
 import 'collect_screen.dart' show collectionModes;
 
 /// Expenses in the current event. Collectors see the ones they entered; approvers see all and can
 /// approve or reject. Only approved expenses count in the balance.
 class ExpensesScreen extends StatefulWidget {
-  const ExpensesScreen({super.key});
+  const ExpensesScreen({super.key, this.dateFrom, this.dateTo, this.status});
+
+  /// Opened from the dashboard for one day: those days, and only approved expenses (what the balance counts).
+  final String? dateFrom;
+  final String? dateTo;
+  final String? status;
 
   @override
   State<ExpensesScreen> createState() => _ExpensesScreenState();
@@ -17,6 +23,7 @@ class ExpensesScreen extends StatefulWidget {
 
 class _ExpensesScreenState extends State<ExpensesScreen> {
   int _version = 0;
+  late ListQuery _query = ListQuery(dateFrom: widget.dateFrom, dateTo: widget.dateTo, ordering: '-expense_date');
 
   void _refresh() => setState(() => _version++);
 
@@ -25,38 +32,67 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
     final app = AppScope.of(context);
     if (app.eventId == null) return EmptyState(icon: Icons.event_busy, text: app.t('no_events'));
     return Scaffold(
-      body: AsyncView<List<Map<String, dynamic>>>(
-        reloadKey: '${app.eventId}-$_version',
-        load: () async => resultsOf(await app.api.get('/expenses/', query: {'event': app.eventId})),
-        builder: (context, items, reload) => items.isEmpty
-            ? EmptyState(icon: Icons.receipt_outlined, text: app.t('no_expenses'))
-            : ListView.separated(
-                padding: const EdgeInsets.only(bottom: 96),
-                itemCount: items.length,
-                separatorBuilder: (_, _) => const Divider(height: 1),
-                itemBuilder: (context, i) {
-                  final e = items[i];
-                  return ListTile(
-                    key: Key('expense-${e['id']}'),
-                    title: Text(expenseTitle(e), overflow: TextOverflow.ellipsis),
-                    subtitle: Text('${expenseWhen(e)} · ${e['category_name']}'),
-                    trailing: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(formatInr('${e['amount']}'), style: Theme.of(context).textTheme.titleSmall),
-                        StatusChip('${e['status']}'),
-                      ],
-                    ),
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => ExpenseDetailScreen(expenseId: '${e['id']}')),
-                    ).then((_) => reload()),
-                  );
-                },
+      body: Column(
+        children: [
+          ListToolsBar(
+            value: _query,
+            onChanged: (q) => setState(() => _query = q),
+            sortOptions: const [
+              SortOption('expense_date', 'list_date'),
+              SortOption('created_at', 'list_created_at'),
+              SortOption('amount', 'list_amount'),
+              SortOption('payee', 'list_paid_to'),
+            ],
+          ),
+          Expanded(
+            child: AsyncView<List<Map<String, dynamic>>>(
+              reloadKey: '${app.eventId}-$_version-${_query.key}',
+              load: () async => resultsOf(
+                await app.api.get(
+                  '/expenses/',
+                  query: {
+                    'event': app.eventId,
+                    if (widget.status != null) 'status': widget.status,
+                    ..._query.query,
+                    'page_size': '100',
+                  },
+                ),
               ),
+              builder: (context, items, reload) => items.isEmpty
+                  ? EmptyState(icon: Icons.receipt_outlined, text: app.t('no_expenses'))
+                  : ListView.separated(
+                      padding: const EdgeInsets.only(bottom: 96),
+                      itemCount: items.length,
+                      separatorBuilder: (_, _) => const Divider(height: 1),
+                      itemBuilder: (context, i) {
+                        final e = items[i];
+                        return ListTile(
+                          key: Key('expense-${e['id']}'),
+                          title: Text(expenseTitle(e), overflow: TextOverflow.ellipsis),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [Text('${expenseWhen(e)} · ${e['category_name']}'), CreatedLine(e)],
+                          ),
+                          trailing: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(formatInr('${e['amount']}'), style: Theme.of(context).textTheme.titleSmall),
+                              StatusChip('${e['status']}'),
+                            ],
+                          ),
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => ExpenseDetailScreen(expenseId: '${e['id']}')),
+                          ).then((_) => reload()),
+                        );
+                      },
+                    ),
+            ),
+          ),
+        ],
       ),
-      floatingActionButton: app.can('expenses.create')
+      floatingActionButton: app.can('expenses.create') && widget.status == null
           ? FloatingActionButton.extended(
               key: const Key('fab-expense'),
               icon: const Icon(Icons.add),

@@ -65,7 +65,8 @@ class FakeApi {
         return _json({'unread': 2});
       case ('GET', '/collectors/me/dashboard/'):
         return _json({'today': '651.00', 'this_week': '651.00', 'this_month': '1651.00', 'total': '110000.50',
-          'by_mode': {'cash': '0.00', 'upi': '651.00'}, 'assigned': 2, 'paid_this_month': 1, 'recent_receipts': []});
+          'by_mode': {'cash': '0.00', 'upi': '651.00'}, 'assigned': 2, 'paid_this_month': 1, 'recent_receipts': [],
+          'collector': 'm-1'});
       case ('GET', '/people/'):
         return _json({'count': 1, 'next': null, 'results': [
           {'id': 'p-1', 'full_name': 'Sunita More', 'mobile': '+919822001133', 'area': 'Shivaji Nagar'}
@@ -85,6 +86,7 @@ class FakeApi {
            'amount': '500.00', 'balance_due': '151.00', 'pavti_status': 'partly_paid', 'follow_up_on': '2026-10-30',
            'follow_up_state': 'upcoming', 'mode': 'cash', 'paid_at': '2026-10-20T10:00:00Z', 'payer_name': 'Sunita More',
            'collector_name': 'Kiran', 'receipt': {'id': 'rc-2', 'receipt_number': 'GC-2026-00003'},
+           'created_at': '2026-10-20T10:00:05Z', 'created_by_name': 'Kiran Collector',
            'lines': [{'contribution_type_name': 'Donation', 'period_month': null}]},
           {'id': 'pay-1', 'event': 'ev-0', 'event_name': 'Navratri 2025', 'status': 'successful', 'amount': '300.00',
            'balance_due': '0.00', 'pavti_status': 'paid', 'mode': 'upi', 'paid_at': '2025-10-01T10:00:00Z',
@@ -94,7 +96,7 @@ class FakeApi {
       case ('GET', '/dues/'):
         return _json({'count': 0, 'next': null, 'results': []});
       case ('GET', '/dashboard/summary/'):
-        return _json({'follow_ups': {'overdue': 0, 'due_today': 0, 'owing': 1, 'balance': '151.00'}});
+        return _json({'follow_ups': {'overdue': 0, 'due_today': 0, 'owing': 1, 'balance': '151.00', 'paid': 4}});
       case ('GET', '/receipts/rc-1/'):
         return _json(_receipt);
       case ('GET', '/members/'):
@@ -286,6 +288,35 @@ void main() {
     await tester.tap(find.byKey(const Key('person-collect')));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('collect-amount-0')), findsOneWidget);
+  });
+
+  testWidgets('dashboard cards open the list behind them, sorted and with who created each payment', (tester) async {
+    final (_, fake) = await start(tester, 'treasurer');
+    await tester.enterText(find.byKey(const Key('login-identifier')), 'asha@demo.test');
+    await tester.enterText(find.byKey(const Key('login-password')), 'right');
+    await tester.tap(find.byKey(const Key('login-submit')));
+    await tester.pumpAndSettle();
+
+    // "Check a day" asks the dashboard for today only and shows fully paid pavtis.
+    final day = fake.requests.lastWhere((r) => r.url.path.endsWith('/dashboard/summary/') && r.url.queryParameters.containsKey('date_from'));
+    expect(day.url.queryParameters['date_from'], day.url.queryParameters['date_to']);
+    expect(find.byKey(const Key('day-paid')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('card-total')));
+    await tester.pumpAndSettle();
+    final list = fake.requests.last;
+    expect(list.url.path, endsWith('/payments/'));
+    expect(list.url.queryParameters['collector'], 'm-1');
+    expect(list.url.queryParameters['status'], 'successful');
+    expect(list.url.queryParameters['ordering'], '-paid_at');
+    expect(find.textContaining('by Kiran Collector'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('list-direction')));
+    await tester.pumpAndSettle();
+    expect(fake.requests.last.url.queryParameters['ordering'], 'paid_at');
+    await tester.tap(find.byKey(const Key('list-today')));
+    await tester.pumpAndSettle();
+    expect(fake.requests.last.url.queryParameters['date_from'], isNotNull);
   });
 
   testWidgets('an admin logs in with a username and manages users', (tester) async {
