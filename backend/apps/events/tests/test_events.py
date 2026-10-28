@@ -46,7 +46,6 @@ def test_new_event_gets_default_contribution_types(client_for, make_org):
     assert [(t["name"], t["kind"]) for t in types] == [
         ("Donation", "one_time"),
         ("Membership Fee", "one_time"),
-        ("Monthly Contribution", "recurring_monthly"),
         ("Other", "one_time"),
     ]
 
@@ -61,10 +60,14 @@ def test_default_contribution_types_use_org_language_and_skip_existing(make_org)
     seed_types(event)
     seed_types(event)
     names = list(ContributionType.objects.filter(event=event).values_list("name", flat=True))
-    assert names == ["Donation", "सभासद शुल्क", "Monthly", "इतर"]
+    assert names == ["Donation", "सभासद शुल्क", "इतर", "Monthly"]
 
 
-def test_seeded_monthly_contribution_is_hidden_next_to_the_events_own_monthly_type(make_org):
+def test_hide_monthly_migration_archives_only_the_built_in_monthly_contribution(make_org):
+    from importlib import import_module
+
+    from django.apps import apps as django_apps
+
     org = make_org()
     event = Event.objects.create(organization=org, name="Ganpati", financial_year=fy_of(org), code="G")
     ContributionType.objects.create(organization=org, event=event, name="Monthly", kind="recurring_monthly")
@@ -72,8 +75,9 @@ def test_seeded_monthly_contribution_is_hidden_next_to_the_events_own_monthly_ty
         organization=org, event=event, name="Monthly Contribution", kind="recurring_monthly"
     )
     seed_types(event)
+    import_module("apps.contributions.migrations.0009_hide_monthly_types").hide_monthly(django_apps, None)
     active = list(ContributionType.objects.filter(event=event, is_active=True).values_list("name", flat=True))
-    assert active == ["Donation", "Membership Fee", "Monthly", "Other"]
+    assert active == ["Donation", "Membership Fee", "Other", "Monthly"]
 
 
 def test_event_templates_listed(client_for, make_user):

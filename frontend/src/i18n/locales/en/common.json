@@ -1075,5 +1075,21 @@
       "teal": "Teal",
       "green": "Green"
     }
+  },
+  "bulk": {
+    "select": "Select",
+    "selectAll": "Select all",
+    "selected": "{{count}} selected",
+    "clear": "Clear",
+    "delete": "Delete ({{count}})",
+    "confirmTitle": "Delete {{count}} selected?",
+    "confirmMessage": "They leave every list and total. The audit log keeps a copy of each one.",
+    "confirmCollections": "Each selected collection is deleted with all its lines, and its receipt is voided. The audit log keeps a copy of each one.",
+    "confirmPeople": "The selected people leave the people list. Their past collections and receipts stay.",
+    "confirmUsers": "The selected users lose access and are logged out. Their name stays on the records they made.",
+    "confirmBalances": "What is still owed on the selected balances is written off. The audit log keeps a copy.",
+    "confirmAssignments": "The selected people are no longer assigned to their collector.",
+    "deleted": "{{count}} deleted",
+    "failed": "{{count}} could not be deleted: {{reason}}"
   }
 }

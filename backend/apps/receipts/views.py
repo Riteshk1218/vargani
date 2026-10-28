@@ -11,6 +11,7 @@ from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
+from apps.core.bulk import BulkDeleteMixin
 from apps.core.dates import OrgDayFilter
 from apps.core.downloads import Col, ListDownloadMixin
 from apps.core.scoping import scope_money
@@ -58,7 +59,7 @@ def pdf_response(receipt, inline=False, language=None):
     return response
 
 
-class ReceiptViewSet(ListDownloadMixin, TenantReadOnlyViewSet):
+class ReceiptViewSet(BulkDeleteMixin, ListDownloadMixin, TenantReadOnlyViewSet):
     """Issued receipts. Receipts are created only by recording a successful payment and never edited.
 
     A receipt is corrected by requesting a void (approved by someone with receipts.void_approve) and then
@@ -88,7 +89,17 @@ class ReceiptViewSet(ListDownloadMixin, TenantReadOnlyViewSet):
         "pdf": "receipts.view",
         "share": "receipts.share",
         "void_request": "receipts.void_request",
+        "bulk_delete": "records.admin_edit",
     }
+
+    def bulk_delete_one(self, receipt):
+        """Deleting a receipt deletes its collection (as DELETE /payments/{id}/ does), which voids the receipt."""
+        from apps.core.exceptions import InvalidStateTransition
+        from apps.payments.admin_edit import delete_payment
+
+        if receipt.status != Receipt.Status.ISSUED:
+            raise InvalidStateTransition()
+        delete_payment(receipt.payment, request=self.request, actor=self.request.user)
 
     def get_base_queryset(self):
         return Receipt.objects.for_org(self.organization).select_related(
@@ -96,6 +107,11 @@ class ReceiptViewSet(ListDownloadMixin, TenantReadOnlyViewSet):
         )
 
     def scope_queryset(self, queryset):
+        if self.action in ("list", "download") and not self.request.query_params.get("status"):
+            # The receipt of a deleted collection leaves the list (it is void and stays in the audit log).
+            from apps.payments.models import Payment
+
+            queryset = queryset.exclude(payment__status=Payment.Status.DELETED)
         return scope_money(
             queryset,
             self.org_context,

@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../api/api_client.dart';
 import '../state/app_state.dart';
+import '../widgets/bulk_delete.dart';
 import '../widgets/common.dart';
 
 /// Role names in the app's language for the built-in roles; an organization's own roles keep their name.
@@ -35,7 +36,7 @@ class UsersScreen extends StatefulWidget {
   State<UsersScreen> createState() => _UsersScreenState();
 }
 
-class _UsersScreenState extends State<UsersScreen> {
+class _UsersScreenState extends State<UsersScreen> with BulkSelect {
   int _reload = 0;
   List<Map<String, dynamic>> _roles = const [];
 
@@ -203,10 +204,22 @@ class _UsersScreenState extends State<UsersScreen> {
           if (added == true) _refresh();
         },
       ),
-      body: AsyncView<List<Map<String, dynamic>>>(
-        reloadKey: _reload,
+      body: Column(
+        children: [
+          if (selecting)
+            BulkDeleteBar(
+              count: selected.length,
+              onSelectAll: toggleAllVisible,
+              onClear: clearSelected,
+              onDelete: () => confirmBulkDelete('/members/', messageKey: 'bulk_confirm_users'),
+            ),
+          Expanded(
+            child: AsyncView<List<Map<String, dynamic>>>(
+        reloadKey: '$_reload-$bulkVersion',
         load: _load,
-        builder: (context, members, reload) => ListView.separated(
+        builder: (context, members, reload) {
+          visibleIds = [for (final m in members) if ((m['user'] as Map)['id'] != myId) '${m['id']}'];
+          return ListView.separated(
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.only(bottom: 88),
           itemCount: members.length,
@@ -216,16 +229,22 @@ class _UsersScreenState extends State<UsersScreen> {
             final user = (m['user'] as Map).cast<String, dynamic>();
             final self = user['id'] == myId;
             final active = m['status'] == 'active';
+            final id = '${m['id']}';
             return ListTile(
-              key: Key('user-${m['id']}'),
-              leading: CircleAvatar(child: Text('${user['full_name']}'.characters.firstOrNull ?? '?')),
+              key: Key('user-$id'),
+              onLongPress: !self && app.can(deletePermission) ? () => toggleSelected(id) : null,
+              leading: (self ? null : selectBox(id)) ?? CircleAvatar(child: Text('${user['full_name']}'.characters.firstOrNull ?? '?')),
               title: Text(self ? '${user['full_name']} (${app.t('you')})' : '${user['full_name']}'),
               subtitle: Text('${loginOf(user)} · ${roleLabel(app, m['role'] as Map?)}'),
               trailing: active ? null : Chip(label: Text(app.t('inactive')), visualDensity: VisualDensity.compact),
-              onTap: self ? null : () => _actions(m),
+              onTap: self ? null : (selecting ? () => toggleSelected(id) : () => _actions(m)),
             );
           },
-        ),
+          );
+        },
+            ),
+          ),
+        ],
       ),
     );
   }

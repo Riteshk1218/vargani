@@ -3,6 +3,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../api/api_client.dart';
 import '../util/money.dart';
+import '../widgets/bulk_delete.dart';
 import '../widgets/common.dart';
 import '../widgets/list_tools.dart';
 import 'collect_screen.dart' show collectionModes;
@@ -21,7 +22,7 @@ class ExpensesScreen extends StatefulWidget {
   State<ExpensesScreen> createState() => _ExpensesScreenState();
 }
 
-class _ExpensesScreenState extends State<ExpensesScreen> {
+class _ExpensesScreenState extends State<ExpensesScreen> with BulkSelect {
   int _version = 0;
   late ListQuery _query = ListQuery(dateFrom: widget.dateFrom, dateTo: widget.dateTo, ordering: '-expense_date');
 
@@ -44,9 +45,16 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
               SortOption('payee', 'list_paid_to'),
             ],
           ),
+          if (selecting)
+            BulkDeleteBar(
+              count: selected.length,
+              onSelectAll: toggleAllVisible,
+              onClear: clearSelected,
+              onDelete: () => confirmBulkDelete('/expenses/'),
+            ),
           Expanded(
             child: AsyncView<List<Map<String, dynamic>>>(
-              reloadKey: '${app.eventId}-$_version-${_query.key}',
+              reloadKey: '${app.eventId}-$_version-${_query.key}-$bulkVersion',
               load: () async => resultsOf(
                 await app.api.get(
                   '/expenses/',
@@ -58,7 +66,9 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                   },
                 ),
               ),
-              builder: (context, items, reload) => items.isEmpty
+              builder: (context, items, reload) {
+                visibleIds = [for (final e in items) '${e['id']}'];
+                return items.isEmpty
                   ? EmptyState(icon: Icons.receipt_outlined, text: app.t('no_expenses'))
                   : ListView.separated(
                       padding: const EdgeInsets.only(bottom: 96),
@@ -66,8 +76,11 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                       separatorBuilder: (_, _) => const Divider(height: 1),
                       itemBuilder: (context, i) {
                         final e = items[i];
+                        final id = '${e['id']}';
                         return ListTile(
-                          key: Key('expense-${e['id']}'),
+                          key: Key('expense-$id'),
+                          leading: selectBox(id),
+                          onLongPress: app.can(deletePermission) ? () => toggleSelected(id) : null,
                           title: Text(expenseTitle(e), overflow: TextOverflow.ellipsis),
                           subtitle: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -81,13 +94,16 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                               StatusChip('${e['status']}'),
                             ],
                           ),
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => ExpenseDetailScreen(expenseId: '${e['id']}')),
-                          ).then((_) => reload()),
+                          onTap: selecting
+                              ? () => toggleSelected(id)
+                              : () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (_) => ExpenseDetailScreen(expenseId: id)),
+                                ).then((_) => reload()),
                         );
                       },
-                    ),
+                    );
+              },
             ),
           ),
         ],

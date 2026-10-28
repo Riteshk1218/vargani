@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Check, ShieldCheck, X } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Button } from '../../components/ui/Button'
 import { Badge, Card, PageHeader } from '../../components/ui/Card'
 import { SelectInput, TextInput } from '../../components/ui/Field'
@@ -21,6 +21,7 @@ const TONE = { pending: 'amber', approved: 'red', rejected: 'gray' } as const
 /** Receipt void requests waiting for a decision (and their history). */
 export function ApprovalsPage() {
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const { activeOrgId, detail, can } = useOrg()
   const queryClient = useQueryClient()
   const { notify } = useToast()
@@ -68,7 +69,7 @@ export function ApprovalsPage() {
           <>
             <ul className="divide-y divide-slate-100">
               {requests.data!.results.map((r) => (
-                <li key={r.id} className="flex flex-col gap-2 px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
+                <li key={r.id} className="flex cursor-pointer flex-col gap-2 px-4 py-3 text-sm hover:bg-slate-50 sm:flex-row sm:items-center sm:justify-between" onClick={() => navigate(`/app/receipts/${r.receipt}`)}>
                   <div className="min-w-0">
                     <p className="font-medium">
                       <Link className="font-mono text-brand-700 hover:underline" to={`/app/receipts/${r.receipt}`}>
@@ -83,7 +84,7 @@ export function ApprovalsPage() {
                     </p>
                   </div>
                   {r.status === 'pending' && canDecide ? (
-                    <div className="flex shrink-0 gap-2">
+                    <div className="flex shrink-0 gap-2" onClick={(e) => e.stopPropagation()}>
                       <Button size="sm" variant="secondary" icon={<X className="size-4" />} onClick={() => setDeciding({ request: r, decision: 'reject' })}>
                         {t('approvals.reject')}
                       </Button>

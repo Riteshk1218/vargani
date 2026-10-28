@@ -20,6 +20,7 @@ import { formatDate, formatMoney, todayIso } from '../../utils/format'
 import { INCOME_SOURCES, MANUAL_MODES } from '../../utils/payments'
 import { DownloadMenu } from '../../components/DownloadMenu'
 import { CreatedMeta, ListTools, useListTools } from '../../components/ListTools'
+import { BulkDeleteBar, DELETE_PERMISSION, SelectBox, useRowSelection } from '../../components/BulkDelete'
 
 /** Income that does not come from a person: donation box (hundi), sponsorship, bank interest, sales. */
 export function OtherIncomePage() {
@@ -39,6 +40,7 @@ export function OtherIncomePage() {
     onError,
   })
   const [voiding, setVoiding] = useState<OtherIncome | null>(null)
+  const [viewing, setViewing] = useState<OtherIncome | null>(null)
   const eventId = activeEvent?.id
   const currency = detail?.organization.currency
   const income = useQuery({
@@ -46,6 +48,8 @@ export function OtherIncomePage() {
     queryFn: () => otherIncomeService.list({ event: eventId, source: source || undefined, ...tools.query, page }),
     enabled: Boolean(eventId),
   })
+  const selection = useRowSelection([eventId, source, tools.query])
+  const canDelete = can(DELETE_PERMISSION)
 
   return (
     <div>
@@ -94,10 +98,14 @@ export function OtherIncomePage() {
               <EmptyState icon={<PiggyBank className="size-6" />} title={source || tools.filtered ? t('people.noMatches') : t('income.empty')} message={source || tools.filtered ? undefined : t('income.emptyMessage')} />
             ) : (
               <>
+                {canDelete && (
+                  <BulkDeleteBar selection={selection} ids={income.data!.results.map((i) => i.id)} path="/other-income/" invalidate={[['other-income'], ['dashboard'], ['finance']]} />
+                )}
                 <ul className="divide-y divide-slate-100">
                   {income.data!.results.map((i) => (
-                    <li key={i.id} className="flex items-center justify-between gap-3 px-4 py-3 text-sm">
-                      <div className="min-w-0">
+                    <li key={i.id} className="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 text-sm hover:bg-slate-50" onClick={() => setViewing(i)}>
+                      {canDelete && <SelectBox checked={selection.has(i.id)} onChange={() => selection.toggle(i.id)} label={t('bulk.select')} />}
+                      <div className="min-w-0 flex-1">
                         <p className="truncate font-medium">
                           {t(`incomeSource.${i.source}`)}
                           {i.description && <span className="font-normal text-slate-600"> · {i.description}</span>}
@@ -109,7 +117,7 @@ export function OtherIncomePage() {
                         </p>
                         <CreatedMeta at={i.created_at} by={i.created_by_name} />
                       </div>
-                      <div className="flex shrink-0 items-center gap-3">
+                      <div className="flex shrink-0 items-center gap-3" onClick={(e) => e.stopPropagation()}>
                         <div className="text-right">
                           <p className={i.status === 'void' ? 'font-semibold tabular-nums text-slate-400 line-through' : 'font-semibold tabular-nums'}>
                             {formatMoney(i.amount, currency)}
@@ -145,11 +153,60 @@ export function OtherIncomePage() {
       </Card>
       {adding && eventId && <IncomeFormModal eventId={eventId} income={adding === true ? null : adding} onClose={() => setAdding(false)} />}
       <VoidIncomeModal income={voiding} onClose={() => setVoiding(null)} />
+      <IncomeDetailModal income={viewing} canEdit={isAdmin} onEdit={(i) => (setViewing(null), setAdding(i))} onClose={() => setViewing(null)} />
     </div>
   )
 }
 
 /** Add income, or (Organization Admin) change any field of existing income. */
+/** One income entry, opened by clicking its row. */
+function IncomeDetailModal({ income, canEdit, onEdit, onClose }: { income: OtherIncome | null; canEdit: boolean; onEdit: (i: OtherIncome) => void; onClose: () => void }) {
+  const { t } = useTranslation()
+  const { detail } = useOrg()
+  if (!income) return null
+  const rows: [string, string][] = [
+    [t('income.source'), t(`incomeSource.${income.source}`)],
+    [t('common.amount'), formatMoney(income.amount, detail?.organization.currency)],
+    [t('income.receivedOn'), formatDate(income.received_on)],
+    [t('collect.mode'), t(`mode.${income.mode}`)],
+    [t('collect.reference'), income.reference_number],
+    [t('ctypes.fund'), income.fund_name ?? ''],
+    [t('common.description'), income.description],
+    [t('common.status'), income.status === 'void' ? `${t('expenseStatus.void')} · ${income.void_reason}` : ''],
+  ]
+  return (
+    <Modal
+      open
+      title={t(`incomeSource.${income.source}`)}
+      onClose={onClose}
+      footer={
+        <>
+          <Button variant="secondary" onClick={onClose}>
+            {t('common.close')}
+          </Button>
+          {canEdit && (
+            <Button icon={<Pencil className="size-4" />} onClick={() => onEdit(income)}>
+              {t('common.edit')}
+            </Button>
+          )}
+        </>
+      }
+    >
+      <dl className="divide-y divide-slate-100 text-sm">
+        {rows
+          .filter(([, value]) => value)
+          .map(([label, value]) => (
+            <div key={label} className="flex justify-between gap-4 py-2">
+              <dt className="text-slate-500">{label}</dt>
+              <dd className="text-right font-medium">{value}</dd>
+            </div>
+          ))}
+      </dl>
+      <CreatedMeta at={income.created_at} by={income.created_by_name} className="mt-3 text-xs text-slate-500" />
+    </Modal>
+  )
+}
+
 function IncomeFormModal({ eventId, income, onClose }: { eventId: string; income: OtherIncome | null; onClose: () => void }) {
   const { t } = useTranslation()
   const { activeOrgId } = useOrg()

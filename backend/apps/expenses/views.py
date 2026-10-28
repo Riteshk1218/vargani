@@ -11,6 +11,7 @@ from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.response import Response
 
 from apps.core.admin_override import ADMIN_EDIT
+from apps.core.bulk import BulkDeleteMixin
 from apps.core.downloads import Col, ListDownloadMixin
 from apps.core.tenancy import SCOPE_ALL
 from apps.core.viewsets import TenantModelViewSet
@@ -53,7 +54,7 @@ class ExpenseFilter(django_filters.FilterSet):
         fields = ["event", "category", "status", "mode"]
 
 
-class ExpenseViewSet(ListDownloadMixin, TenantModelViewSet):
+class ExpenseViewSet(BulkDeleteMixin, ListDownloadMixin, TenantModelViewSet):
     """Expenses with bills and an approval flow. Only approved expenses count in the balance.
 
     Editable while draft, submitted or rejected. Approved expenses can only be voided (with a reason).
@@ -95,6 +96,7 @@ class ExpenseViewSet(ListDownloadMixin, TenantModelViewSet):
         "attachments": "expenses.create",
         "attachment": ("expenses.view", "expenses.create"),
         "destroy": ADMIN_EDIT,
+        "bulk_delete": ADMIN_EDIT,
     }
 
     def get_required_permissions(self):
@@ -146,6 +148,9 @@ class ExpenseViewSet(ListDownloadMixin, TenantModelViewSet):
         """Organization Admin: delete an expense and its bills (a copy stays in the audit log)."""
         services.delete_expense(self.get_object(), request=request, actor=request.user)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+    def bulk_delete_one(self, expense):
+        services.delete_expense(expense, request=self.request, actor=self.request.user)
 
     @extend_schema(request=None, responses=ExpenseSerializer)
     @action(detail=True, methods=["post"])
@@ -226,7 +231,7 @@ class OtherIncomeFilter(django_filters.FilterSet):
         fields = ["event", "fund", "source", "status", "mode"]
 
 
-class OtherIncomeViewSet(ListDownloadMixin, TenantModelViewSet):
+class OtherIncomeViewSet(BulkDeleteMixin, ListDownloadMixin, TenantModelViewSet):
     """Income not from a person (donation box, sponsorship, interest, sales). Amounts never change; void instead.
 
     An Organization Admin can change every field with PATCH and delete with DELETE.
@@ -257,6 +262,7 @@ class OtherIncomeViewSet(ListDownloadMixin, TenantModelViewSet):
         "partial_update": "other_income.manage",
         "void": "other_income.manage",
         "destroy": ADMIN_EDIT,
+        "bulk_delete": ADMIN_EDIT,
     }
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
 
@@ -296,6 +302,9 @@ class OtherIncomeViewSet(ListDownloadMixin, TenantModelViewSet):
     def destroy(self, request, *args, **kwargs):
         services.delete_income(self.get_object(), request=request, actor=request.user)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+    def bulk_delete_one(self, income):
+        services.delete_income(income, request=self.request, actor=self.request.user)
 
     @extend_schema(request=ExpenseReasonSerializer, responses=OtherIncomeSerializer)
     @action(detail=True, methods=["post"])

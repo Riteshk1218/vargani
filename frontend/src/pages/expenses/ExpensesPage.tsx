@@ -21,6 +21,7 @@ import { formatBytes, formatDate, formatDateTime, formatMoney, formatStamp, toda
 import { EXPENSE_STATUSES, EXPENSE_TONE, MANUAL_MODES } from '../../utils/payments'
 import { DownloadMenu } from '../../components/DownloadMenu'
 import { CreatedMeta, ListTools, useListTools } from '../../components/ListTools'
+import { BulkDeleteBar, DELETE_PERMISSION, SelectBox, useRowSelection } from '../../components/BulkDelete'
 
 export function ExpensesPage() {
   const { t } = useTranslation()
@@ -43,6 +44,8 @@ export function ExpensesPage() {
     queryFn: () => expenseService.list({ event: eventId, status: status || undefined, category: category || undefined, ...tools.query, page }),
     enabled: Boolean(eventId),
   })
+  const selection = useRowSelection([eventId, status, category, tools.query])
+  const canDelete = can(DELETE_PERMISSION)
 
   return (
     <div>
@@ -109,10 +112,21 @@ export function ExpensesPage() {
               />
             ) : (
               <>
+                {canDelete && (
+                  <BulkDeleteBar
+                    selection={selection}
+                    ids={expenses.data!.results.map((e) => e.id)}
+                    path="/expenses/"
+                    invalidate={[['expenses'], ['dashboard'], ['finance']]}
+                  />
+                )}
                 <ul className="divide-y divide-slate-100">
                   {expenses.data!.results.map((e) => (
-                    <li key={e.id}>
-                      <button type="button" onClick={() => setSelectedId(e.id)} className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm hover:bg-slate-50">
+                    <li key={e.id} className="flex items-center">
+                      {canDelete && (
+                        <SelectBox className="ml-4" checked={selection.has(e.id)} onChange={() => selection.toggle(e.id)} label={t('bulk.select')} />
+                      )}
+                      <button type="button" onClick={() => setSelectedId(e.id)} className="flex min-w-0 flex-1 items-center justify-between gap-3 px-4 py-3 text-left text-sm hover:bg-slate-50">
                         <div className="min-w-0">
                           <p className="truncate font-medium">
                             {expenseTitle(e)}

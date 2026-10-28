@@ -10,6 +10,7 @@ from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.response import Response
 
 from apps.audit import services as audit
+from apps.core.bulk import BulkDeleteMixin
 from apps.core.dates import OrgDayFilter
 from apps.core.downloads import Col, ListDownloadMixin
 from apps.core.phone import normalize_mobile
@@ -40,7 +41,7 @@ class LinkUserSerializer(serializers.Serializer):
     user = serializers.UUIDField()
 
 
-class PersonViewSet(ListDownloadMixin, TenantModelViewSet):
+class PersonViewSet(BulkDeleteMixin, ListDownloadMixin, TenantModelViewSet):
     queryset = Person.objects.all()
     download_title = gettext_noop("People")
     download_columns = [
@@ -69,6 +70,7 @@ class PersonViewSet(ListDownloadMixin, TenantModelViewSet):
         "create": ("people.manage", "people.create"),
         "partial_update": "people.manage",
         "archive": "people.manage",
+        "bulk_delete": "records.admin_edit",
         "check_duplicates": ("people.manage", "people.create"),
         "link_user": "people.manage",
         "unlink_user": "people.manage",
@@ -116,10 +118,14 @@ class PersonViewSet(ListDownloadMixin, TenantModelViewSet):
     @action(detail=True, methods=["post"])
     def archive(self, request, pk=None):
         person = self.get_object()
+        self.bulk_delete_one(person)
+        return Response(self.get_serializer(person).data)
+
+    def bulk_delete_one(self, person):
         before = model_to_dict(person)
-        person.soft_delete(user=request.user)
+        person.soft_delete(user=self.request.user)
         audit.record(
-            request=request,
+            request=self.request,
             organization=self.organization,
             action=audit.SOFT_DELETE,
             entity_type="people.person",
@@ -127,7 +133,6 @@ class PersonViewSet(ListDownloadMixin, TenantModelViewSet):
             before=before,
             after=model_to_dict(person),
         )
-        return Response(self.get_serializer(person).data)
 
     @extend_schema(request=LinkUserSerializer, responses=PersonSerializer)
     @action(detail=True, methods=["post"], url_path="link-user")
