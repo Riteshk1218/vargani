@@ -38,6 +38,7 @@ def load_permissions(role) -> dict[str, str]:
 
 
 DOWNLOAD_PERMISSION = "reports.export"
+ADMIN_DELETE_PERMISSION = "records.admin_edit"  # core/admin_override.ADMIN_EDIT
 
 
 def membership_permissions(membership) -> dict[str, str]:
@@ -47,6 +48,9 @@ def membership_permissions(membership) -> dict[str, str]:
         permissions[DOWNLOAD_PERMISSION] = SCOPE_ALL
     elif membership.can_download is False:
         permissions.pop(DOWNLOAD_PERMISSION, None)
+    if membership.user.is_platform_admin:
+        # The platform admin may delete anything in any organization they open (e.g. to start it from zero).
+        permissions[ADMIN_DELETE_PERMISSION] = SCOPE_ALL
     return permissions
 
 
@@ -66,7 +70,7 @@ def get_org_context(request, org_id=None) -> OrgContext:
         raise NotAMember() from exc
 
     membership = (
-        OrganizationMembership.objects.select_related("organization", "role")
+        OrganizationMembership.objects.select_related("organization", "role", "user")
         .filter(
             user=request.user,
             organization_id=org_uuid,

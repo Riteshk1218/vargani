@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { HandCoins, Search, Users, Wallet } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Button } from '../../components/ui/Button'
 import { ConfirmDialog } from '../../components/ui/Modal'
 import { useToast } from '../../components/ui/Toast'
@@ -21,6 +21,7 @@ import { formatDate, formatMobile, formatMoney, formatMonth, formatStamp } from 
 import { cn } from '../../utils/cn'
 import { DownloadMenu } from '../../components/DownloadMenu'
 import { CreatedMeta, ListTools, useListTools } from '../../components/ListTools'
+import { BulkDeleteBar, DELETE_PERMISSION, SelectAllHeader, SelectCell, useRowSelection } from '../../components/BulkDelete'
 import { RemindButton } from './RemindButton'
 
 type Tab = 'list' | 'balances' | 'dues'
@@ -106,7 +107,8 @@ function Summary({ eventId }: { eventId: string }) {
 
 function ContributionList({ eventId }: { eventId: string }) {
   const { t } = useTranslation()
-  const { activeOrgId, detail } = useOrg()
+  const { activeOrgId, detail, can } = useOrg()
+  const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [type, setType] = useState('')
   const [page, setPage] = useState(1)
@@ -118,6 +120,11 @@ function ContributionList({ eventId }: { eventId: string }) {
     queryFn: () => contributionService.list({ event: eventId, search: debounced || undefined, contribution_type: type || undefined, ...tools.query, page }),
   })
   const currency = detail?.organization.currency
+  const selection = useRowSelection([eventId, debounced, type, tools.query])
+  const canDelete = can(DELETE_PERMISSION)
+  const pageIds = rows.data?.results.map((c) => c.id) ?? []
+  // Archived types (such as the old monthly ones) are left out of the dropdown.
+  const activeTypes = (types.data?.results ?? []).filter((ct) => ct.is_active)
   return (
     <Card>
       <div className="grid gap-3 border-b border-slate-200 p-4 sm:grid-cols-[1fr_14rem_auto] sm:items-end">
@@ -127,7 +134,7 @@ function ContributionList({ eventId }: { eventId: string }) {
         </div>
         <SelectInput label={t('collect.type')} value={type} onChange={(e) => (setType(e.target.value), setPage(1))}>
           <option value="">{t('common.all')}</option>
-          {(types.data?.results ?? []).map((ct) => (
+          {activeTypes.map((ct) => (
             <option key={ct.id} value={ct.id}>
               {ct.name}
             </option>
@@ -153,10 +160,21 @@ function ContributionList({ eventId }: { eventId: string }) {
         <EmptyState title={t('contributions.empty')} message={t('contributions.emptyMessage')} />
       ) : (
         <>
+          {canDelete && (
+            <BulkDeleteBar
+              selection={selection}
+              ids={pageIds}
+              path="/contributions/"
+              invalidate={[['contributions'], ['payments'], ['receipts'], ['dues'], ['dashboard']]}
+              showSelectAll={false}
+              message={t('bulk.confirmCollections')}
+            />
+          )}
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm">
               <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
                 <tr>
+                  {canDelete && <SelectAllHeader selection={selection} ids={pageIds} />}
                   <th className="px-4 py-2 font-medium">{t('collect.person')}</th>
                   <th className="hidden px-4 py-2 font-medium sm:table-cell">{t('collect.type')}</th>
                   <th className="hidden px-4 py-2 font-medium md:table-cell">{t('common.date')}</th>
@@ -167,7 +185,8 @@ function ContributionList({ eventId }: { eventId: string }) {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {rows.data!.results.map((c) => (
-                  <tr key={c.id}>
+                  <tr key={c.id} className="cursor-pointer hover:bg-slate-50" onClick={() => navigate(`/app/payments?open=${c.payment}`)}>
+                    {canDelete && <SelectCell selection={selection} id={c.id} />}
                     <td className="px-4 py-3">
                       <p className="font-medium">{c.person_name}</p>
                       <p className="text-xs text-slate-500 sm:hidden">
@@ -205,6 +224,7 @@ function ContributionList({ eventId }: { eventId: string }) {
 
 function Dues({ eventId }: { eventId: string }) {
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const { activeOrgId, detail } = useOrg()
   const currency = detail?.organization.currency
   const types = useQuery({
@@ -270,7 +290,7 @@ function Dues({ eventId }: { eventId: string }) {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {r!.results.map((row) => (
-                <tr key={row.person}>
+                <tr key={row.person} className="cursor-pointer hover:bg-slate-50" onClick={() => navigate(`/app/people/${row.person}`)}>
                   <td className="px-4 py-3">
                     <p className="font-medium">{row.person_name}</p>
                     <p className="text-xs text-slate-500">{formatMobile(row.mobile)}</p>
@@ -294,6 +314,7 @@ function Dues({ eventId }: { eventId: string }) {
 function Balances({ eventId }: { eventId: string }) {
   const { t } = useTranslation()
   const { activeOrgId, detail, can } = useOrg()
+  const navigate = useNavigate()
   const currency = detail?.organization.currency
   const queryClient = useQueryClient()
   const { notify } = useToast()
@@ -315,6 +336,9 @@ function Balances({ eventId }: { eventId: string }) {
     onError,
   })
   const canCollect = can('payments.create')
+  const canDelete = can(DELETE_PERMISSION)
+  const selection = useRowSelection([eventId, debounced, tools.query])
+  const pageIds = dues.data?.results.map((d) => d.id) ?? []
   return (
     <Card>
       <div className="flex flex-col gap-3 border-b border-slate-200 p-4 sm:flex-row sm:items-end sm:justify-between">
@@ -340,10 +364,22 @@ function Balances({ eventId }: { eventId: string }) {
       ) : dues.data!.count === 0 ? (
         <EmptyState title={t('balances.none')} message={t('balances.noneMessage')} />
       ) : (
+        <>
+        {canDelete && (
+          <BulkDeleteBar
+            selection={selection}
+            ids={pageIds}
+            path="/dues/"
+            invalidate={[['dues'], ['contributions'], ['payments'], ['dashboard']]}
+            showSelectAll={false}
+            message={t('bulk.confirmBalances')}
+          />
+        )}
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
             <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
               <tr>
+                {canDelete && <SelectAllHeader selection={selection} ids={pageIds} />}
                 <th className="px-4 py-2 font-medium">{t('collect.person')}</th>
                 <th className="hidden px-4 py-2 font-medium sm:table-cell">{t('collect.type')}</th>
                 <th className="hidden px-4 py-2 text-right font-medium md:table-cell">{t('balances.balance')}</th>
@@ -353,7 +389,8 @@ function Balances({ eventId }: { eventId: string }) {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {dues.data!.results.map((due) => (
-                <tr key={due.id}>
+                <tr key={due.id} className="cursor-pointer hover:bg-slate-50" onClick={() => navigate(`/app/payments?open=${due.payment}`)}>
+                  {canDelete && <SelectCell selection={selection} id={due.id} />}
                   <td className="px-4 py-3">
                     <p className="font-medium">{due.person_name}</p>
                     <p className="text-xs text-slate-500">{[formatMobile(due.person_mobile), due.receipt_number].filter(Boolean).join(' · ')}</p>
@@ -365,7 +402,7 @@ function Balances({ eventId }: { eventId: string }) {
                   </td>
                   <td className="hidden px-4 py-3 text-right tabular-nums md:table-cell">{formatMoney(due.amount, currency)}</td>
                   <td className="px-4 py-3 text-right font-medium tabular-nums text-red-700">{formatMoney(due.remaining, currency)}</td>
-                  <td className="px-4 py-3 text-right">
+                  <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                     <div className="flex justify-end gap-2">
                       {canCollect && (
                         <Link to={`/app/collect?person=${due.person}`}>
@@ -384,6 +421,7 @@ function Balances({ eventId }: { eventId: string }) {
             </tbody>
           </table>
         </div>
+        </>
       )}
       <Pagination page={page} pageSize={25} count={dues.data?.count ?? 0} onChange={setPage} />
       <ConfirmDialog

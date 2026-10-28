@@ -8,6 +8,7 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 
 from apps.contributions import assignments
+from apps.core.bulk import BulkDeleteMixin
 from apps.core.dates import OrgDayFilter
 from apps.core.downloads import Col, ListDownloadMixin
 from apps.core.scoping import scope_money
@@ -53,7 +54,7 @@ class PaymentFilter(django_filters.FilterSet):
         fields = ["event", "status", "mode", "payer", "collector"]
 
 
-class PaymentViewSet(ListDownloadMixin, TenantModelViewSet):
+class PaymentViewSet(BulkDeleteMixin, ListDownloadMixin, TenantModelViewSet):
     """Payments with their contribution lines and receipt.
 
     POST records a payment (also exposed as POST /collections/). Send an `Idempotency-Key` header so a retry
@@ -97,6 +98,7 @@ class PaymentViewSet(ListDownloadMixin, TenantModelViewSet):
         "fail": "payments.cancel_pending",
         "admin_edit": "records.admin_edit",
         "destroy": "records.admin_edit",
+        "bulk_delete": "records.admin_edit",
     }
 
     def get_serializer_class(self):
@@ -261,3 +263,6 @@ class PaymentViewSet(ListDownloadMixin, TenantModelViewSet):
             self.get_object(), reason=serializer.validated_data["reason"], request=request, actor=request.user
         )
         return self._detail(payment)
+
+    def bulk_delete_one(self, payment):
+        admin_edit.delete_payment(payment, request=self.request, actor=self.request.user)

@@ -22,6 +22,7 @@ import { PaymentEditModal } from './PaymentEditModal'
 import { PavtiVisitModal } from './PavtiVisitModal'
 import { DownloadMenu } from '../../components/DownloadMenu'
 import { CreatedMeta, ListTools, useListTools } from '../../components/ListTools'
+import { BulkDeleteBar, DELETE_PERMISSION, SelectBox, useRowSelection } from '../../components/BulkDelete'
 
 
 const STATUSES: PaymentStatus[] = ['successful', 'pending', 'failed', 'cancelled', 'deleted']
@@ -102,6 +103,8 @@ export function PaymentsPage() {
   })
   const currency = detail?.organization.currency
   const filtered = Boolean(debounced || status || mode || pavtiFilter || tools.filtered)
+  const selection = useRowSelection([eventId, debounced, status, mode, followUp, pavti, tools.query])
+  const canDelete = can(DELETE_PERMISSION)
 
   return (
     <div>
@@ -179,10 +182,22 @@ export function PaymentsPage() {
               <EmptyState icon={<HandCoins className="size-6" />} title={filtered ? t('people.noMatches') : t('payments.empty')} message={filtered ? undefined : t('payments.emptyMessage')} />
             ) : (
               <>
+                {canDelete && (
+                  <BulkDeleteBar
+                    selection={selection}
+                    ids={payments.data!.results.filter((p) => p.status !== 'deleted').map((p) => p.id)}
+                    path="/payments/"
+                    invalidate={[['payments'], ['contributions'], ['receipts'], ['dues'], ['dashboard']]}
+                    message={t('bulk.confirmCollections')}
+                  />
+                )}
                 <ul className="divide-y divide-slate-100">
                   {payments.data!.results.map((p) => (
-                    <li key={p.id}>
-                      <button type="button" onClick={() => setSelected(p)} className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm hover:bg-slate-50">
+                    <li key={p.id} className="flex items-center">
+                      {canDelete && (
+                        <SelectBox className="ml-4" checked={selection.has(p.id)} onChange={() => selection.toggle(p.id)} label={t('bulk.select')} />
+                      )}
+                      <button type="button" onClick={() => setSelected(p)} className="flex min-w-0 flex-1 items-center justify-between gap-3 px-4 py-3 text-left text-sm hover:bg-slate-50">
                         <div className="min-w-0">
                           <p className={p.is_anonymous ? 'truncate font-medium italic text-slate-600' : 'truncate font-medium'}>{p.payer_name}</p>
                           <p className="truncate text-slate-500">

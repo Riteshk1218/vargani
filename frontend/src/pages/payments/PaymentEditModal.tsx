@@ -70,6 +70,8 @@ export function PaymentEditModal({ payment, onClose, onSaved }: { payment: Payme
 
   const typeList = types.data?.results ?? []
   const typeById = (id: string) => typeList.find((ct) => ct.id === id)
+  // Archived types (such as the old monthly ones) stay out of the dropdown, except on a line that already has one.
+  const typeOptions = (current: string) => typeList.filter((ct) => ct.is_active || ct.id === current)
   const total = sumMoney(lines.map((l) => (MONEY.test(l.amount) ? l.amount : '0')))
   const update = (key: number, patch: Partial<Line>) => setLines((ls) => ls.map((l) => (l.key === key ? { ...l, ...patch } : l)))
 
@@ -146,7 +148,7 @@ export function PaymentEditModal({ payment, onClose, onSaved }: { payment: Payme
           {lines.map((line, index) => (
             <div key={line.key} className="grid gap-2 sm:grid-cols-[1fr_8rem_8rem_auto] sm:items-start">
               <SelectInput label={t('collect.type')} value={line.typeId} error={errors[`lines.${index}.contribution_type`]} onChange={(e) => update(line.key, { typeId: e.target.value })}>
-                {typeList.map((option) => (
+                {typeOptions(line.typeId).map((option) => (
                   <option key={option.id} value={option.id}>
                     {option.name}
                   </option>
@@ -175,7 +177,7 @@ export function PaymentEditModal({ payment, onClose, onSaved }: { payment: Payme
             variant="secondary"
             size="sm"
             icon={<Plus className="size-4" />}
-            onClick={() => setLines((ls) => [...ls, { key: Math.max(0, ...ls.map((l) => l.key)) + 1, typeId: typeList[0]?.id ?? '', month: '', amount: '' }])}
+            onClick={() => setLines((ls) => [...ls, { key: Math.max(0, ...ls.map((l) => l.key)) + 1, typeId: typeOptions('')[0]?.id ?? '', month: '', amount: '' }])}
           >
             {t('collect.addLine')}
           </Button>

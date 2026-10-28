@@ -10,6 +10,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.core.bulk import BulkDeleteMixin
 from apps.core.dates import org_tz
 from apps.core.exceptions import EventRequired
 from apps.core.permissions import HasOrgPermission
@@ -31,7 +32,7 @@ def _money(value) -> str:
     return f"{(value or 0):.2f}"
 
 
-class CollectorAssignmentViewSet(TenantReadOnlyViewSet):
+class CollectorAssignmentViewSet(BulkDeleteMixin, TenantReadOnlyViewSet):
     """Who collects from whom. Assign with POST /collector-assignments/bulk/, stop with /{id}/end/."""
 
     queryset = CollectorAssignment.objects.all()
@@ -45,7 +46,11 @@ class CollectorAssignmentViewSet(TenantReadOnlyViewSet):
         "retrieve": ("collectors.manage", "collectors.view_performance"),
         "bulk": "collectors.manage",
         "end": "collectors.manage",
+        "bulk_delete": "collectors.manage",
     }
+
+    def bulk_delete_one(self, assignment):
+        assignments.end(assignment, request=self.request, actor=self.request.user)
 
     def get_base_queryset(self):
         return CollectorAssignment.objects.for_org(self.organization).select_related("person", "collector__user")

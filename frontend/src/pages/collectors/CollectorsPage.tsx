@@ -17,6 +17,8 @@ import { collectorService } from '../../services/finance'
 import { memberService } from '../../services/organizations'
 import { peopleService } from '../../services/people'
 import { formatMobile, formatMoney } from '../../utils/format'
+import { useNavigate } from 'react-router-dom'
+import { BulkDeleteBar, SelectBox, useRowSelection } from '../../components/BulkDelete'
 
 const COLLECTING_ROLES = new Set(['collector', 'treasurer', 'org_admin'])
 
@@ -93,6 +95,7 @@ function Performance({ eventId }: { eventId: string }) {
 function Assignments({ eventId }: { eventId: string }) {
   const { t } = useTranslation()
   const { activeOrgId } = useOrg()
+  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const onError = useApiErrors()
   const [collector, setCollector] = useState('')
@@ -106,6 +109,7 @@ function Assignments({ eventId }: { eventId: string }) {
     queryFn: () => collectorService.assignments({ event: eventId, collector: chosen, is_active: true, page }),
     enabled: Boolean(chosen),
   })
+  const selection = useRowSelection([eventId, chosen])
   const end = useMutation({
     mutationFn: (id: string) => collectorService.end(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['org', activeOrgId, 'collector-assignments'] }),
@@ -142,14 +146,22 @@ function Assignments({ eventId }: { eventId: string }) {
         <EmptyState title={t('collectors.nobodyAssigned')} />
       ) : (
         <>
+          <BulkDeleteBar
+            selection={selection}
+            ids={list.data!.results.map((a) => a.id)}
+            path="/collector-assignments/"
+            invalidate={[['collector-assignments'], ['collectors']]}
+            message={t('bulk.confirmAssignments')}
+          />
           <ul className="divide-y divide-slate-100">
             {list.data!.results.map((a) => (
-              <li key={a.id} className="flex items-center justify-between px-4 py-2.5 text-sm">
-                <span>
+              <li key={a.id} className="flex cursor-pointer items-center gap-3 px-4 py-2.5 text-sm hover:bg-slate-50" onClick={() => navigate(`/app/people/${a.person}`)}>
+                <SelectBox checked={selection.has(a.id)} onChange={() => selection.toggle(a.id)} label={t('bulk.select')} />
+                <span className="min-w-0 flex-1">
                   <span className="font-medium">{a.person_name}</span>
                   <span className="block text-slate-500">{[formatMobile(a.person_mobile), a.person_area].filter(Boolean).join(' · ')}</span>
                 </span>
-                <Button variant="ghost" size="sm" aria-label={t('collectors.unassign')} loading={end.isPending && end.variables === a.id} onClick={() => end.mutate(a.id)}>
+                <Button variant="ghost" size="sm" aria-label={t('collectors.unassign')} loading={end.isPending && end.variables === a.id} onClick={(e) => (e.stopPropagation(), end.mutate(a.id))}>
                   <UserMinus className="size-4" />
                 </Button>
               </li>

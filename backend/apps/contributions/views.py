@@ -8,6 +8,7 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework.response import Response
 
+from apps.core.bulk import BulkDeleteMixin
 from apps.core.dates import OrgDayFilter
 from apps.core.downloads import Col, ListDownloadMixin
 from apps.core.exceptions import BusinessRuleViolation, EventRequired
@@ -76,8 +77,9 @@ class ContributionFilter(django_filters.FilterSet):
         fields = ["event", "person", "fund", "contribution_type", "period_month", "status", "collector", "payment"]
 
 
-class ContributionViewSet(ListDownloadMixin, TenantReadOnlyViewSet):
-    """Contribution lines. Read-only: lines are created by recording a payment and never edited or deleted."""
+class ContributionViewSet(BulkDeleteMixin, ListDownloadMixin, TenantReadOnlyViewSet):
+    """Contribution lines. Lines are created by recording a payment and never edited on their own; bulk-delete
+    (Organization Admin) deletes the whole collection each chosen line belongs to."""
 
     queryset = Contribution.objects.all()
     download_title = gettext_noop("Contributions")
@@ -102,7 +104,17 @@ class ContributionViewSet(ListDownloadMixin, TenantReadOnlyViewSet):
         "list": "contributions.view",
         "retrieve": "contributions.view",
         "summary": "contributions.view",
+        "bulk_delete": "records.admin_edit",
     }
+    http_method_names = ["get", "post", "head", "options"]
+
+    def bulk_delete_targets(self, rows):
+        return list({row.payment_id: row.payment for row in rows}.values())
+
+    def bulk_delete_one(self, payment):
+        from apps.payments.admin_edit import delete_payment
+
+        delete_payment(payment, request=self.request, actor=self.request.user)
 
     def get_base_queryset(self):
         return Contribution.objects.for_org(self.organization).select_related(
@@ -110,6 +122,9 @@ class ContributionViewSet(ListDownloadMixin, TenantReadOnlyViewSet):
         )
 
     def scope_queryset(self, queryset):
+        if self.action in ("list", "download") and not self.request.query_params.get("status"):
+            # Lines of a deleted collection leave the list, like the collection itself.
+            queryset = queryset.exclude(payment__status=Payment.Status.DELETED)
         return scope_money(queryset, self.org_context, "contributions.view", self.request.user)
 
     @extend_schema(
@@ -152,7 +167,7 @@ class DueFilter(django_filters.FilterSet):
         return queryset
 
 
-class DueViewSet(ListDownloadMixin, TenantReadOnlyViewSet):
+class DueViewSet(BulkDeleteMixin, ListDownloadMixin, TenantReadOnlyViewSet):
     """Balances (baaki): money still owed on a receipt that was given before all of it came.
 
     Created by recording a collection with `received` below the total, paid off by collection lines with
@@ -182,7 +197,11 @@ class DueViewSet(ListDownloadMixin, TenantReadOnlyViewSet):
         "list": "contributions.view",
         "retrieve": "contributions.view",
         "cancel": "records.admin_edit",
+        "bulk_delete": "records.admin_edit",
     }
+
+    def bulk_delete_one(self, due):
+        services.cancel_due(due, reason=_("Deleted by admin"), request=self.request)
 
     def get_base_queryset(self):
         from django.db.models import OuterRef, Subquery

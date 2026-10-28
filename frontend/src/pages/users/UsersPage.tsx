@@ -17,6 +17,7 @@ import { memberService } from '../../services/organizations'
 import type { Invitation, Member, Role } from '../../types/api'
 import { formatDate, formatMobile, loginOf } from '../../utils/format'
 import { DownloadMenu } from '../../components/DownloadMenu'
+import { BulkDeleteBar, DELETE_PERMISSION, SelectBox, useRowSelection } from '../../components/BulkDelete'
 import { LoginShareCard, PasswordField } from '../../components/LoginDetails'
 
 export function UsersPage() {
@@ -27,6 +28,8 @@ export function UsersPage() {
   const { notify } = useToast()
   const onError = useApiErrors()
   const canManage = can('members.manage')
+  const canDelete = can(DELETE_PERMISSION)
+  const selection = useRowSelection()
   const [inviting, setInviting] = useState(false)
   const [adding, setAdding] = useState(false)
   const [passwordFor, setPasswordFor] = useState<Member | null>(null)
@@ -91,11 +94,22 @@ export function UsersPage() {
         ) : members.isError ? (
           <ErrorState onRetry={() => void members.refetch()} />
         ) : (
+          <>
+          {canDelete && (
+            <BulkDeleteBar
+              selection={selection}
+              ids={members.data!.results.filter((m) => m.user.id !== user?.id).map((m) => m.id)}
+              path="/members/"
+              invalidate={[['members']]}
+              message={t('bulk.confirmUsers')}
+            />
+          )}
           <ul className="divide-y divide-slate-100">
             {members.data!.results.map((member) => {
               const self = member.user.id === user?.id
               return (
                 <li key={member.id} className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center">
+                  {canDelete && (self ? <span className="hidden size-4 shrink-0 sm:block" /> : <SelectBox checked={selection.has(member.id)} onChange={() => selection.toggle(member.id)} label={t('bulk.select')} />)}
                   <div className="min-w-0 flex-1">
                     <p className="font-medium">
                       {member.user.full_name} {self && <span className="text-xs text-slate-500">({t('users.you')})</span>}
@@ -157,6 +171,7 @@ export function UsersPage() {
               )
             })}
           </ul>
+          </>
         )}
       </Card>
 

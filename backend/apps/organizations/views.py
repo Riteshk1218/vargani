@@ -12,6 +12,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.audit import services as audit
+from apps.core.bulk import BulkDeleteMixin
 from apps.core.downloads import Col, ListDownloadMixin
 from apps.core.exceptions import BusinessRuleViolation
 from apps.core.tenancy import get_org_context
@@ -207,6 +208,7 @@ class FinancialYearViewSet(TenantModelViewSet):
 
 
 class MemberViewSet(
+    BulkDeleteMixin,
     ListDownloadMixin,
     TenantScopedMixin,
     mixins.ListModelMixin,
@@ -238,6 +240,7 @@ class MemberViewSet(
         "partial_update": "members.manage",
         "remove": "members.manage",
         "set_password": "members.manage",
+        "bulk_delete": "records.admin_edit",
     }
 
     def get_base_queryset(self):
@@ -250,11 +253,13 @@ class MemberViewSet(
     @action(detail=True, methods=["post"])
     def remove(self, request, pk=None):
         """Delete a user's access (kept as "removed" for the records and the audit log)."""
-        membership = self.get_object()
-        if membership.user_id == request.user.pk:
-            raise BusinessRuleViolation(_("You cannot delete your own access."))
-        services.remove_member(membership, request)
+        self.bulk_delete_one(self.get_object())
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+    def bulk_delete_one(self, membership):
+        if membership.user_id == self.request.user.pk:
+            raise BusinessRuleViolation(_("You cannot delete your own access."))
+        services.remove_member(membership, self.request)
 
     def partial_update(self, request, pk=None):
         membership = self.get_object()
