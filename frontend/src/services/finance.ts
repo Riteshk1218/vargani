@@ -75,8 +75,9 @@ export const contributionService = {
 export const receiptService = {
   list: (params: ListParams) => api.get<Paginated<Receipt>>('/receipts/', { params }).then((r) => r.data),
   get: (id: string) => api.get<Receipt>(`/receipts/${id}/`).then((r) => r.data),
-  pdf: (id: string) => api.get<Blob>(`/receipts/${id}/pdf/`, { responseType: 'blob' }).then((r) => r.data),
-  share: (id: string) => api.post<ReceiptShareLink>(`/receipts/${id}/share/`).then((r) => r.data),
+  pdf: (id: string, language?: string) =>
+    api.get<Blob>(`/receipts/${id}/pdf/`, { params: { language }, responseType: 'blob' }).then((r) => r.data),
+  share: (id: string, language?: string) => api.post<ReceiptShareLink>(`/receipts/${id}/share/`, { language }).then((r) => r.data),
   requestVoid: (id: string, reason: string) => api.post<VoidRequest>(`/receipts/${id}/void-request/`, { reason }).then((r) => r.data),
   voidRequests: (params: ListParams) => api.get<Paginated<VoidRequest>>('/receipt-void-requests/', { params }).then((r) => r.data),
   decideVoid: (id: string, decision: 'approve' | 'reject', reason = '') =>

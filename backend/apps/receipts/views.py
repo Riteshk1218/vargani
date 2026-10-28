@@ -2,7 +2,7 @@ import django_filters
 from django.http import HttpResponse
 from django.utils.translation import gettext_noop
 from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound, PermissionDenied
@@ -37,6 +37,13 @@ class ReasonSerializer(serializers.Serializer):
     reason = serializers.CharField(max_length=300, required=False, allow_blank=True, default="")
 
 
+LANGUAGE_PARAM = OpenApiParameter("language", str, enum=list(rendering.LANGUAGES), description="en, mr or hi")
+
+
+class ShareRequestSerializer(serializers.Serializer):
+    language = serializers.ChoiceField(choices=rendering.LANGUAGES, required=False)
+
+
 class ShareSerializer(serializers.Serializer):
     share_url = serializers.URLField()
     expires_at = serializers.DateTimeField()
@@ -44,8 +51,8 @@ class ShareSerializer(serializers.Serializer):
     whatsapp_url = serializers.URLField()
 
 
-def pdf_response(receipt, inline=False):
-    response = HttpResponse(rendering.receipt_pdf(receipt), content_type="application/pdf")
+def pdf_response(receipt, inline=False, language=None):
+    response = HttpResponse(rendering.receipt_pdf(receipt, language), content_type="application/pdf")
     disposition = "inline" if inline else "attachment"
     response["Content-Disposition"] = f'{disposition}; filename="{receipt.receipt_number}.pdf"'
     response["Cache-Control"] = "private, no-store"
@@ -114,18 +121,25 @@ class ReceiptViewSet(BulkDeleteMixin, ListDownloadMixin, TenantReadOnlyViewSet):
             person="payment__payer",
         )
 
-    @extend_schema(responses={(200, "application/pdf"): OpenApiTypes.BINARY})
+    @extend_schema(parameters=[LANGUAGE_PARAM], responses={(200, "application/pdf"): OpenApiTypes.BINARY})
     @action(detail=True, methods=["get"])
     def pdf(self, request, pk=None):
-        return pdf_response(self.get_object(), inline=request.query_params.get("inline") == "1")
+        return pdf_response(
+            self.get_object(),
+            inline=request.query_params.get("inline") == "1",
+            language=request.query_params.get("language"),
+        )
 
-    @extend_schema(request=None, responses=ShareSerializer)
+    @extend_schema(request=ShareRequestSerializer, responses=ShareSerializer)
     @action(detail=True, methods=["post"])
     def share(self, request, pk=None):
         receipt = self.get_object()
         if self.org_context.scope("receipts.share") != SCOPE_ALL and receipt.payment.collector_id != self.membership.pk:
             raise PermissionDenied()
-        return Response(ShareSerializer(rendering.create_share(receipt, request=request, actor=request.user)).data)
+        share = rendering.create_share(
+            receipt, language=request.data.get("language"), request=request, actor=request.user
+        )
+        return Response(ShareSerializer(share).data)
 
     @extend_schema(request=ReasonSerializer, responses={201: ReceiptVoidRequestSerializer})
     @action(detail=True, methods=["post"], url_path="void-request")
@@ -218,13 +232,16 @@ class PublicReceiptView(APIView):
                 "status": receipt.status,
                 "issued_at": receipt.issued_at,
                 "language": receipt.language,
-                "snapshot": {k: v for k, v in s.items() if k != "collector"},
+                "snapshot": {
+                    **{k: v for k, v in s.items() if k != "collector"},
+                    "signatory": rendering.signatory(s),
+                },
                 "logo_url": logo_url(receipt.organization, request) if s["organization"].get("logo") else None,
             }
         )
 
 
 class PublicReceiptPdfView(PublicReceiptView):
-    @extend_schema(responses={(200, "application/pdf"): OpenApiTypes.BINARY})
+    @extend_schema(parameters=[LANGUAGE_PARAM], responses={(200, "application/pdf"): OpenApiTypes.BINARY})
     def get(self, request, token):
-        return pdf_response(self._share(token).receipt)
+        return pdf_response(self._share(token).receipt, language=request.query_params.get("language"))

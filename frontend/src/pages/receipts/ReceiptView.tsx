@@ -1,14 +1,18 @@
 import { useTranslation } from 'react-i18next'
+import { LANGUAGES } from '../../i18n'
 import type { Receipt } from '../../types/api'
+import { cn } from '../../utils/cn'
 import { formatMobile } from '../../utils/format'
 
-/** The printable receipt. Everything shown comes from the snapshot taken when the receipt was issued. */
-export function ReceiptView({ receipt }: { receipt: Pick<Receipt, 'language' | 'snapshot' | 'status' | 'logo_url' | 'receipt_number'> }) {
+/** The printable receipt. Everything shown comes from the snapshot taken when the receipt was issued.
+ * `language` prints it in another language than the one it was issued in (en, mr or hi). */
+export function ReceiptView({ receipt, language }: { receipt: Pick<Receipt, 'language' | 'snapshot' | 'status' | 'logo_url' | 'receipt_number'>; language?: string }) {
   const { i18n } = useTranslation()
-  const lang = receipt.language || 'en'
+  const lang = language || receipt.language || 'en'
   const t = i18n.getFixedT(lang)
   const s = receipt.snapshot
   const balanceLines = s.balance_lines ?? []
+  const signatory = s.signatory ?? s.collector
   const locale = { en: 'en-IN', mr: 'mr-IN', hi: 'hi-IN' }[lang] ?? 'en-IN'
   const money = (value: string) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: s.currency || 'INR' }).format(Number(value))
   // "08-Oct-2026, 10:35 PM" in the organization's time zone, whatever the viewer's computer is set to.
@@ -170,8 +174,36 @@ export function ReceiptView({ receipt }: { receipt: Pick<Receipt, 'language' | '
 
       <footer className="mt-8 flex items-end justify-between gap-4">
         <p className="text-sm italic text-brand-800">{s.thank_you_message || t('receipts.thankYou')}</p>
-        <p className="border-t border-slate-400 pt-1 text-xs text-slate-500">{t('receipts.signature')}</p>
+        <div className="min-w-36 text-center">
+          {signatory && (
+            <p className="pb-1 text-sm font-semibold" data-testid="receipt-signatory">
+              {signatory}
+            </p>
+          )}
+          <p className="border-t border-slate-400 pt-1 text-xs text-slate-500">{t('receipts.signature')}</p>
+        </div>
       </footer>
     </article>
+  )
+}
+
+/** English / मराठी / हिन्दी buttons that choose the language the receipt is shown, printed and shared in. */
+export function ReceiptLanguagePicker({ value, onChange }: { value: string; onChange: (language: string) => void }) {
+  const { t } = useTranslation()
+  return (
+    <div role="radiogroup" aria-label={t('receipts.language')} className="inline-flex rounded-lg bg-white p-0.5 ring-1 ring-slate-300">
+      {LANGUAGES.map((option) => (
+        <button
+          key={option.code}
+          type="button"
+          role="radio"
+          aria-checked={value === option.code}
+          onClick={() => onChange(option.code)}
+          className={cn('rounded-md px-3 py-1.5 text-sm font-medium', value === option.code ? 'bg-brand-600 text-white' : 'text-slate-700 hover:bg-slate-50')}
+        >
+          {option.label}
+        </button>
+      ))}
+    </div>
   )
 }

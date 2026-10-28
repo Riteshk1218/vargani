@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../api/api_client.dart';
+import '../util/files.dart';
 import '../widgets/bulk_delete.dart';
 import '../widgets/common.dart';
 import '../widgets/list_tools.dart';
@@ -18,7 +19,7 @@ class PeopleScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final app = AppScope.of(context);
     // With access to payments, a person opens their contribution history (Collect is one tap from there).
-    return PersonSearchList(
+    final list = PersonSearchList(
       bulkDelete: true,
       onPick: (p) => Navigator.push(
         context,
@@ -27,6 +28,62 @@ class PeopleScreen extends StatelessWidget {
         ),
       ),
     );
+    if (!app.can('reports.export')) return list;
+    return Column(
+      children: [
+        Align(
+          alignment: Alignment.centerRight,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+            child: TextButton.icon(
+              key: const Key('people-download'),
+              onPressed: () => downloadPeople(context),
+              icon: const Icon(Icons.download_outlined),
+              label: Text(app.t('download_contacts')),
+            ),
+          ),
+        ),
+        Expanded(child: list),
+      ],
+    );
+  }
+}
+
+/// Everyone's name, mobile, email and address as Excel or CSV, to send them updates. Opens in Sheets or
+/// Excel on the phone, from where it can be shared or saved.
+Future<void> downloadPeople(BuildContext context) async {
+  final app = AppScope.read(context);
+  final file = await showModalBottomSheet<String>(
+    context: context,
+    builder: (ctx) => SafeArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(title: Text(app.t('download_contacts'), style: Theme.of(ctx).textTheme.titleMedium)),
+          ListTile(
+            leading: const Icon(Icons.table_chart_outlined),
+            title: Text(app.t('download_excel')),
+            onTap: () => Navigator.pop(ctx, 'xlsx'),
+          ),
+          ListTile(
+            leading: const Icon(Icons.description_outlined),
+            title: Text(app.t('download_csv')),
+            onTap: () => Navigator.pop(ctx, 'csv'),
+          ),
+        ],
+      ),
+    ),
+  );
+  if (file == null) return;
+  try {
+    final bytes = await app.api.getBytes('/people/download/', query: {'file': file});
+    await openFileBytes(
+      bytes,
+      'people.$file',
+      file == 'csv' ? 'text/csv' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    );
+  } catch (e) {
+    if (context.mounted) showMessage(context, errorText(context, e), error: true);
   }
 }
 

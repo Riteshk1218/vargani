@@ -27,7 +27,7 @@ from apps.payments.serializers import PaymentSerializer
 from apps.people.models import Person
 from apps.receipts.models import Receipt
 from apps.receipts.serializers import ReceiptSerializer
-from apps.receipts.views import pdf_response
+from apps.receipts.views import LANGUAGE_PARAM, pdf_response
 
 from .linking import portal_enabled
 
@@ -222,6 +222,10 @@ class PortalReceiptDetailView(PortalMixin, APIView):
 
 
 class PortalReceiptPdfView(PortalReceiptDetailView):
-    @extend_schema(responses={(200, "application/pdf"): OpenApiTypes.BINARY})
+    @extend_schema(parameters=[LANGUAGE_PARAM], responses={(200, "application/pdf"): OpenApiTypes.BINARY})
     def get(self, request, pk):
-        return pdf_response(self._receipt(pk), inline=request.query_params.get("inline") == "1")
+        return pdf_response(
+            self._receipt(pk),
+            inline=request.query_params.get("inline") == "1",
+            language=request.query_params.get("language"),
+        )

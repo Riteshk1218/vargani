@@ -533,7 +533,8 @@
     "deleteMessage": "Delete {{amount}} from {{name}}? It is removed from every list and total, and its receipt is cancelled. The audit log keeps a copy.",
     "editTitle": "Edit collection",
     "editNote": "Admin edit: the receipt keeps its number and shows the new details. The old values are kept in the audit log.",
-    "saveChanges": "Save changes ({{amount}})"
+    "saveChanges": "Save changes ({{amount}})",
+    "balanceEditNote": "This pavti keeps a balance. Correct the amount received on each line; the difference moves to the balance still owed."
   },
   "contributions": {
     "title": "Contributions",
@@ -598,7 +599,9 @@
     "towardsBalance": "towards balance",
     "nothingReceived": "Nothing received yet",
     "received": "Received",
-    "balanceDue": "Balance due"
+    "balanceDue": "Balance due",
+    "language": "Receipt language",
+    "edit": "Edit pavti"
   },
   "approvals": {
     "title": "Approvals",

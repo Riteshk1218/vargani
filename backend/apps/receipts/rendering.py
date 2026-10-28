@@ -44,8 +44,21 @@ def _money(value: str) -> str:
     return indian_format(value)
 
 
+LANGUAGES = ("en", "mr", "hi")
+
+
+def receipt_language(receipt: Receipt, requested: str | None = None) -> str:
+    """The language asked for (en, mr or hi), else the one the receipt was issued in."""
+    return requested if requested in LANGUAGES else (receipt.language or "en")
+
+
+def signatory(snapshot: dict) -> str | None:
+    """The name printed above "Authorised signatory". Receipts issued before it was stored use the collector."""
+    return snapshot.get("signatory") or snapshot.get("collector")
+
+
 def receipt_pdf(receipt: Receipt, language: str | None = None) -> bytes:
-    language = language or receipt.language or "en"
+    language = receipt_language(receipt, language)
     s = receipt.snapshot
     with translation.override(language):
         lines = [
@@ -79,6 +92,7 @@ def receipt_pdf(receipt: Receipt, language: str | None = None) -> bytes:
             ),
             "mode": s.get("mode_label") or _(MODE_LABELS.get(s["mode"], s["mode"])),
             "words": rupees_in_words(s["total"]) if language == "en" else "",
+            "signatory": signatory(s),
         }
         return render_pdf("receipts/receipt_pdf.html", context)
 
@@ -87,7 +101,7 @@ def _hash(token: str) -> str:
     return hashlib.sha256(token.encode()).hexdigest()
 
 
-def create_share(receipt: Receipt, *, request=None, actor=None) -> dict:
+def create_share(receipt: Receipt, *, language=None, request=None, actor=None) -> dict:
     token = secrets.token_urlsafe(24)
     share = ReceiptShare.objects.create(
         organization_id=receipt.organization_id,
@@ -108,7 +122,7 @@ def create_share(receipt: Receipt, *, request=None, actor=None) -> dict:
     )
     share_url = f"{settings.FRONTEND_URL.rstrip('/')}/r/{token}"
     s = receipt.snapshot
-    with translation.override(receipt.language or "en"):
+    with translation.override(receipt_language(receipt, language)):
         text = _(
             "Namaskar %(name)s, thank you for your contribution of Rs %(amount)s to %(organization)s "
             "(%(event)s). Receipt no. %(number)s: %(url)s"

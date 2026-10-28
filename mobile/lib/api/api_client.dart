@@ -110,10 +110,10 @@ class ApiClient {
 
   Future<dynamic> delete(String path) => _send('DELETE', path);
 
-  Future<Uint8List> getBytes(String path) async {
-    var res = await _raw('GET', uri(path), null, null);
+  Future<Uint8List> getBytes(String path, {Map<String, String?>? query}) async {
+    var res = await _raw('GET', uri(path, query), null, null);
     if (res.statusCode == 401 && await refresh()) {
-      res = await _raw('GET', uri(path), null, null);
+      res = await _raw('GET', uri(path, query), null, null);
     }
     if (res.statusCode >= 400) throw _error(res);
     return res.bodyBytes;
