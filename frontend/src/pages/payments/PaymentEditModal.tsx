@@ -31,7 +31,7 @@ function toLocalInput(iso: string) {
   return local.toISOString().slice(0, 16)
 }
 
-/** Organization Admin: change anything about a recorded collection. The receipt keeps its number. */
+/** Edit a recorded collection (an Organization Admin, or the person who created the pavti). The receipt keeps its number. */
 export function PaymentEditModal({ payment, onClose, onSaved }: { payment: Payment; onClose: () => void; onSaved: (p: Payment) => void }) {
   const { t } = useTranslation()
   const { activeOrgId, detail } = useOrg()

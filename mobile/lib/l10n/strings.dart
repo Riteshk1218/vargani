@@ -5,6 +5,11 @@ const supportedLanguages = {'en': 'English', 'mr': 'मराठी', 'hi': 'ह
 
 const Map<String, Map<String, String>> _strings = {
   'en': {
+    'edit_pavti': 'Edit pavti',
+    'edit_pavti_hint': 'Change the amount, mode or details. The pavti keeps its number {number}.',
+    'edit_pavti_amount_invalid': 'Enter each amount in rupees, e.g. 500 or 500.50.',
+    'created_by': 'Created by',
+    'everyone': 'Everyone',
     'app_name': 'Vargani',
     'login': 'Log in',
     'committee': 'Committee',
@@ -290,6 +295,11 @@ const Map<String, Map<String, String>> _strings = {
     'close': 'Close',
   },
   'mr': {
+    'edit_pavti': 'पावती संपादित करा',
+    'edit_pavti_hint': 'रक्कम, पद्धत किंवा तपशील बदला. पावतीचा क्रमांक {number} तसाच राहील.',
+    'edit_pavti_amount_invalid': 'प्रत्येक रक्कम रुपयांत लिहा, उदा. 500 किंवा 500.50.',
+    'created_by': 'कोणी बनवली',
+    'everyone': 'सर्व',
     'app_name': 'वर्गणी',
     'login': 'लॉग इन',
     'committee': 'समिती',
@@ -575,6 +585,11 @@ const Map<String, Map<String, String>> _strings = {
     'close': 'बंद करा',
   },
   'hi': {
+    'edit_pavti': 'पावती संपादित करें',
+    'edit_pavti_hint': 'राशि, तरीका या विवरण बदलें। पावती का नंबर {number} वही रहेगा।',
+    'edit_pavti_amount_invalid': 'हर राशि रुपयों में लिखें, जैसे 500 या 500.50।',
+    'created_by': 'किसने बनाई',
+    'everyone': 'सभी',
     'app_name': 'वर्गणी',
     'login': 'लॉग इन',
     'committee': 'समिति',
