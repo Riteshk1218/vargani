@@ -279,11 +279,18 @@ class _PasswordDialogState extends State<_PasswordDialog> {
   }
 }
 
-/// Password box that stays readable so the admin can copy it, with a "Make a password" button.
-class _PasswordField extends StatelessWidget {
+/// Password box with an eye button to show or hide it, and a "Make a password" button.
+class _PasswordField extends StatefulWidget {
   const _PasswordField({required this.controller, this.errorText});
   final TextEditingController controller;
   final String? errorText;
+
+  @override
+  State<_PasswordField> createState() => _PasswordFieldState();
+}
+
+class _PasswordFieldState extends State<_PasswordField> {
+  bool _hide = true;
 
   @override
   Widget build(BuildContext context) {
@@ -294,21 +301,28 @@ class _PasswordField extends StatelessWidget {
       children: [
         TextFormField(
           key: const Key('user-password-field'),
-          controller: controller,
+          controller: widget.controller,
+          obscureText: _hide,
           autocorrect: false,
           enableSuggestions: false,
           decoration: InputDecoration(
             labelText: app.t('password'),
             helperText: app.t('password_hint'),
-            errorText: errorText,
+            errorText: widget.errorText,
             border: const OutlineInputBorder(),
+            suffixIcon: IconButton(
+              key: const Key('user-password-eye'),
+              tooltip: app.t(_hide ? 'show_password' : 'hide_password'),
+              icon: Icon(_hide ? Icons.visibility : Icons.visibility_off),
+              onPressed: () => setState(() => _hide = !_hide),
+            ),
           ),
           validator: (v) => (v == null || v.isEmpty) ? app.t('required') : null,
         ),
         TextButton.icon(
           icon: const Icon(Icons.key_outlined),
           label: Text(app.t('make_password')),
-          onPressed: () => controller.text = generatePassword(),
+          onPressed: () => widget.controller.text = generatePassword(),
         ),
       ],
     );
