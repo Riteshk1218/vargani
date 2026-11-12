@@ -57,7 +57,7 @@ def endpoint_cases(org):
         "payment gateway keys": ("get", "/api/v1/gateway/config/", None),
         "my notifications": ("get", "/api/v1/notifications/", None),
         "financial summary": ("get", "/api/v1/finance/summary/", None),
-        "admin edit collection": ("post", f"/api/v1/payments/{NO_ID}/edit/", {}),
+        "edit collection": ("post", f"/api/v1/payments/{NO_ID}/edit/", {}),
         "admin delete collection": ("delete", f"/api/v1/payments/{NO_ID}/", None),
     }
 
@@ -103,7 +103,8 @@ EXPECTED = {
     "payment gateway keys": (1, 0, 0, 0, 0, 0),
     "my notifications": (1, 1, 1, 1, 1, 1),
     "financial summary": (1, 1, 1, 0, 0, 0),
-    "admin edit collection": (1, 0, 0, 0, 0, 0),
+    # Anyone who collects reaches the edit endpoint: they may edit pavtis they created (test_creator_edit).
+    "edit collection": (1, 1, 0, 1, 0, 0),
     "admin delete collection": (1, 0, 0, 0, 0, 0),
 }
 

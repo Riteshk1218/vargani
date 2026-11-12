@@ -144,6 +144,7 @@ class PaymentSerializer(CreatedByMixin, serializers.ModelSerializer):
     pavti_status = serializers.SerializerMethodField()
     follow_up_state = serializers.SerializerMethodField()
     custom_fields = serializers.SerializerMethodField()
+    can_edit = serializers.SerializerMethodField()
 
     class Meta:
         model = Payment
@@ -175,9 +176,18 @@ class PaymentSerializer(CreatedByMixin, serializers.ModelSerializer):
             "follow_up_state",
             "custom_fields",
             "created_at",
+            "created_by",
             "created_by_name",
+            "can_edit",
         ]
         read_only_fields = [f for f in fields if f != "notes"]
+
+    def get_can_edit(self, obj) -> bool:
+        """The caller may edit this pavti: an Organization Admin, or the person who created it."""
+        from .admin_edit import can_edit
+
+        request = self.context.get("request")
+        return can_edit(obj, getattr(request, "_org_context", None), getattr(request, "user", None))
 
     def get_is_anonymous(self, obj) -> bool:
         return obj.payer_id is None

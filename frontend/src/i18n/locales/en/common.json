@@ -592,6 +592,10 @@
     "replacedBy": "Corrected by {{number}}",
     "replaces": "This receipt corrects",
     "recordCorrection": "Record corrected payment",
+    "editPavti": "Edit pavti",
+    "editPavtiHint": "Change the amount, mode or details. The pavti keeps its number {{number}}.",
+    "createdBy": "Created by",
+    "everyone": "Everyone",
     "linkInvalid": "This receipt link is invalid or has expired.",
     "status": {
       "issued": "Issued",

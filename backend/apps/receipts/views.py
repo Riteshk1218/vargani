@@ -27,6 +27,9 @@ from .serializers import ReceiptSerializer, ReceiptVoidRequestSerializer
 class ReceiptFilter(django_filters.FilterSet):
     date_from = OrgDayFilter(field_name="issued_at")
     date_to = OrgDayFilter(field_name="issued_at", end=True)
+    created_by = django_filters.UUIDFilter(
+        field_name="payment__created_by", label="Pavtis created by this user (see /receipts/creators/)"
+    )
 
     class Meta:
         model = Receipt
@@ -35,6 +38,11 @@ class ReceiptFilter(django_filters.FilterSet):
 
 class ReasonSerializer(serializers.Serializer):
     reason = serializers.CharField(max_length=300, required=False, allow_blank=True, default="")
+
+
+class CreatorSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    name = serializers.CharField()
 
 
 class ShareSerializer(serializers.Serializer):
@@ -53,10 +61,12 @@ def pdf_response(receipt, inline=False):
 
 
 class ReceiptViewSet(BulkDeleteMixin, ListDownloadMixin, TenantReadOnlyViewSet):
-    """Issued receipts. Receipts are created only by recording a successful payment and never edited.
+    """Issued receipts (pavtis). Receipts are created only by recording a successful payment.
 
-    A receipt is corrected by requesting a void (approved by someone with receipts.void_approve) and then
-    recording the right payment with `replaces_receipt`.
+    The person who created a pavti (and an Organization Admin) edits it in place with
+    POST /payments/{payment}/edit/: it keeps its number. `can_edit` says whether the caller may. A receipt can
+    also be voided (approved by someone with receipts.void_approve) and the right payment recorded with
+    `replaces_receipt`. Filter by `created_by`; GET /receipts/creators/ lists who created the pavtis.
     """
 
     queryset = Receipt.objects.all()
@@ -79,6 +89,7 @@ class ReceiptViewSet(BulkDeleteMixin, ListDownloadMixin, TenantReadOnlyViewSet):
     required_permissions = {
         "list": "receipts.view",
         "retrieve": "receipts.view",
+        "creators": "receipts.view",
         "pdf": "receipts.view",
         "share": "receipts.share",
         "void_request": "receipts.void_request",
@@ -96,11 +107,11 @@ class ReceiptViewSet(BulkDeleteMixin, ListDownloadMixin, TenantReadOnlyViewSet):
 
     def get_base_queryset(self):
         return Receipt.objects.for_org(self.organization).select_related(
-            "payment__payer", "replaces_receipt", "created_by"
+            "payment__payer", "payment__created_by", "replaces_receipt", "created_by"
         )
 
     def scope_queryset(self, queryset):
-        if self.action in ("list", "download") and not self.request.query_params.get("status"):
+        if self.action in ("list", "download", "creators") and not self.request.query_params.get("status"):
             # The receipt of a deleted collection leaves the list (it is void and stays in the audit log).
             from apps.payments.models import Payment
 
@@ -113,6 +124,18 @@ class ReceiptViewSet(BulkDeleteMixin, ListDownloadMixin, TenantReadOnlyViewSet):
             collector="payment__collector",
             person="payment__payer",
         )
+
+    @extend_schema(responses=CreatorSerializer(many=True))
+    @action(detail=False, methods=["get"])
+    def creators(self, request):
+        """Who created the pavtis in this list (same filters), for the "Created by" filter."""
+        from apps.accounts.models import User
+
+        queryset = self.filter_queryset(self.get_queryset())
+        ids = queryset.exclude(payment__created_by__isnull=True).values("payment__created_by").distinct()
+        users = User.objects.filter(pk__in=ids)
+        rows = sorted(({"id": u.pk, "name": u.full_name or u.username} for u in users), key=lambda r: r["name"].lower())
+        return Response(CreatorSerializer(rows, many=True).data)
 
     @extend_schema(responses={(200, "application/pdf"): OpenApiTypes.BINARY})
     @action(detail=True, methods=["get"])

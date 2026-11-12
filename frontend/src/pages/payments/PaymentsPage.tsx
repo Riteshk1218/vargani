@@ -257,7 +257,10 @@ function PaymentDetailModal({ payment, onClose, onChanged }: { payment: Payment 
   const currency = detail?.organization.currency
   const pending = payment.status === 'pending'
   const isAdmin = can('records.admin_edit')
-  const editable = isAdmin && (payment.status === 'successful' || pending)
+  const open = payment.status === 'successful' || pending
+  // An Organization Admin edits and deletes any pavti; the person who created a pavti edits that pavti.
+  const editable = open && (payment.can_edit ?? isAdmin)
+  const deletable = isAdmin && open
   if (editing) return <PaymentEditModal payment={payment} onClose={() => setEditing(false)} onSaved={(p) => (setEditing(false), onChanged(p))} />
   if (visiting) return <PavtiVisitModal payment={payment} onClose={() => setVisiting(false)} onSaved={(p) => (setVisiting(false), onChanged(p))} />
   const owing = payment.status === 'successful' && Number(payment.balance_due) > 0
@@ -279,15 +282,15 @@ function PaymentDetailModal({ payment, onClose, onChanged }: { payment: Payment 
           </>
         ) : (
           <>
+            {deletable && (
+              <Button variant="ghost" icon={<Trash2 className="size-4" />} onClick={() => setAction('delete')}>
+                {t('payments.delete')}
+              </Button>
+            )}
             {editable && (
-              <>
-                <Button variant="ghost" icon={<Trash2 className="size-4" />} onClick={() => setAction('delete')}>
-                  {t('payments.delete')}
-                </Button>
-                <Button variant="secondary" icon={<Pencil className="size-4" />} onClick={() => setEditing(true)}>
-                  {t('common.edit')}
-                </Button>
-              </>
+              <Button variant="secondary" icon={<Pencil className="size-4" />} onClick={() => setEditing(true)}>
+                {t('common.edit')}
+              </Button>
             )}
             {pending && can('payments.cancel_pending') && (
               <>

@@ -18,6 +18,48 @@ class ReceiptsScreen extends StatefulWidget {
 class _ReceiptsScreenState extends State<ReceiptsScreen> with BulkSelect {
   ListQuery _query = const ListQuery(ordering: '-issued_at');
 
+  /// Pavtis created by this user only (null: everyone).
+  Map<String, dynamic>? _creator;
+
+  Future<void> _pickCreator() async {
+    final app = AppScope.read(context);
+    final t = app.t;
+    List<Map<String, dynamic>> creators;
+    try {
+      creators = resultsOf(await app.api.get('/receipts/creators/', query: {'event': app.eventId}));
+    } catch (e) {
+      if (mounted) showMessage(context, errorText(context, e), error: true);
+      return;
+    }
+    if (!mounted) return;
+    final picked = await showModalBottomSheet<Map<String, dynamic>>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          children: [
+            ListTile(title: Text(t('created_by'), style: Theme.of(context).textTheme.titleMedium)),
+            ListTile(
+              key: const Key('creator-everyone'),
+              leading: Icon(_creator == null ? Icons.radio_button_checked : Icons.radio_button_off),
+              title: Text(t('everyone')),
+              onTap: () => Navigator.pop(context, const <String, dynamic>{}),
+            ),
+            for (final c in creators)
+              ListTile(
+                key: Key('creator-${c['id']}'),
+                leading: Icon(_creator?['id'] == c['id'] ? Icons.radio_button_checked : Icons.radio_button_off),
+                title: Text('${c['name']}'),
+                onTap: () => Navigator.pop(context, c),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (picked == null) return;
+    setState(() => _creator = picked.isEmpty ? null : picked);
+  }
+
   @override
   Widget build(BuildContext context) {
     final app = AppScope.of(context);
@@ -33,6 +75,20 @@ class _ReceiptsScreenState extends State<ReceiptsScreen> with BulkSelect {
             SortOption('payment__payer__full_name', 'list_name'),
           ],
         ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 0, 12, 4),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: InputChip(
+              key: const Key('receipts-created-by'),
+              avatar: const Icon(Icons.person_outline, size: 18),
+              label: Text('${app.t('created_by')}: ${_creator == null ? app.t('everyone') : _creator!['name']}'),
+              selected: _creator != null,
+              onPressed: _pickCreator,
+              onDeleted: _creator == null ? null : () => setState(() => _creator = null),
+            ),
+          ),
+        ),
         if (selecting)
           BulkDeleteBar(
             count: selected.length,
@@ -42,9 +98,17 @@ class _ReceiptsScreenState extends State<ReceiptsScreen> with BulkSelect {
           ),
         Expanded(
           child: AsyncView<List<Map<String, dynamic>>>(
-            reloadKey: '${app.eventId}-${_query.key}-$bulkVersion',
+            reloadKey: '${app.eventId}-${_query.key}-${_creator?['id']}-$bulkVersion',
             load: () async => resultsOf(
-              await app.api.get('/receipts/', query: {'event': app.eventId, ..._query.query, 'page_size': '100'}),
+              await app.api.get(
+                '/receipts/',
+                query: {
+                  'event': app.eventId,
+                  ..._query.query,
+                  'created_by': _creator?['id']?.toString(),
+                  'page_size': '100',
+                },
+              ),
             ),
             builder: (context, items, reload) {
               visibleIds = [for (final r in items) if (r['status'] == 'issued') '${r['id']}'];
@@ -59,7 +123,7 @@ class _ReceiptsScreenState extends State<ReceiptsScreen> with BulkSelect {
                           : Navigator.push(
                               context,
                               MaterialPageRoute(builder: (_) => ReceiptScreen(receiptId: '${r['id']}')),
-                            ),
+                            ).then((_) => reload()),
                     );
             },
           ),

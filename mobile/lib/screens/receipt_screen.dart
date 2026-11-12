@@ -5,6 +5,7 @@ import '../util/files.dart';
 import '../util/money.dart';
 import '../widgets/common.dart';
 import 'org_picker_screen.dart';
+import 'pavti_edit_screen.dart';
 
 /// A receipt (pavti) as issued, built from the snapshot the server stored at issue time.
 class ReceiptScreen extends StatefulWidget {
@@ -61,7 +62,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
       appBar: AppBar(title: Text(widget.justIssued ? t('receipt_issued') : t('receipts'))),
       body: AsyncView<Map<String, dynamic>>(
         load: () async => ((await app.api.get('$_base/')) as Map).cast<String, dynamic>(),
-        builder: (context, r, _) {
+        builder: (context, r, reload) {
           final s = (r['snapshot'] as Map?)?.cast<String, dynamic>() ?? {};
           final org = (s['organization'] as Map?) ?? {};
           final person = (s['person'] as Map?) ?? {};
@@ -224,6 +225,25 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                 ),
               ),
               const SizedBox(height: 16),
+              if (!widget.portal && r['can_edit'] == true && r['status'] == 'issued') ...[
+                OutlinedButton.icon(
+                  key: const Key('receipt-edit'),
+                  onPressed: _busy
+                      ? null
+                      : () async {
+                          final changed = await Navigator.push<bool>(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => PavtiEditScreen(paymentId: '${r['payment']}', receiptNumber: number),
+                            ),
+                          );
+                          if (changed == true) await reload();
+                        },
+                  icon: const Icon(Icons.edit_outlined),
+                  label: Padding(padding: const EdgeInsets.all(12), child: Text(t('edit_pavti'))),
+                ),
+                const SizedBox(height: 8),
+              ],
               if (!widget.portal && app.can('receipts.share') && r['status'] == 'issued')
                 FilledButton.icon(
                   key: const Key('receipt-whatsapp'),

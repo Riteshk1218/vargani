@@ -374,6 +374,9 @@ export interface Payment {
   custom_fields: { key: string; label: string; value: string }[]
   created_at: string
   created_by_name?: string | null
+  created_by?: string | null
+  /** The caller may edit this pavti: an Organization Admin, or the person who created it. */
+  can_edit?: boolean
 }
 
 export type PavtiStatus = 'unpaid' | 'partly_paid' | 'paid'
@@ -521,7 +524,15 @@ export interface Receipt {
   snapshot: ReceiptSnapshot
   logo_url: string | null
   created_at?: string
+  created_by?: string | null
   created_by_name?: string | null
+  /** The caller may edit this pavti in place: an Organization Admin, or the person who created it. */
+  can_edit?: boolean
+}
+
+export interface PavtiCreator {
+  id: string
+  name: string
 }
 
 export interface PublicReceipt {

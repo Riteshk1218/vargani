@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { Badge, Card, PageHeader } from '../../components/ui/Card'
-import { TextInput } from '../../components/ui/Field'
+import { SelectInput, TextInput } from '../../components/ui/Field'
 import { Pagination } from '../../components/ui/Pagination'
 import { EmptyState, ErrorState, SkeletonRows } from '../../components/ui/States'
 import { useEvents } from '../../context/EventContext'
@@ -21,30 +21,47 @@ export function ReceiptsPage() {
   const { activeOrgId, detail, can } = useOrg()
   const { activeEvent } = useEvents()
   const [search, setSearch] = useState('')
+  const [createdBy, setCreatedBy] = useState('')
   const [page, setPage] = useState(1)
   const tools = useListTools('-issued_at', () => setPage(1))
   const debounced = useDebounced(search)
   const eventId = activeEvent?.id
   const receipts = useQuery({
-    queryKey: ['org', activeOrgId, 'receipts', 'list', eventId, debounced, tools.query, page],
-    queryFn: () => receiptService.list({ event: eventId, search: debounced || undefined, ...tools.query, page }),
+    queryKey: ['org', activeOrgId, 'receipts', 'list', eventId, debounced, createdBy, tools.query, page],
+    queryFn: () => receiptService.list({ event: eventId, search: debounced || undefined, created_by: createdBy || undefined, ...tools.query, page }),
+    enabled: Boolean(eventId),
+  })
+  const creators = useQuery({
+    queryKey: ['org', activeOrgId, 'receipts', 'creators', eventId],
+    queryFn: () => receiptService.creators({ event: eventId }),
     enabled: Boolean(eventId),
   })
   const currency = detail?.organization.currency
-  const selection = useRowSelection([eventId, debounced, tools.query])
+  const selection = useRowSelection([eventId, debounced, createdBy, tools.query])
+  const filtered = Boolean(debounced || createdBy || tools.filtered)
   const canDelete = can(DELETE_PERMISSION)
 
   return (
     <div>
-      <PageHeader title={t('receipts.title')} description={activeEvent ? `${activeEvent.name} · ${t('receipts.subtitle')}` : t('receipts.subtitle')} actions={<DownloadMenu path="/receipts/" params={{ event: eventId, search: debounced, ...tools.query }} />} />
+      <PageHeader title={t('receipts.title')} description={activeEvent ? `${activeEvent.name} · ${t('receipts.subtitle')}` : t('receipts.subtitle')} actions={<DownloadMenu path="/receipts/" params={{ event: eventId, search: debounced, created_by: createdBy, ...tools.query }} />} />
       <Card>
         {!eventId ? (
           <EmptyState title={t('common.selectEvent')} message={t('common.selectEventMessage')} />
         ) : (
           <>
-            <div className="relative border-b border-slate-200 p-4">
-              <TextInput label={t('common.search')} placeholder={t('receipts.searchPlaceholder')} value={search} onChange={(e) => (setSearch(e.target.value), setPage(1))} />
-              <Search className="pointer-events-none absolute right-7 top-13 size-4 text-slate-400" aria-hidden />
+            <div className="grid gap-3 border-b border-slate-200 p-4 sm:grid-cols-[1fr_16rem]">
+              <div className="relative">
+                <TextInput label={t('common.search')} placeholder={t('receipts.searchPlaceholder')} value={search} onChange={(e) => (setSearch(e.target.value), setPage(1))} />
+                <Search className="pointer-events-none absolute right-3 top-9 size-4 text-slate-400" aria-hidden />
+              </div>
+              <SelectInput label={t('receipts.createdBy')} value={createdBy} onChange={(e) => (setCreatedBy(e.target.value), setPage(1))} data-testid="receipts-created-by">
+                <option value="">{t('receipts.everyone')}</option>
+                {(creators.data ?? []).map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </SelectInput>
             </div>
             <ListTools
               tools={tools}
@@ -60,7 +77,7 @@ export function ReceiptsPage() {
             ) : receipts.isError ? (
               <ErrorState onRetry={() => void receipts.refetch()} />
             ) : receipts.data!.count === 0 ? (
-              <EmptyState icon={<ReceiptText className="size-6" />} title={debounced || tools.filtered ? t('people.noMatches') : t('receipts.empty')} message={debounced || tools.filtered ? undefined : t('receipts.emptyMessage')} />
+              <EmptyState icon={<ReceiptText className="size-6" />} title={filtered ? t('people.noMatches') : t('receipts.empty')} message={filtered ? undefined : t('receipts.emptyMessage')} />
             ) : (
               <>
                 {canDelete && (

@@ -592,6 +592,10 @@
     "replacedBy": "{{number}} द्वारा सुधारी गई",
     "replaces": "यह रसीद सुधारती है",
     "recordCorrection": "सुधारा हुआ भुगतान दर्ज करें",
+    "editPavti": "पावती संपादित करें",
+    "editPavtiHint": "राशि, तरीका या विवरण बदलें। पावती का नंबर {{number}} वही रहेगा।",
+    "createdBy": "किसने बनाई",
+    "everyone": "सभी",
     "linkInvalid": "यह रसीद लिंक गलत है या समाप्त हो चुकी है।",
     "status": {
       "issued": "जारी",
