@@ -17,7 +17,7 @@ export function generatePassword(): string {
   return `${pick(LETTERS, 4)}-${pick(DIGITS, 4)}-${pick(LETTERS, 4)}`
 }
 
-/** Password box with a "Make one" button; the text stays visible so the admin can copy it. */
+/** Password box with a "Make one" button and an eye toggle; the login card shown after saving repeats it for copying. */
 export function PasswordField({ value, onChange, error, label }: { value: string; onChange: (value: string) => void; error?: string; label?: string }) {
   const { t } = useTranslation()
   return (
@@ -25,6 +25,7 @@ export function PasswordField({ value, onChange, error, label }: { value: string
       <TextInput
         label={label ?? t('auth.password')}
         required
+        type="password"
         autoComplete="new-password"
         value={value}
         onChange={(e) => onChange(e.target.value)}

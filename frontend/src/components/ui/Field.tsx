@@ -1,4 +1,6 @@
-import { forwardRef, useId, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react'
+import { Eye, EyeOff } from 'lucide-react'
+import { forwardRef, useId, useState, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react'
+import { useTranslation } from 'react-i18next'
 import { cn } from '../../utils/cn'
 
 const CONTROL =
@@ -38,19 +40,48 @@ export function Field({ label, error, hint, required, children, className }: Fie
 
 type InputProps = InputHTMLAttributes<HTMLInputElement> & { label: string; error?: string; hint?: string }
 
-export const TextInput = forwardRef<HTMLInputElement, InputProps>(function TextInput({ label, error, hint, required, className, ...props }, ref) {
+/** Text box. With type="password" it gets an eye button to show or hide what was typed. */
+export const TextInput = forwardRef<HTMLInputElement, InputProps>(function TextInput({ label, error, hint, required, className, type, ...props }, ref) {
+  const { t } = useTranslation()
+  const [reveal, setReveal] = useState(false)
+  const isPassword = type === 'password'
   return (
     <Field label={label} error={error} hint={hint} required={required} className={className}>
-      {(id, describedBy) => (
-        <input
-          ref={ref}
-          id={id}
-          aria-invalid={Boolean(error)}
-          aria-describedby={describedBy}
-          className={cn(CONTROL, error && 'ring-red-500')}
-          {...props}
-        />
-      )}
+      {(id, describedBy) =>
+        isPassword ? (
+          <div className="relative">
+            <input
+              ref={ref}
+              id={id}
+              type={reveal ? 'text' : 'password'}
+              aria-invalid={Boolean(error)}
+              aria-describedby={describedBy}
+              className={cn(CONTROL, 'pr-10', error && 'ring-red-500')}
+              {...props}
+            />
+            <button
+              type="button"
+              onClick={() => setReveal((v) => !v)}
+              onMouseDown={(event) => event.preventDefault()}
+              aria-label={reveal ? t('common.hidePassword') : t('common.showPassword')}
+              aria-pressed={reveal}
+              className="absolute inset-y-0 right-0 flex w-10 items-center justify-center rounded-r-lg text-slate-500 hover:text-slate-700"
+            >
+              {reveal ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+            </button>
+          </div>
+        ) : (
+          <input
+            ref={ref}
+            id={id}
+            type={type}
+            aria-invalid={Boolean(error)}
+            aria-describedby={describedBy}
+            className={cn(CONTROL, error && 'ring-red-500')}
+            {...props}
+          />
+        )
+      }
     </Field>
   )
 })

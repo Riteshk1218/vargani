@@ -16,13 +16,20 @@ interface ModalProps {
 export function Modal({ open, title, onClose, children, footer, size = 'md' }: ModalProps) {
   const { t } = useTranslation()
   const panelRef = useRef<HTMLDivElement>(null)
+  // Callers usually pass a fresh onClose on every render. Keep it in a ref so the
+  // effect below runs only when the modal opens, not on every keystroke (which
+  // used to yank focus back to the first field while typing).
+  const onCloseRef = useRef(onClose)
+  useEffect(() => {
+    onCloseRef.current = onClose
+  }, [onClose])
 
   useEffect(() => {
     if (!open) return
     const previous = document.activeElement as HTMLElement | null
     panelRef.current?.querySelector<HTMLElement>('input, select, textarea, button')?.focus()
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose()
+      if (event.key === 'Escape') onCloseRef.current()
     }
     document.addEventListener('keydown', onKey)
     document.body.style.overflow = 'hidden'
@@ -31,7 +38,7 @@ export function Modal({ open, title, onClose, children, footer, size = 'md' }: M
       document.body.style.overflow = ''
       previous?.focus()
     }
-  }, [open, onClose])
+  }, [open])
 
   if (!open) return null
   return (

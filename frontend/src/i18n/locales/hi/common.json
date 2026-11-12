@@ -35,6 +35,8 @@
     "myProfile": "मेरी प्रोफ़ाइल"
   },
   "common": {
+    "hidePassword": "पासवर्ड छिपाएँ",
+    "showPassword": "पासवर्ड दिखाएँ",
     "add": "जोड़ें",
     "all": "सभी",
     "cancel": "रद्द करें",

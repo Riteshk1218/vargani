@@ -139,6 +139,7 @@ class _PasswordLoginState extends State<_PasswordLogin> {
                   labelText: app.t('password'),
                   border: const OutlineInputBorder(),
                   suffixIcon: IconButton(
+                    tooltip: app.t(_hide ? 'show_password' : 'hide_password'),
                     icon: Icon(_hide ? Icons.visibility : Icons.visibility_off),
                     onPressed: () => setState(() => _hide = !_hide),
                   ),

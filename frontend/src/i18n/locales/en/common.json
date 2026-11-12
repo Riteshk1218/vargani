@@ -35,6 +35,8 @@
     "myProfile": "My profile"
   },
   "common": {
+    "hidePassword": "Hide password",
+    "showPassword": "Show password",
     "add": "Add",
     "all": "All",
     "cancel": "Cancel",
