@@ -1,4 +1,7 @@
-"""Organization Admin: edit or delete a recorded collection.
+"""Edit or delete a recorded collection (pavti).
+
+An Organization Admin edits or deletes any collection. The person who created a pavti may also edit it
+(`can_edit`), as long as they can still collect.
 
 Edit keeps the receipt number and rewrites the receipt to match. Delete marks the payment `deleted`, cancels
 its lines and voids its receipt, so it leaves every list and total but stays in the audit log. Both lift the
@@ -13,7 +16,7 @@ from rest_framework.exceptions import ValidationError
 
 from apps.audit import services as audit
 from apps.contributions.models import Contribution, Due
-from apps.core.admin_override import ADMIN_DELETE_ACTION, ADMIN_EDIT_ACTION, allow_admin_changes
+from apps.core.admin_override import ADMIN_DELETE_ACTION, ADMIN_EDIT, ADMIN_EDIT_ACTION, allow_admin_changes
 from apps.core.exceptions import InvalidStateTransition
 from apps.receipts.models import Receipt
 from apps.receipts.services import build_snapshot
@@ -24,6 +27,20 @@ from .services import CLOCK_SKEW, REFERENCE_REQUIRED, _org_today, create_person
 EDITABLE = {Payment.Status.SUCCESSFUL, Payment.Status.PENDING}
 FIELDS = ["mode", "paid_at", "reference_number", "cheque_bank", "cheque_date", "notes"]
 TEXT_FIELDS = {"reference_number", "cheque_bank", "notes"}
+CREATOR_EDIT_ACTION = "pavti_edit"
+
+
+def is_admin(org_context) -> bool:
+    return org_context is not None and org_context.has(ADMIN_EDIT)
+
+
+def can_edit(payment, org_context, user) -> bool:
+    """An Organization Admin edits any collection; the person who created it edits their own."""
+    if payment.status not in EDITABLE or org_context is None or user is None:
+        return False
+    if is_admin(org_context):
+        return True
+    return bool(payment.created_by_id) and payment.created_by_id == user.pk and org_context.has("payments.create")
 
 
 def _state(payment) -> dict:
@@ -40,7 +57,7 @@ def _state(payment) -> dict:
     }
 
 
-def edit_payment(payment, *, data, request=None, actor=None) -> Payment:
+def edit_payment(payment, *, data, request=None, actor=None, action=ADMIN_EDIT_ACTION) -> Payment:
     """`data` may hold payer (Person or None for anonymous), new_person, mode, paid_at, reference_number,
     cheque_bank, cheque_date, notes and lines (a list of payments.services.LineInput, replacing all lines)."""
     with transaction.atomic():
@@ -143,7 +160,7 @@ def edit_payment(payment, *, data, request=None, actor=None) -> Payment:
             request=request,
             actor=actor,
             organization=org,
-            action=ADMIN_EDIT_ACTION,
+            action=action,
             entity_type="payments.payment",
             entity_id=payment.pk,
             before=before,

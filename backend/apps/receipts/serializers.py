@@ -18,6 +18,29 @@ class ReceiptSerializer(CreatedByMixin, serializers.ModelSerializer):
     )
     replaced_by = serializers.SerializerMethodField()
     pending_void_request = serializers.SerializerMethodField()
+    created_by = serializers.SerializerMethodField()
+    can_edit = serializers.SerializerMethodField()
+
+    def _creator(self, obj):
+        """Who created the pavti: the person who recorded the collection (falls back to the receipt)."""
+        return obj.payment.created_by or obj.created_by
+
+    def get_created_by(self, obj) -> str | None:
+        user = self._creator(obj)
+        return str(user.pk) if user else None
+
+    def get_created_by_name(self, obj) -> str | None:
+        user = self._creator(obj)
+        return (user.full_name or user.username) if user else None
+
+    def get_can_edit(self, obj) -> bool:
+        """The caller may edit this pavti in place (same number): an Organization Admin or its creator."""
+        from apps.payments.admin_edit import can_edit
+
+        if obj.status != Receipt.Status.ISSUED:
+            return False
+        request = self.context.get("request")
+        return can_edit(obj.payment, getattr(request, "_org_context", None), getattr(request, "user", None))
 
     def get_replaced_by(self, obj) -> dict | None:
         new = obj.replaced_by.first()
@@ -51,7 +74,9 @@ class ReceiptSerializer(CreatedByMixin, serializers.ModelSerializer):
             "snapshot",
             "logo_url",
             "created_at",
+            "created_by",
             "created_by_name",
+            "can_edit",
         ]
         read_only_fields = fields
 

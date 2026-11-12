@@ -11,6 +11,7 @@ from apps.contributions import assignments
 from apps.core.bulk import BulkDeleteMixin
 from apps.core.dates import OrgDayFilter
 from apps.core.downloads import Col, ListDownloadMixin
+from apps.core.exceptions import InvalidStateTransition
 from apps.core.scoping import scope_money
 from apps.core.tenancy import SCOPE_ALL
 from apps.core.viewsets import TenantModelViewSet
@@ -61,8 +62,9 @@ class PaymentViewSet(BulkDeleteMixin, ListDownloadMixin, TenantModelViewSet):
     after a network error returns the first payment instead of recording it twice. `payer` is optional: leave
     it empty for an anonymous collection, or send `new_person` to add the contributor while collecting.
 
-    PATCH edits only `notes`. An Organization Admin can edit everything with POST /payments/{id}/edit/ and
-    delete with DELETE /payments/{id}/ (the receipt is voided; the record stays in the audit log).
+    PATCH edits only `notes`. POST /payments/{id}/edit/ edits everything: an Organization Admin may edit any
+    collection, the person who created it may edit their own. An Organization Admin deletes with
+    DELETE /payments/{id}/ (the receipt is voided; the record stays in the audit log).
     """
 
     queryset = Payment.objects.all()
@@ -96,7 +98,7 @@ class PaymentViewSet(BulkDeleteMixin, ListDownloadMixin, TenantModelViewSet):
         "visit": "payments.create",
         "cancel": "payments.cancel_pending",
         "fail": "payments.cancel_pending",
-        "admin_edit": "records.admin_edit",
+        "admin_edit": ("records.admin_edit", "payments.create"),  # creators edit their own (see admin_edit)
         "destroy": "records.admin_edit",
         "bulk_delete": "records.admin_edit",
     }
@@ -242,17 +244,36 @@ class PaymentViewSet(BulkDeleteMixin, ListDownloadMixin, TenantModelViewSet):
     @extend_schema(request=PaymentAdminEditSerializer, responses=PaymentSerializer)
     @action(detail=True, methods=["post"], url_path="edit")
     def admin_edit(self, request, pk=None):
-        """Organization Admin: change the person, amount and lines, mode, date and time or notes.
+        """Change the person, amount and lines, mode, date and time or notes of a pavti.
 
-        The receipt keeps its number and shows the new details. Old and new values go to the audit log.
+        An Organization Admin may edit any pavti; the person who created a pavti may edit that pavti. The receipt
+        keeps its number and shows the new details. Old and new values go to the audit log.
         """
         payment = self.get_object()
+        if not admin_edit.can_edit(payment, self.org_context, request.user):
+            if payment.status not in admin_edit.EDITABLE:
+                raise InvalidStateTransition()
+            raise PermissionDenied(_("Only the person who created this pavti or an admin can edit it."))
         serializer = PaymentAdminEditSerializer(data=request.data, context=self.get_serializer_context())
         serializer.is_valid(raise_exception=True)
         data = dict(serializer.validated_data)
+        admin = admin_edit.is_admin(self.org_context)
+        if not admin:
+            # A creator who is not an admin keeps the usual collecting rules for a new contributor.
+            if data.get("new_person"):
+                self._check_can_collect(new_person=True)
+            elif data.get("payer") is not None and data["payer"].pk != payment.payer_id:
+                self._check_can_collect(data["payer"], payment.event)
         if "lines" in data:
             data["lines"] = [services.LineInput(**line) for line in data["lines"]]
-        return self._detail(admin_edit.edit_payment(payment, data=data, request=request, actor=request.user))
+        edited = admin_edit.edit_payment(
+            payment,
+            data=data,
+            request=request,
+            actor=request.user,
+            action=admin_edit.ADMIN_EDIT_ACTION if admin else admin_edit.CREATOR_EDIT_ACTION,
+        )
+        return self._detail(edited)
 
     @extend_schema(request=PaymentDeleteSerializer, responses=PaymentSerializer)
     def destroy(self, request, *args, **kwargs):
